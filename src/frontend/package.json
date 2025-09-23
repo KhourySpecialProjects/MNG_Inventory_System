@@ -1,0 +1,26 @@
+{
+    "name": "frontend",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview --port 5174"
+    },
+    "dependencies": {
+        "@tanstack/react-query": "^5.90.2",
+        "@trpc/client": "^11.5.1",
+        "@trpc/react-query": "^11.5.1",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "superjson": "^2.2.2",
+        "zod": "^4.1.11"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.24",
+        "@types/react-dom": "^18.3.7",
+        "@vitejs/plugin-react": "^5.0.3",
+        "typescript": "^5.9.2",
+        "vite": "^5.4.20"
+    }
+}

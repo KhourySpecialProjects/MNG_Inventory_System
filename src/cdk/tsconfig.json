@@ -1,0 +1,9 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+      "outDir": "dist",
+      "module": "CommonJS"  // CDK CLI expects CJS for Node runtime
+    },
+    "include": ["bin", "lib"]
+  }
+  
