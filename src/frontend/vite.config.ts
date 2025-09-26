@@ -7,8 +7,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:3001', changeOrigin: true }
-    }
+      // Forward all /trpc requests to the API server
+      '/trpc': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
   build: { outDir: 'dist' },
 
@@ -17,11 +21,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     css: true,
-    include: ['tests/**/*.test.{ts,tsx}'], 
+    include: ['tests/**/*.test.{ts,tsx}'],
     setupFiles: './tests/setup.ts',
     coverage: {
       reporter: ['text', 'html'],
-      include: ['src/**/*.{ts,tsx}']
-    }
-  }
+      include: ['src/**/*.{ts,tsx}'],
+    },
+  },
 });
