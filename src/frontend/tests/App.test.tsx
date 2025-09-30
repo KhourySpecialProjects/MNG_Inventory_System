@@ -12,7 +12,7 @@ test('shows loading then the API message on success', async () => {
     'fetch',
     vi.fn().mockResolvedValue({
       json: async () => ({ result: { data: { message: 'Hello from API' } } }),
-    } as any)
+    } as string | Response)
   );
 
   render(<App />);
