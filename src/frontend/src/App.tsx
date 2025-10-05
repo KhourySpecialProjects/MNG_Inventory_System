@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
+import HeroPage from './pages/HeroPage';
+import SignUpPage from './pages/SignUpPage';
+import SignInPage from './pages/SignInPage';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 export default function App() {
-  const [msg, setMsg] = useState("loading...");
 
-  useEffect(() => {
-    fetch("/trpc/hello?input=null")
-      .then((r) => r.json())
-      .then((d) => setMsg(d?.result?.data?.message ?? "no message"))
-      .catch(() => setMsg("API not running"));
-  }, []);
 
   return (
-    <div style={{ padding: 24, fontFamily: "ui-sans-serif, system-ui" }}>
-      <h1>Monorepo Boilerplate</h1>
-      <p>API says: {msg}</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HeroPage/>} />
+        <Route path="/signin" element={<SignInPage/>} />
+        <Route path="/signup" element={<SignUpPage/>} />
+      </Routes>
+    </BrowserRouter>
   );
 }
