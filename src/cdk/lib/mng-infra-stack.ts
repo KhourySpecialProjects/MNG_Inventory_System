@@ -1,3 +1,4 @@
+// src/cdk/lib/mng-infra-stack.ts
 import * as path from "path";
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
@@ -21,39 +22,7 @@ export class MngInfraStack extends cdk.Stack {
 
     const stage = resolveStage(this.node.root as cdk.App);
 
-    // Frontend: S3 + CloudFront 
-    const webBucket = new s3.Bucket(this, "WebBucket", {
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      autoDeleteObjects: stage.autoDeleteObjects,
-      removalPolicy: stage.removalPolicy,
-    });
-
-    const oai = new cloudfront.OriginAccessIdentity(this, "WebOAI");
-    webBucket.grantRead(oai);
-
-    const distro = new cloudfront.Distribution(this, "WebDistribution", {
-      defaultBehavior: {
-        origin: new origins.S3Origin(webBucket, { originAccessIdentity: oai }),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        compress: true,
-      },
-      defaultRootObject: "index.html",
-      errorResponses: [
-        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: "/index.html", ttl: cdk.Duration.seconds(0) },
-        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: "/index.html", ttl: cdk.Duration.seconds(0) },
-      ],
-    });
-
-    new s3deploy.BucketDeployment(this, "DeployWebsite", {
-      sources: [s3deploy.Source.asset(path.join(__dirname, "../../frontend/dist"))],
-      destinationBucket: webBucket,
-      distribution: distro,
-      distributionPaths: ["/*"],
-      prune: true,
-    });
-
-    // Backend: Lambda + HTTP API 
+    // BACKEND: Lambda (tRPC) + HTTP API
     const apiFn = new NodejsFunction(this, "TrpcLambda", {
       runtime: lambda.Runtime.NODEJS_20_X,
       entry: path.join(__dirname, "../../api/src/handler.ts"),
@@ -63,51 +32,114 @@ export class MngInfraStack extends cdk.Stack {
       bundling: {
         minify: true,
         sourceMap: true,
-        target: "es2022",
-        format: OutputFormat.CJS,
-        banner: "import { createRequire } from 'module';const require = createRequire(import.meta.url);",
+        target: "node20",
+        format: OutputFormat.CJS, // bundle as CJS to match handler
       },
       environment: {
         NODE_OPTIONS: "--enable-source-maps",
-        NODE_ENV: stage.nodeEnv,   
-        STAGE: stage.name,        
+        NODE_ENV: stage.nodeEnv,
+        STAGE: stage.name,
         SERVICE_NAME: "mng-api",
-        AWS_REGION: this.region,
-        CORS_ORIGINS: stage.cors.allowOrigins.join(","),
+        CORS_ORIGINS: stage.cors.allowOrigins.join(","),  // explicit origins (no "*") if you want credentials
         CORS_HEADERS: stage.cors.allowHeaders.join(","),
         CORS_METHODS: stage.cors.allowMethods.join(","),
       },
     });
 
+    const allowOrigins: string[] = stage.cors.allowOrigins;
+    const wildcard = allowOrigins.length === 1 && allowOrigins[0] === "*";
+
     const httpApi = new apigwv2.HttpApi(this, "HttpApi", {
       apiName: `mng-http-api-${stage.name}`,
       description: `HTTP API for tRPC (${stage.name})`,
       corsPreflight: {
-        allowOrigins: stage.cors.allowOrigins,
-        allowMethods: stage.cors.allowMethods.map(m => apigwv2.CorsHttpMethod[m as keyof typeof apigwv2.CorsHttpMethod]),
+        allowOrigins,
+        allowMethods: stage.cors.allowMethods.map(
+          (m: string) => apigwv2.CorsHttpMethod[m as keyof typeof apigwv2.CorsHttpMethod]
+        ),
         allowHeaders: stage.cors.allowHeaders,
+        // only set allowCredentials when not wildcard
+        ...(wildcard ? {} : { allowCredentials: true }),
       },
     });
 
+    const trpcIntegration = new apigwv2Integrations.HttpLambdaIntegration("TrpcIntegrationV2", apiFn);
+
+    // tRPC base
     httpApi.addRoutes({
-      path: "/{proxy+}",
+      path: "/trpc",
       methods: [apigwv2.HttpMethod.ANY],
-      integration: new apigwv2Integrations.HttpLambdaIntegration("LambdaProxyIntegration", apiFn),
+      integration: trpcIntegration,
     });
 
-    // CloudFront -> HTTP API
+    // tRPC proxy (batching, nested routes)
+    httpApi.addRoutes({
+      path: "/trpc/{proxy+}",
+      methods: [apigwv2.HttpMethod.ANY],
+      integration: trpcIntegration,
+    });
+
+    // FRONTEND: S3 + CloudFront
+    const webBucket = new s3.Bucket(this, "WebBucket", {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      autoDeleteObjects: stage.autoDeleteObjects,
+      removalPolicy: stage.removalPolicy,
+    });
+
+    // OAI for S3
+    const oai = new cloudfront.OriginAccessIdentity(this, "WebOAI");
+    const s3Origin = origins.S3BucketOrigin.withOriginAccessIdentity(webBucket, {
+      originAccessIdentity: oai,
+    });
+    webBucket.grantRead(oai);
+
+    // API origin (point to $default stage host)
     const apiOrigin = new origins.HttpOrigin(
-      `${httpApi.apiId}.execute-api.${this.region}.amazonaws.com`
+      `${httpApi.apiId}.execute-api.${this.region}.amazonaws.com`,
+      {
+        protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+      }
     );
 
-    distro.addBehavior("/trpc/*", apiOrigin, {
+    const apiBehavior: cloudfront.BehaviorOptions = {
+      origin: apiOrigin,
       viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-      cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+      cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED, // API responses should not be cached
+      // Important: don't forward Host; API GW must see its own host
       originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
       compress: true,
+    };
+
+    const distro = new cloudfront.Distribution(this, "WebDistribution", {
+      defaultBehavior: {
+        origin: s3Origin,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        compress: true,
+      },
+      defaultRootObject: "index.html",
+      additionalBehaviors: {
+        "/trpc": apiBehavior,    // base tRPC path
+        "/trpc/*": apiBehavior,  // all procedures + batching
+      },
+      errorResponses: [
+        // SPA fallback to index.html
+        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: "/index.html", ttl: cdk.Duration.seconds(0) },
+        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: "/index.html", ttl: cdk.Duration.seconds(0) },
+      ],
     });
 
+    // Deploy built frontend (point to your actual dist path)
+    new s3deploy.BucketDeployment(this, "DeployWebsite", {
+      sources: [s3deploy.Source.asset(path.join(__dirname, "../../frontend/dist"))],
+      destinationBucket: webBucket,
+      distribution: distro,
+      distributionPaths: ["/*"],
+      prune: true,
+    });
+
+    // Outputs  
     new cdk.CfnOutput(this, "Stage", { value: stage.name });
     new cdk.CfnOutput(this, "SiteUrl", { value: `https://${distro.domainName}` });
     new cdk.CfnOutput(this, "HttpApiInvokeUrl", {
