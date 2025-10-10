@@ -1,22 +1,19 @@
-#!/usr/bin/env node
-import 'source-map-support/register';
-import { App } from 'aws-cdk-lib';
-import { ApiStack } from '../lib/api-stack';
+import "source-map-support/register";
+import * as cdk from "aws-cdk-lib";
+import { MngInfraStack } from "../lib/mng-infra-stack";
+import { resolveStage } from "../stage";
 
-const app = new App();
+const app = new cdk.App();
+const cfg = resolveStage(app);
 
-// pull env from context or process.env
-const stage = app.node.tryGetContext('stage') ?? process.env.STAGE ?? 'dev';
-const account = process.env.CDK_DEFAULT_ACCOUNT;
-const region = process.env.CDK_DEFAULT_REGION ?? 'us-east-1';
-
-// pass allowed origins via context 
-const allowedOriginsCtx = app.node.tryGetContext('allowedOrigins') as string[] | undefined;
-const allowedOriginPatternsCtx = app.node.tryGetContext('allowedOriginPatterns') as string[] | undefined;
-
-new ApiStack(app, `MNG-Api-${stage}`, {
-  env: { account, region },
-  stage,
-  allowedOrigins: allowedOriginsCtx,
-  allowedOriginPatterns: allowedOriginPatternsCtx,
+const stack = new MngInfraStack(app, `MngInfra-${cfg.name}`, {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
 });
+
+// Apply tags from stage config
+if (cfg.tags) {
+  Object.entries(cfg.tags).forEach(([k, v]) => cdk.Tags.of(stack).add(k, v));
+}
