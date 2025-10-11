@@ -1,7 +1,7 @@
-import "source-map-support/register";
-import * as cdk from "aws-cdk-lib";
-import { MngInfraStack } from "../lib/mng-infra-stack";
-import { resolveStage } from "../stage";
+import 'source-map-support/register';
+import * as cdk from 'aws-cdk-lib';
+import { MngInfraStack } from '../lib/mng-infra-stack';
+import { resolveStage } from '../stage';
 
 const app = new cdk.App();
 const cfg = resolveStage(app);

@@ -20,8 +20,8 @@ export class ApiStack extends Stack {
 
     // Lambda that runs Express/tRPC.
     const apiFn = new NodejsFunction(this, 'ApiFn', {
-      entry: path.join(__dirname, '../../api/src/handler.ts'), 
-      handler: 'handler',                                 
+      entry: path.join(__dirname, '../../api/src/handler.ts'),
+      handler: 'handler',
       runtime: Runtime.NODEJS_20_X,
       memorySize: 512,
       timeout: Duration.seconds(15),
@@ -42,7 +42,7 @@ export class ApiStack extends Stack {
     const httpApi = new HttpApi(this, 'HttpApi', {
       corsPreflight: {
         allowMethods: [CorsHttpMethod.ANY],
-        allowOrigins: ['*'], 
+        allowOrigins: ['*'],
         allowHeaders: ['*'],
       },
     });
@@ -54,7 +54,7 @@ export class ApiStack extends Stack {
       integration,
     });
 
-    // Build the execute-api origin 
+    // Build the execute-api origin
     const apiExecuteDomain = `${httpApi.apiId}.execute-api.${this.region}.amazonaws.com`;
 
     // Final allowlist to inject
@@ -65,7 +65,7 @@ export class ApiStack extends Stack {
       ...(props.allowedOrigins ?? []),
     ];
 
-    const originPatterns = props.allowedOriginPatterns ?? []; 
+    const originPatterns = props.allowedOriginPatterns ?? [];
 
     // Inject env for server.ts to read
     apiFn.addEnvironment('ALLOWED_ORIGINS', JSON.stringify([...new Set(exactOrigins)]));
