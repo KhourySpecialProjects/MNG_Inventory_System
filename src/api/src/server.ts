@@ -1,8 +1,9 @@
-import express from 'express';
-import cors, { type CorsOptions } from 'cors';
-import * as trpcExpress from '@trpc/server/adapters/express';
-import { appRouter } from './routers';
-import { createContext } from './routers/trpc';
+import express from "express";
+import cors, { type CorsOptions } from "cors";
+import * as trpcExpress from "@trpc/server/adapters/express";
+import { appRouter } from "./routers";
+import { createContext } from "./routers/trpc";
+import { helloRouter } from "./routers/hello";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);
@@ -35,9 +36,10 @@ const corsDelegate = (req: express.Request, cb: (e: Error | null, o?: CorsOption
 app.options('*', cors(corsDelegate));
 app.use(cors(corsDelegate));
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
-
-app.use('/trpc', trpcExpress.createExpressMiddleware({ router: appRouter, createContext }));
+// TODO: ONCE YOU MAKE A ROUTER MAP IT HERE FOR LOCAL DEV
+app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/hello", trpcExpress.createExpressMiddleware({ router: helloRouter, createContext }));
+app.use("/trpc", trpcExpress.createExpressMiddleware({ router: appRouter, createContext }));
 
 app.get('/', (_req, res) => res.type('text/plain').send('API up at /trpc'));
 
