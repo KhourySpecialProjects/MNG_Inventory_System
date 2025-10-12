@@ -1,4 +1,4 @@
-// src/routers/s3.router.ts
+
 import { z } from 'zod';
 import { router, publicProcedure } from './trpc';
 import { presignUpload, presignGet, list, deleteObject } from '../services/s3.services';
