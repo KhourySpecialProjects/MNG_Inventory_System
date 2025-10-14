@@ -3,7 +3,6 @@ import {
   AdminCreateUserCommand,
   AdminInitiateAuthCommand,
   AdminRespondToAuthChallengeCommand,
-  AdminSetUserPasswordCommand,
   MessageActionType,
   AuthFlowType,
   ChallengeNameType,
