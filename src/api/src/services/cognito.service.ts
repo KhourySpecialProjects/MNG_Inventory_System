@@ -49,7 +49,7 @@ export class CognitoService {
     const command = new AdminInitiateAuthCommand({
       UserPoolId: USER_POOL_ID,
       ClientId: USER_POOL_CLIENT_ID,
-      AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH, 
+      AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
       AuthParameters: {
         USERNAME: params.email,
         PASSWORD: params.password,
@@ -59,7 +59,7 @@ export class CognitoService {
   }
 
   /**
-   * Respond to authentication challenges 
+   * Respond to authentication challenges
    */
   async respondToChallenge(params: {
     challengeName: string;
