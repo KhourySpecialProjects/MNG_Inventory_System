@@ -247,6 +247,7 @@ function SignUpPage() {
       </Card>
     </Box>
   );
+  return <Typography variant="h1">Sign In Page</Typography>;
 }
 
 export default SignUpPage;
