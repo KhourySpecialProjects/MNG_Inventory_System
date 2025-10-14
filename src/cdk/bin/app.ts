@@ -3,6 +3,7 @@ import * as cdk from "aws-cdk-lib";
 import { MngInfraStack } from "../lib/mng-infra-stack";
 import { resolveStage } from "../stage";
 import { AuthStack } from "../lib/auth-stack";
+import { DynamoStack } from "../lib/dynamo-stack";
 
 const app = new cdk.App();
 const cfg = resolveStage(app);
@@ -25,10 +26,6 @@ const infra = new MngInfraStack(app, `MngInfra-${cfg.name}`, {
   env: { account, region },
 });
 
-if (cfg.tags) {
-  Object.entries(cfg.tags).forEach(([k, v]) => cdk.Tags.of(infra).add(k, v));
-}
-
 // Add Cognito (invite-only)
 const auth = new AuthStack(app, `MngAuth-${cfg.name}`, {
   env: { account, region },
@@ -37,6 +34,15 @@ const auth = new AuthStack(app, `MngAuth-${cfg.name}`, {
   webOrigins,
 });
 
+// Add DynamoDB
+const dynamo = new DynamoStack(app, `MngDynamo-${cfg.name}`, {
+  env: { account, region },
+  stage: cfg.name,
+  serviceName: "mng",
+});
+
 if (cfg.tags) {
-  Object.entries(cfg.tags).forEach(([k, v]) => cdk.Tags.of(auth).add(k, v));
+  const applyTags = (stack: cdk.Stack) =>
+    Object.entries(cfg.tags!).forEach(([k, v]) => cdk.Tags.of(stack).add(k, v));
+  [infra, auth, dynamo].forEach(applyTags);
 }
