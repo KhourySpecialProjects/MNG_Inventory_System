@@ -17,7 +17,16 @@ export default defineConfig({
     globals: true,
     css: true,
     deps: {
-      inline: [/react/, /react-dom/, /@testing-library/],
+      optimizer: {
+        web: {
+          include: [
+            "react",
+            "react-dom",
+            "@testing-library/react",
+            "@testing-library/user-event",
+          ],
+        },
+      },
     },
     include: ['tests/**/*.test.{ts,tsx}'],
     setupFiles: './tests/setup.ts',
