@@ -181,7 +181,7 @@ export const authRouter = router({
       z.object({
         challengeName: z.string(),
         session: z.string(),
-        newPassword: z.string().min(10),
+        newPassword: z.string().min(12),
         email: z.email(),
       }),
     )
