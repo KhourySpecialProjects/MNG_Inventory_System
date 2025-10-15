@@ -561,10 +561,8 @@ export const authRouter = router({
       z.object({
         challengeName: z.string(),
         session: z.string(),
-        newPassword: z.string().min(10),
-        email: z.string(),
         newPassword: z.string().min(12),
-        email: z.string(),
+        email: z.email(),
       }),
     )
     .mutation(async ({ input }) => {
