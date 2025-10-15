@@ -157,6 +157,8 @@ import {
   AdminRespondToAuthChallengeCommand,
   AdminGetUserCommand,
   AdminSetUserPasswordCommand,
+  AdminGetUserCommand,
+  AdminSetUserPasswordCommand,
   MessageActionType,
   AuthFlowType,
   ChallengeNameType,
@@ -167,8 +169,18 @@ import {
   SendEmailCommandInput,
 } from '@aws-sdk/client-sesv2';
 import crypto from 'crypto';
+import {
+  SESv2Client,
+  SendEmailCommand,
+  SendEmailCommandInput,
+} from '@aws-sdk/client-sesv2';
+import crypto from 'crypto';
 
 const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
+const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
+const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
+const SES_FROM_ADDRESS = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
+const APP_SIGNIN_URL = process.env.APP_SIGNIN_URL || 'https://d2cktegyq4qcfk.cloudfront.net/signin';
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
 const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
 const SES_FROM_ADDRESS = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
@@ -182,7 +194,71 @@ if (!SES_FROM_ADDRESS) {
   throw new Error('SES_FROM_ADDRESS environment variable is required');
 }
 
+if (!SES_FROM_ADDRESS) {
+  throw new Error('SES_FROM_ADDRESS environment variable is required');
+}
+
 const cognitoClient = new CognitoIdentityProviderClient({ region: AWS_REGION });
+const sesClient = new SESv2Client({ region: AWS_REGION });
+
+/**
+ * Helper: Generate a random temporary password that satisfies Cognito's password policy
+ */
+const generateTempPassword = (): string => {
+  const base = crypto.randomBytes(6).toString('base64');
+  const extras = 'Aa1!';
+  return (base + extras).slice(0, 16);
+};
+
+/**
+ * Helper: Send invitation email using Amazon SES
+ */
+const sendInviteEmail = async (params: { to: string; tempPassword: string; signinUrl: string }) => {
+  const { to, tempPassword, signinUrl } = params;
+
+  const subject = 'Your MNG Inventory invitation';
+  const text = `Hi,
+
+You’ve been invited to MNG Inventory.
+
+Email: ${to}
+Temporary password: ${tempPassword}
+
+Please sign in here: ${signinUrl}
+
+You’ll be prompted to set a new password on first login.`;
+
+  const html = `
+  <div style="font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5">
+    <h2>Welcome to MNG Inventory</h2>
+    <p>You’ve been invited to join the platform. Use the credentials below to sign in for the first time:</p>
+    <ul>
+      <li><b>Email:</b> ${to}</li>
+      <li><b>Temporary password:</b> <code>${tempPassword}</code></li>
+    </ul>
+    <p><a href="${signinUrl}" target="_blank" rel="noopener noreferrer">Sign in now</a></p>
+    <p>You’ll be asked to set a new password on first login.</p>
+    <hr />
+    <small>If you didn’t expect this, you can safely ignore this email.</small>
+  </div>`;
+
+  const input: SendEmailCommandInput = {
+    FromEmailAddress: SES_FROM_ADDRESS,
+    Destination: { ToAddresses: [to] },
+    Content: {
+      Simple: {
+        Subject: { Data: subject },
+        Body: { Text: { Data: text }, Html: { Data: html } },
+      },
+    },
+  };
+
+  await sesClient.send(new SendEmailCommand(input));
+};
+
+/**
+ * Invite or re-invite a Cognito user (suppress default email, use SES instead)
+ */
 const sesClient = new SESv2Client({ region: AWS_REGION });
 
 /**
@@ -288,6 +364,50 @@ const inviteUser = async (params: { email: string }) => {
   await sendInviteEmail({ to: email, tempPassword, signinUrl: APP_SIGNIN_URL });
 
   return { success: true, email };
+  const { email } = params;
+  const tempPassword = generateTempPassword();
+
+  try {
+    // Check if user already exists
+    await cognitoClient.send(
+      new AdminGetUserCommand({ UserPoolId: USER_POOL_ID, Username: email }),
+    );
+
+    // User exists → reset their password instead of creating a new user
+    await cognitoClient.send(
+      new AdminSetUserPasswordCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: email,
+        Password: tempPassword,
+        Permanent: false,
+      }),
+    );
+
+    console.log(`Re-invited existing user: ${email}`);
+  } catch (err: any) {
+    // If user not found, create and suppress default Cognito email
+    if (err.name === 'UserNotFoundException') {
+      const command = new AdminCreateUserCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: email,
+        TemporaryPassword: tempPassword,
+        UserAttributes: [
+          { Name: 'email', Value: email },
+          { Name: 'email_verified', Value: 'true' },
+        ],
+        MessageAction: MessageActionType.SUPPRESS,
+      });
+      await cognitoClient.send(command);
+      console.log(`Created new user: ${email}`);
+    } else {
+      throw err;
+    }
+  }
+
+  // Send invite email via SES
+  await sendInviteEmail({ to: email, tempPassword, signinUrl: APP_SIGNIN_URL });
+
+  return { success: true, email };
 };
 
 const signIn = async (params: { email: string; password: string }) => {
@@ -331,10 +451,12 @@ export const authRouter = router({
     .input(
       z.object({
         email: z.string().email(),
+        email: z.string().email(),
       }),
     )
     .mutation(async ({ input }) => {
       try {
+        console.log(`Inviting user via SES: ${input.email}`);
         console.log(`Inviting user via SES: ${input.email}`);
 
         const result = await inviteUser({
@@ -343,6 +465,9 @@ export const authRouter = router({
 
         return {
           success: true,
+          userEmail: result.email,
+          message:
+            'User invited successfully - a custom SES email with credentials was sent.',
           userEmail: result.email,
           message:
             'User invited successfully - a custom SES email with credentials was sent.',
@@ -368,6 +493,7 @@ export const authRouter = router({
   signIn: publicProcedure
     .input(
       z.object({
+        email: z.string().email(),
         email: z.string().email(),
         password: z.string().min(12),
       }),
@@ -435,6 +561,8 @@ export const authRouter = router({
       z.object({
         challengeName: z.string(),
         session: z.string(),
+        newPassword: z.string().min(10),
+        email: z.string(),
         newPassword: z.string().min(12),
         email: z.string(),
       }),
