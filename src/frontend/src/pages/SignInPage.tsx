@@ -138,7 +138,6 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  //Link as MuiLink,
 } from "@mui/material";
 import { Visibility, VisibilityOff, CheckCircle, Cancel } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -274,5 +273,3 @@ function SignInPage() {
     </Box>
   );
 }
-
-export default SignInPage;
