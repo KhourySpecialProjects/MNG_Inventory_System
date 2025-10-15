@@ -42,11 +42,9 @@
     "typescript": "^5.4.0"
   },
   "dependencies": {
-    "@mui/icons-material": "^7.3.4"
+    "@mui/icons-material": "^7.3.4",
     "rollup": "^4.52.4",
-    "typescript": "^5.4.0"
-  },
-  "dependencies": {
+    "typescript": "^5.4.0",
     "@aws-sdk/client-s3": "^3.908.0"
   }
 }

@@ -8,12 +8,13 @@ import {
   Typography,
   IconButton,
   InputAdornment,
-  //Link as MuiLink,
 } from "@mui/material";
 import { Visibility, VisibilityOff, CheckCircle, Cancel } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
-// sign up component (no longer a separate page - only renders when a temporary password is inputted)
+/* -------------------------------------------------------------------------- */
+/*                              Sign Up Component                             */
+/* -------------------------------------------------------------------------- */
 function SignUpComponent({ onComplete }: { onComplete: () => void }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -162,8 +163,10 @@ function SignUpComponent({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// sign in page - user should be redirected to this link from an invite email that specifies the temporary password to use
-function SignInPage() {
+/* -------------------------------------------------------------------------- */
+/*                               Auth Page Main                               */
+/* -------------------------------------------------------------------------- */
+export default function AuthPage() {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -174,7 +177,8 @@ function SignInPage() {
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // potential AWS Cognito integration:
+    // === Simulated Logic ===
+    // In real AWS Cognito integration:
     // Cognito.signIn(identifier, password)
     //   .then((user) => checkChallengeName for "NEW_PASSWORD_REQUIRED")
 
@@ -289,7 +293,4 @@ function SignInPage() {
       </Card>
     </Box>
   );
-  return <Typography variant="h1">Sign In Page</Typography>;
 }
-
-export default SignInPage;
