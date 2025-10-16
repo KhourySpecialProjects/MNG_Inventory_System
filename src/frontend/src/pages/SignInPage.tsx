@@ -24,12 +24,14 @@ function SignInPage() {
     try {
       const res = await loginUser(identifier, password);
    
-      if (res.challenge === "NEW_PASSWORD_REQUIRED") {
+      if (res.challengeName === "NEW_PASSWORD_REQUIRED") {
         setIsSigningUp(true);
         localStorage.setItem("cognitoSession", res.session); 
       } else if (res.success) {
         navigate("/home");
       } else {
+        console.log("Login failed:", res.error);
+        console.error("Login challenge:", res.challengeName);
         alert(res.error ?? "Invalid credentials");
       }
     } catch (err) {
