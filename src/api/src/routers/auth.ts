@@ -17,6 +17,8 @@ import {
   SendEmailCommandInput,
 } from '@aws-sdk/client-sesv2';
 import crypto from 'crypto';
+import { cognitoClient, sesClient, AWS_CONFIG } from "../aws";
+
 
 const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
@@ -24,16 +26,8 @@ const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0j
 const SES_FROM_ADDRESS = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
 const APP_SIGNIN_URL = process.env.APP_SIGNIN_URL || 'https://d2cktegyq4qcfk.cloudfront.net/signin';
 
-if (!USER_POOL_ID || !USER_POOL_CLIENT_ID) {
-  throw new Error('COGNITO_USER_POOL_ID and COGNITO_CLIENT_ID environment variables are required');
-}
-
-if (!SES_FROM_ADDRESS) {
-  throw new Error('SES_FROM_ADDRESS environment variable is required');
-}
-
-const cognitoClient = new CognitoIdentityProviderClient({ region: AWS_REGION });
-const sesClient = new SESv2Client({ region: AWS_REGION });
+// const cognitoClient = new CognitoIdentityProviderClient({ region: AWS_REGION });
+// const sesClient = new SESv2Client({ region: AWS_REGION });
 
 /**
  * Helper: Generate a random temporary password that satisfies Cognito's password policy
@@ -285,8 +279,8 @@ export const authRouter = router({
       z.object({
         challengeName: z.string(),
         session: z.string(),
-        newPassword: z.string().min(12),
-        email: z.email(),
+        newPassword: z.string().min(10),
+        email: z.string(),
       }),
     )
     .mutation(async ({ input }) => {
