@@ -1,41 +1,20 @@
-// src/server.ts
-
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
 import { createExpressContext } from "./routers/trpc";
 
-/**
- * ------------------------------------------------------------------
- * Allowed origins for local dev:
- * - We MUST NOT use "*" if we want to send cookies.
- * - These should match the same list you passed into CDK
- *   (CloudFront URL + localhost dev URLs).
- * ------------------------------------------------------------------
- */
 const CANONICAL_ALLOWED_ORIGINS = [
   process.env.LOCAL_WEB_ORIGIN ?? "http://localhost:5173",
   "http://127.0.0.1:5173",
   "https://d2cktegyq4qcfk.cloudfront.net",
 ];
 
-/**
- * Resolve which origin to echo in Access-Control-Allow-Origin.
- * For Express/cors() we can supply a function(origin, callback)
- * to dynamically approve/deny each request.
- */
 function isAllowedOrigin(origin: string | undefined): boolean {
   if (!origin) return true; // same-origin / curl cases
   return CANONICAL_ALLOWED_ORIGINS.includes(origin);
 }
 
-/**
- * Build an Express cors() config that:
- * - reflects the request Origin (if allowed),
- * - sets credentials:true so browsers can send cookies,
- * - rejects disallowed origins cleanly in dev.
- */
 const corsMiddleware = cors({
   origin(origin, callback) {
     if (!origin || isAllowedOrigin(origin)) {
@@ -45,11 +24,7 @@ const corsMiddleware = cors({
     return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
-  allowedHeaders: [
-    "content-type",
-    "authorization",
-    "x-requested-with",
-  ],
+  allowedHeaders: ["content-type", "authorization", "x-requested-with"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   maxAge: 60 * 60 * 12, // 12h like API Gateway
 });
@@ -71,12 +46,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 /**
- * tRPC endpoint (Express adapter).
- *
- * This uses the same router and context you use in Lambda,
- * except here createExpressContext injects req/res so that
- * setAuthCookies / attachAuthCookiesToContext can directly set
- * `Set-Cookie` headers on res during local dev.
+ * tRPC router
  */
 app.use(
   "/trpc",
@@ -95,9 +65,7 @@ app.use(
 );
 
 /**
- * Catch-all error handler, so local dev doesn't just hard-crash.
- * This also makes 500s show up as JSON if something escapes
- * the tRPC layer.
+ * Global error handler
  */
 app.use(
   (

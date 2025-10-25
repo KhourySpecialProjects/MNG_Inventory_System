@@ -7,11 +7,6 @@ import type {
 import { appRouter } from "./routers";
 import { createLambdaContext } from "./routers/trpc";
 
-/**
- * Pick which Origin we will echo back in CORS.
- * We prefer a whitelist from process.env.ALLOWED_ORIGINS.
- * If there's no whitelist, we fall back to the request Origin.
- */
 function resolveAllowedOrigin(originHeader: string | undefined): string {
   const allow = (process.env.ALLOWED_ORIGINS ?? "")
     .split(",")
@@ -31,12 +26,6 @@ function resolveAllowedOrigin(originHeader: string | undefined): string {
   return allow[0] ?? originHeader;
 }
 
-/**
- * Build the CORS headers we want the browser to see.
- * IMPORTANT:
- * - Access-Control-Allow-Credentials: true so browser can send/receive cookies.
- * - Access-Control-Allow-Origin MUST be a specific origin, not "*".
- */
 function buildCorsHeaders(
   originHeader: string | undefined,
   includeCreds = true,
@@ -62,10 +51,6 @@ function buildCorsHeaders(
   return h;
 }
 
-/**
- * Handle preflight OPTIONS if API Gateway forwards it through to Lambda.
- * (API Gateway may answer OPTIONS itself, but if it doesn't, we do it here.)
- */
 function handleOptions(
   event: APIGatewayProxyEventV2
 ): APIGatewayProxyStructuredResultV2 {
@@ -73,20 +58,13 @@ function handleOptions(
     (event.headers?.origin ??
       (event.headers as any)?.Origin) as string | undefined;
 
+  // Manual preflight fallback if it reaches us
   return {
     statusCode: 204,
     headers: buildCorsHeaders(origin, true, true),
   };
 }
 
-/**
- * Main Lambda handler around tRPC.
- *
- * - Always attach CORS headers.
- * - Surface any cookies collected in ctx.responseCookies via responseMeta.
- *   The awsLambdaRequestHandler will map `cookies: string[]` to multiple
- *   Set-Cookie headers in the final API Gateway response.
- */
 export const lambdaHandler = async (
   event: APIGatewayProxyEventV2,
   ctx: LambdaCtx
@@ -117,17 +95,13 @@ export const lambdaHandler = async (
         const status = (errors[0] as any)?.data?.httpStatus ?? 500;
         return {
           status,
-          headers: {
-            ...baseHeaders,
-          },
+          headers: { ...baseHeaders },
           cookies: cookieList,
         };
       }
 
       return {
-        headers: {
-          ...baseHeaders,
-        },
+        headers: { ...baseHeaders },
         cookies: cookieList,
       };
     },
