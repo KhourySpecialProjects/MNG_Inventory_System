@@ -4,19 +4,16 @@ import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./routers";
 import { createExpressContext } from "./routers/trpc";
 
-
 const CANONICAL_ALLOWED_ORIGINS = [
   process.env.LOCAL_WEB_ORIGIN ?? "http://localhost:5173",
   "http://127.0.0.1:5173",
   "https://d2cktegyq4qcfk.cloudfront.net",
 ];
 
-
 function isAllowedOrigin(origin: string | undefined): boolean {
   if (!origin) return true; // same-origin / curl cases
   return CANONICAL_ALLOWED_ORIGINS.includes(origin);
 }
-
 
 const corsMiddleware = cors({
   origin(origin, callback) {
@@ -27,22 +24,13 @@ const corsMiddleware = cors({
     return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
-  allowedHeaders: [
-    "content-type",
-    "authorization",
-    "x-requested-with",
-  ],
+  allowedHeaders: ["content-type", "authorization", "x-requested-with"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   maxAge: 60 * 60 * 12, // 12h like API Gateway
 });
 
 const app = express();
 
-/**
- * We mount CORS first so preflight OPTIONS is handled.
- * Then JSON parser, then routes.
- */
-app.use(corsMiddleware);
 /**
  * We mount CORS first so preflight OPTIONS is handled.
  * Then JSON parser, then routes.
@@ -56,21 +44,16 @@ app.use(express.json());
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).send("ok");
 });
+
 /**
- * Health check
+ * tRPC router
  */
-app.get("/health", (_req: Request, res: Response) => {
-  res.status(200).send("ok");
-});
-
-
 app.use(
   "/trpc",
   trpcExpress.createExpressMiddleware({
     router: appRouter,
     createContext: createExpressContext,
     onError({ error, path, type }) {
-      // Helpful detail in dev
       // Helpful detail in dev
       console.error(`[tRPC] ${type} ${path} failed`, {
         code: error.code,
@@ -81,7 +64,9 @@ app.use(
   })
 );
 
-
+/**
+ * Global error handler
+ */
 app.use(
   (
     err: any,
@@ -100,16 +85,9 @@ app.use(
 /**
  * Start server unless we're under tests.
  */
-/**
- * Start server unless we're under tests.
- */
 const PORT = Number(process.env.PORT) || 3001;
 
 if (process.env.NODE_ENV !== "test") {
-  const server = app.listen(PORT, () => {
-    console.log(`API running on http://localhost:${PORT}`);
-    console.log("Allowed CORS origins:", CANONICAL_ALLOWED_ORIGINS);
-  });
   const server = app.listen(PORT, () => {
     console.log(`API running on http://localhost:${PORT}`);
     console.log("Allowed CORS origins:", CANONICAL_ALLOWED_ORIGINS);
