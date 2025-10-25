@@ -36,18 +36,13 @@ function buildCorsHeaders(
   const h: Record<string, string> = {
     "Access-Control-Allow-Origin": allowOrigin,
     Vary: "Origin",
-    "Access-Control-Allow-Origin": allowOrigin,
-    Vary: "Origin",
   };
 
   if (includeCreds) {
     h["Access-Control-Allow-Credentials"] = "true";
-    h["Access-Control-Allow-Credentials"] = "true";
   }
 
   if (includeMethodsHeaders) {
-    h["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
-    h["Access-Control-Allow-Headers"] =
     h["Access-Control-Allow-Methods"] = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
     h["Access-Control-Allow-Headers"] =
       "content-type,authorization,x-requested-with";
@@ -63,11 +58,7 @@ function handleOptions(
     (event.headers?.origin ??
       (event.headers as any)?.Origin) as string | undefined;
 
-  return {
-    statusCode: 204,
-    headers: buildCorsHeaders(origin, true, true),
-  };
-
+  // Manual preflight fallback if it reaches us
   return {
     statusCode: 204,
     headers: buildCorsHeaders(origin, true, true),
@@ -79,17 +70,12 @@ export const lambdaHandler = async (
   ctx: LambdaCtx
 ): Promise<APIGatewayProxyStructuredResultV2> => {
   // Manual preflight fallback if it reaches us
-  // Manual preflight fallback if it reaches us
   if ((event.requestContext?.http?.method ?? "").toUpperCase() === "OPTIONS") {
     return handleOptions(event);
   }
 
   return awsLambdaRequestHandler({
     router: appRouter,
-    createContext: createLambdaContext,
-
-    responseMeta({ ctx: trpcCtx, errors }) {
-      // The request's Origin header (case-insensitive per browsers)
     createContext: createLambdaContext,
 
     responseMeta({ ctx: trpcCtx, errors }) {
@@ -105,48 +91,22 @@ export const lambdaHandler = async (
       // We'll pass these back so API Gateway returns Set-Cookie headers.
       const cookieList = trpcCtx?.responseCookies ?? [];
 
-      // Build the base CORS headers for all responses
-      const baseHeaders = buildCorsHeaders(origin, true, false);
-
-      // Collect cookies that resolvers attached to the context in Lambda mode.
-      // We'll pass these back so API Gateway returns Set-Cookie headers.
-      const cookieList = trpcCtx?.responseCookies ?? [];
-
       if (errors?.length) {
         const status = (errors[0] as any)?.data?.httpStatus ?? 500;
         return {
           status,
-          headers: {
-            ...baseHeaders,
-          },
-          cookies: cookieList,
-        };
-        return {
-          status,
-          headers: {
-            ...baseHeaders,
-          },
+          headers: { ...baseHeaders },
           cookies: cookieList,
         };
       }
 
       return {
-        headers: {
-          ...baseHeaders,
-        },
-        cookies: cookieList,
-      };
-
-      return {
-        headers: {
-          ...baseHeaders,
-        },
+        headers: { ...baseHeaders },
         cookies: cookieList,
       };
     },
   })(event, ctx);
 };
 
-// AWS Lambda entrypoint
 // AWS Lambda entrypoint
 export const handler = lambdaHandler;
