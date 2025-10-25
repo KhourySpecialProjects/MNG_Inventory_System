@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   CardMedia,
+  CircularProgress,
   Container,
   FormControl,
   MenuItem,
   Select,
   TextField,
-  Typography,
-  CircularProgress,
-  Alert
+  Typography
 } from '@mui/material';
 import PercentageBar from '../components/PercentageBar';
 import { getItem } from '../api/api';
+import NavBar from '../components/NavBar';
 
 interface ItemViewModel {
   productName: string;
@@ -31,107 +32,109 @@ interface ProductCardProps {
   product: ItemViewModel;
 }
 
-const ProductCard = ({ product } : ProductCardProps) => {
+const ProductCard = ({ product }: ProductCardProps) => {
   const [status, setStatus] = React.useState('Found');
   const [notes, setNotes] = React.useState(product.description);
 
   return (
-    <Container maxWidth="md" sx={{
-      px: { xs: 0, sm: 2, md: 3 }
-    }}>
-      <Card>
-        <PercentageBar />
-
-        {/* Product Image */}
-        <CardMedia
-          component="img"
-          image={product.imageLink}
-          alt={product.productName}
-          sx={{
-            maxHeight: '40vh',
-            objectFit: 'contain'
-          }}
-        />
-
-        <CardContent>
-          {/* Product Title */}
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            {product.productName}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {product.actualName}
-          </Typography>
-
-          {/* Notes Section */}
-          <Box sx={{ mt: 2, mb: 2 }}>
-            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-              Notes:
-            </Typography>
-            <TextField
-              multiline
-              fullWidth
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes here..."
-              sx={{
-                borderRadius: 2,
-                '& .MuiInputBase-input': {
-                  fontSize: { xs: '0.75rem', sm: '0.9rem', md: '1rem' }
-                }
-              }}
-            />
-          </Box>
-
-          {/* Product Details */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Serial Number: {product.serialNumber || 'N/A'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Date Last Scanned: N/A
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Last Known Location: N/A
-            </Typography>
-          </Box>
-
-          {/* Status Dropdown */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-              Status:
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                sx={{ bgcolor: 'white' }}
-              >
-                <MenuItem value="Found">Found</MenuItem>
-                <MenuItem value="Damaged">Damaged</MenuItem>
-                <MenuItem value="Missing">Missing</MenuItem>
-                <MenuItem value="In Repair">In Repair</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Complete Button */}
-          <Button
-            variant="contained"
-            fullWidth
+    <div>
+      <PercentageBar />
+      <Container maxWidth="md" sx={{
+        px: { xs: 0, sm: 2, md: 3 }
+      }}>
+        <Card>
+          {/* Product Image */}
+          <CardMedia
+            component="img"
+            image={product.imageLink}
+            alt={product.productName}
             sx={{
-              mt: 2,
-              bgcolor: '#81c784',
-              '&:hover': { bgcolor: '#66bb6a' },
-              textTransform: 'none',
-              fontWeight: 'bold'
+              maxHeight: '40vh',
+              objectFit: 'contain'
             }}
-          >
-            Complete
-          </Button>
-        </CardContent>
-      </Card>
-    </Container>
+          />
+
+          <CardContent>
+            {/* Product Title */}
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              {product.productName}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {product.actualName}
+            </Typography>
+
+            {/* Notes Section */}
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                Notes:
+              </Typography>
+              <TextField
+                multiline
+                fullWidth
+                rows={4}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add notes here..."
+                sx={{
+                  borderRadius: 2,
+                  '& .MuiInputBase-input': {
+                    fontSize: { xs: '0.75rem', sm: '0.9rem', md: '1rem' }
+                  }
+                }}
+              />
+            </Box>
+
+            {/* Product Details */}
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Serial Number: {product.serialNumber || 'N/A'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Date Last Scanned: N/A
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Last Known Location: N/A
+              </Typography>
+            </Box>
+
+            {/* Status Dropdown */}
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                Status:
+              </Typography>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  sx={{ bgcolor: 'white' }}
+                >
+                  <MenuItem value="Found">Found</MenuItem>
+                  <MenuItem value="Damaged">Damaged</MenuItem>
+                  <MenuItem value="Missing">Missing</MenuItem>
+                  <MenuItem value="In Repair">In Repair</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Complete Button */}
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{
+                mt: 2,
+                bgcolor: '#81c784',
+                '&:hover': { bgcolor: '#66bb6a' },
+                textTransform: 'none',
+                fontWeight: 'bold'
+              }}
+            >
+              Complete
+            </Button>
+          </CardContent>
+        </Card>
+      </Container>
+      <NavBar />
+    </div>
   );
 };
 

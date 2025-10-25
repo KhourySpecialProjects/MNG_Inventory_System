@@ -5,6 +5,8 @@ import ProductReviewPage from './pages/ProductReviewPage';
 import theme from './theme';
 import { ThemeProvider } from '@emotion/react';
 import { CssBaseline } from '@mui/material';
+import ReviewedPage from './pages/ReviewedPage';
+import ToReviewPage from './pages/ToReviewPage';
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
           <Route path="/" element={<HeroPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/product/item" element={<ProductReviewPage />} />
+          <Route path="/reviewed" element={<ReviewedPage />} />
+          <Route path="/to-review" element={<ToReviewPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

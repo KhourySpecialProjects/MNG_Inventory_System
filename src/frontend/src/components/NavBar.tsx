@@ -5,9 +5,11 @@ import HomeIcon from "@mui/icons-material/Home";
 import CheckBoxBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import OutboxIcon from "@mui/icons-material/Outbox";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
-  const [value, setValue] = React.useState(0);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <Paper
@@ -27,13 +29,13 @@ export default function NavBar() {
     >
       <BottomNavigation
         showLabels
-        value={value}
-        onChange={(event, newValue) => setValue(newValue)}
+        value={location.pathname}
+        onChange={(event, newValue) => navigate(newValue)}
       >
-        <BottomNavigationAction label="Home" value="home" icon={<HomeIcon />} />
-        <BottomNavigationAction label="To Review" value="toReview" icon={<CheckBoxBlankIcon />} />
-        <BottomNavigationAction label="Reviewed" value="reviewed" icon={<CheckBoxIcon />} />
-        <BottomNavigationAction label="Send" value="send" icon={<OutboxIcon />} />
+        <BottomNavigationAction label="Home" value="/" icon={<HomeIcon />} />
+        <BottomNavigationAction label="To Review" value="/to-review" icon={<CheckBoxBlankIcon />} />
+        <BottomNavigationAction label="Reviewed" value="/reviewed" icon={<CheckBoxIcon />} />
+        <BottomNavigationAction label="Send" value="/send" icon={<OutboxIcon />} />
       </BottomNavigation>
     </Paper>
   );
