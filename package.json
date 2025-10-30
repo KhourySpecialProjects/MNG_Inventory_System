@@ -42,9 +42,10 @@
     "typescript": "^5.4.0"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.908.0",
     "@mui/icons-material": "^7.3.4",
+    "recharts": "^3.3.0",
     "rollup": "^4.52.4",
-    "typescript": "^5.4.0",
-    "@aws-sdk/client-s3": "^3.908.0"
+    "typescript": "^5.4.0"
   }
 }
