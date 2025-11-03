@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { Box, Button, Paper, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import {
+  Button,
+  Paper,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 interface RestartProcessCardProps {
   onRestart?: () => void; // optional callback for when the restart is confirmed
 }
 
-export default function RestartProcess ({ onRestart }: RestartProcessCardProps) {
+export default function RestartProcess({ onRestart }: RestartProcessCardProps) {
+  const theme = useTheme();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2>(1);
 
@@ -26,7 +36,15 @@ export default function RestartProcess ({ onRestart }: RestartProcessCardProps) 
   return (
     <>
       {/* Restart Process Card */}
-      <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", textAlign: "center", border: "1px solid rgba(0,0,0,0.08)" }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          bgcolor: theme.palette.background.paper,
+          textAlign: "center",
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
         <Typography variant="h6" fontWeight={800} mb={2}>
           Restart Inventory Process
         </Typography>
@@ -36,7 +54,12 @@ export default function RestartProcess ({ onRestart }: RestartProcessCardProps) 
         <Button
           variant="contained"
           fullWidth
-          sx={{ mt: 2, bgcolor: "#F44336", color: "#FFFFFF !important", fontWeight: 700, ":hover": { bgcolor: "#D32F2F" } }}
+          color="error"
+          sx={{
+            mt: 2,
+            fontWeight: 700,
+            color: theme.palette.error.contrastText,
+          }}
           onClick={openWizard}
         >
           Restart Process
@@ -45,8 +68,20 @@ export default function RestartProcess ({ onRestart }: RestartProcessCardProps) 
 
       {/* Two-Step Wizard */}
       <Dialog open={isDialogOpen} onClose={closeWizard}>
-        <DialogTitle sx={{ bgcolor: "#FFFFFF", color: "#000000" }}>Restart Process</DialogTitle>
-        <DialogContent sx={{ bgcolor: "#FFFFFF", color: "#000000" }}>
+        <DialogTitle
+          sx={{
+            bgcolor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+          }}
+        >
+          Restart Process
+        </DialogTitle>
+        <DialogContent
+          sx={{
+            bgcolor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+          }}
+        >
           {wizardStep === 1 ? (
             <Typography>
               Are you sure you want to restart the process? This will reset all progress.
@@ -57,10 +92,14 @@ export default function RestartProcess ({ onRestart }: RestartProcessCardProps) 
             </Typography>
           )}
         </DialogContent>
-        <DialogActions sx={{ bgcolor: "#FFFFFF" }}>
+        <DialogActions sx={{ bgcolor: theme.palette.background.paper }}>
           <Button onClick={closeWizard}>Cancel</Button>
           {wizardStep === 1 ? (
-            <Button variant="contained" color="warning" onClick={() => setWizardStep(2)}>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={() => setWizardStep(2)}
+            >
               Continue
             </Button>
           ) : (

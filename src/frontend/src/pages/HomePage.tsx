@@ -1,5 +1,5 @@
 import Grid from "@mui/material/Grid";
-import { alpha } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import { Link } from "react-router-dom";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import SecurityIcon from "@mui/icons-material/Security";
@@ -30,10 +30,10 @@ import {
 } from "recharts";
 
 export default function HomePage() {
+  const theme = useTheme();
   const tasksCompleted = 30;
-  const cardBorder = `1px solid ${alpha("#000", 0.08)}`;
+  const cardBorder = `1px solid ${theme.palette.divider}`;
 
-  // TODO: should connect to actual counts in terms of data that was moved to "Reviewed"; is hourly a good frequency?
   const reviewData = [
     { hour: "1h ago", reviewed: 3 },
     { hour: "2h ago", reviewed: 4 },
@@ -43,70 +43,57 @@ export default function HomePage() {
   ];
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* === Top NavBar === */}
-      <AppBar
-        position="sticky"
-        elevation={0}
-        sx={{
-          bgcolor: "#283996",
-          borderBottom: `1px solid ${alpha("#000", 0.1)}`,
-        }}
-      >
+    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", overflowX: "hidden" }}>
+      {/* Top AppBar */}
+      <AppBar position="sticky" elevation={0}>
         <Toolbar sx={{ minHeight: { xs: 56, sm: 60 } }}>
           <Stack
             direction="row"
             spacing={1.2}
             alignItems="center"
-            sx={{ flexGrow: 1, color: "#FFFFFF", textDecoration: "none" }}
+            sx={{
+              flexGrow: 1,
+              color: theme.palette.primary.contrastText,
+              textDecoration: "none",
+            }}
             component={Link}
             to="/"
           >
-            <MilitaryTechIcon sx={{ color: "#FFFFFF" }} />
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 800, letterSpacing: 0.5, color: "#FFFFFF" }}
-            >
-              SupplyNet
-            </Typography>
+            <MilitaryTechIcon sx={{ color: theme.palette.primary.contrastText }} />
+            <Typography variant="h6">SupplyNet</Typography>
           </Stack>
 
           <Button
             component={Link}
             to="/signin"
             variant="contained"
+            color="warning"
             startIcon={<SecurityIcon />}
-            sx={{
-              bgcolor: "#D0A139",
-              color: "#101214",
-              ":hover": { bgcolor: "#B58827" },
-              fontWeight: 800,
-            }}
           >
             Sign In
           </Button>
         </Toolbar>
       </AppBar>
 
-      {/* === Dashboard Content === */}
+      {/* Main Content */}
       <Box
         sx={{
           flex: 1,
-          bgcolor: "#F4F4F1",
+          bgcolor: theme.palette.background.default,
           p: { xs: 2, sm: 3, md: 4 },
-          "&, & *": { color: "#000000 !important" }, // 🔥 All text black
+          color: theme.palette.text.primary,
+          pb: { xs: 12, sm: 14 }, // extra padding for fixed bottom nav
         }}
       >
         <Grid container spacing={3}>
-          {/* LEFT SIDE */}
+          {/* Left side */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Stack spacing={3}>
               {/* Inventory Status */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", border: cardBorder }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   MNG Inventory's Inventory Status
                 </Typography>
-
                 <Grid container spacing={2}>
                   {[
                     { title: "To Review", value: "70" },
@@ -114,14 +101,14 @@ export default function HomePage() {
                     { title: "Shortages", value: "3" },
                     { title: "Damaged", value: "2" },
                   ].map((item, i) => (
-                    <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Grid key={i} size={{ xs: 6, sm: 6, md: 3 }}>
                       <Card
                         elevation={0}
                         sx={{
                           p: 3,
                           textAlign: "center",
                           border: cardBorder,
-                          bgcolor: "#FFFFFF",
+                          bgcolor: theme.palette.background.paper,
                         }}
                       >
                         <Typography variant="subtitle2">{item.title}</Typography>
@@ -135,31 +122,55 @@ export default function HomePage() {
               </Paper>
 
               {/* Inventory Reviewed */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", border: cardBorder }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Inventory Reviewed
                 </Typography>
-
-                <Stack direction={{ xs: "column", sm: "row" }} alignItems="center" spacing={3}>
+                <Stack
+                  direction={{ xs: "row", sm: "row" }}
+                  alignItems="center"
+                  spacing={3}
+                  sx={{ flexWrap: "wrap" }}
+                >
+                  {/* Circular Progress */}
                   <CircularProgressBar value={tasksCompleted} />
 
-                  <Box sx={{ flex: 1, minHeight: 180 }}>
+                  {/* Reviews in Last 5 Hours */}
+                  <Box sx={{ flex: 1, minHeight: 180, minWidth: { xs: 180, sm: 200 } }}>
                     <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
                       Reviews in Last 5 Hours
                     </Typography>
-
                     <ResponsiveContainer width="100%" height={120}>
                       <BarChart data={reviewData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E0E0" />
-                        <XAxis dataKey="hour" tick={{ fill: "#000000", fontSize: 12 }} axisLine={false} tickLine={false} />
-                        <YAxis tick={{ fill: "#000000", fontSize: 12 }} axisLine={false} tickLine={false} width={30} />
-                        <Tooltip
-                          cursor={{ fill: "rgba(40, 57, 150, 0.05)" }}
-                          contentStyle={{ backgroundColor: "#FFFFFF", border: cardBorder, borderRadius: 6 }}
-                          labelStyle={{ color: "#000000", fontWeight: 700 }}
-                          itemStyle={{ color: "#000000" }}
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                        <XAxis
+                          dataKey="hour"
+                          tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                          axisLine={false}
+                          tickLine={false}
                         />
-                        <Bar dataKey="reviewed" fill="#283996" radius={[4, 4, 0, 0]} barSize={24} />
+                        <YAxis
+                          tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={30}
+                        />
+                        <Tooltip
+                          cursor={{ fill: alpha(theme.palette.primary.main, 0.05) }}
+                          contentStyle={{
+                            backgroundColor: theme.palette.background.paper,
+                            border: cardBorder,
+                            borderRadius: 6,
+                          }}
+                          labelStyle={{ color: theme.palette.text.primary, fontWeight: 700 }}
+                          itemStyle={{ color: theme.palette.text.primary }}
+                        />
+                        <Bar
+                          dataKey="reviewed"
+                          fill={theme.palette.primary.main}
+                          radius={[4, 4, 0, 0]}
+                          barSize={24}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                     <Typography variant="caption" sx={{ mt: 1, display: "block", textAlign: "right" }}>
@@ -170,17 +181,36 @@ export default function HomePage() {
               </Paper>
 
               {/* Follow-Ups */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", border: cardBorder }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Follow-Ups
                 </Typography>
-                <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", "& th, & td": { textAlign: "left", padding: "8px", borderBottom: "1px solid #E0E0E0", color: "#000000 !important" }, "& th": { bgcolor: "#F9F9F9", fontWeight: 700 } }}>
+                <Box
+                  component="table"
+                  sx={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: { xs: "0.75rem", sm: "0.8rem", md: "0.9rem" },
+                    "& th, & td": {
+                      textAlign: "left",
+                      padding: "6px 8px",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      whiteSpace: "normal",
+                      wordWrap: "break-word",
+                      overflowWrap: "break-word",
+                    },
+                    "& th": {
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      fontWeight: 700,
+                    },
+                  }}
+                >
                   <thead>
                     <tr>
                       <th>Item</th>
                       <th>Kit</th>
                       <th>Status</th>
-                      <th>Reviewd On</th>
+                      <th>Reviewed On</th>
                       <th>Notes</th>
                     </tr>
                   </thead>
@@ -205,11 +235,11 @@ export default function HomePage() {
             </Stack>
           </Grid>
 
-          {/* RIGHT SIDE */}
+          {/* Right side */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Stack spacing={3}>
               {/* Recent Notes */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", border: cardBorder }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Recent Notes
                 </Typography>
@@ -227,11 +257,10 @@ export default function HomePage() {
               </Paper>
 
               {/* Team Activity */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", border: cardBorder }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Team Activity
                 </Typography>
-
                 <Box sx={{ width: "100%", height: 250 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -243,27 +272,41 @@ export default function HomePage() {
                       ]}
                       margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E0E0E0" />
-                      <XAxis dataKey="name" tick={{ fill: "#000000", fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: "#000000", fontSize: 12 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                      <Tooltip
-                        cursor={{ fill: "rgba(40, 57, 150, 0.05)" }}
-                        contentStyle={{ backgroundColor: "#FFFFFF", border: cardBorder, borderRadius: 6 }}
-                        labelStyle={{ color: "#000000", fontWeight: 700 }}
-                        itemStyle={{ color: "#000000" }}
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
                       />
-                      <Bar dataKey="completed" stackId="a" fill="#4CAF50" name="Completed" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="shortages" stackId="a" fill="#FFEB3B" name="Shortages" />
-                      <Bar dataKey="damaged" stackId="a" fill="#F44336" name="Damaged" />
+                      <YAxis
+                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        cursor={{ fill: alpha(theme.palette.primary.main, 0.05) }}
+                        contentStyle={{
+                          backgroundColor: theme.palette.background.paper,
+                          border: cardBorder,
+                          borderRadius: 6,
+                        }}
+                        labelStyle={{ color: theme.palette.text.primary, fontWeight: 700 }}
+                        itemStyle={{ color: theme.palette.text.primary }}
+                      />
+                      <Bar dataKey="completed" stackId="a" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="shortages" stackId="a" fill={theme.palette.warning.main} />
+                      <Bar dataKey="damaged" stackId="a" fill={theme.palette.error.main} />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
 
                 <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 2, flexWrap: "wrap" }}>
                   {[
-                    { label: "Completed", color: "#4CAF50" },
-                    { label: "Shortages", color: "#FFEB3B" },
-                    { label: "Damaged", color: "#F44336" },
+                    { label: "Completed", color: theme.palette.success.main },
+                    { label: "Shortages", color: theme.palette.warning.main },
+                    { label: "Damaged", color: theme.palette.error.main },
                   ].map((item, i) => (
                     <Stack key={i} direction="row" alignItems="center" spacing={1}>
                       <Box sx={{ width: 16, height: 16, bgcolor: item.color, borderRadius: 0.5 }} />
@@ -274,18 +317,14 @@ export default function HomePage() {
               </Paper>
 
               {/* Add Inventory */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: "#FFFFFF", border: cardBorder, textAlign: "center" }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder, textAlign: "center" }}>
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Add Inventory
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 2 }}>
                   Register new inventory items to be reviewed
                 </Typography>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  sx={{ bgcolor: "#283996", color: "#FFFFFF !important", fontWeight: 700, ":hover": { bgcolor: "#1f2d7d" } }}
-                >
+                <Button variant="contained" fullWidth color="primary">
                   Add New Inventory Item
                 </Button>
               </Paper>
@@ -297,7 +336,10 @@ export default function HomePage() {
         </Grid>
       </Box>
 
-      <NavBar />
+      {/* Fixed Bottom Nav */}
+      <Box sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
+        <NavBar />
+      </Box>
     </Box>
   );
 }

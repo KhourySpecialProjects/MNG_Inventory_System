@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import {
-  Box,
-  CircularProgress,
-  Typography,
-} from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
+import { useTheme, alpha } from "@mui/material/styles";
 
 // TODO: split up into a pie chart with different Reviewed statuses (completed, shortages, damaged)
 export default function CircularProgressBar({ value = 30 }) {
+  const theme = useTheme();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -45,7 +43,7 @@ export default function CircularProgressBar({ value = 30 }) {
           sx={{
             width: "100% !important",
             height: "100% !important",
-            color: "#e8f5e9", // ✅ lighter background track
+            color: alpha(theme.palette.success.main, 0.1), // ✅ lighter background track
           }}
         />
 
@@ -61,7 +59,7 @@ export default function CircularProgressBar({ value = 30 }) {
             left: 0,
             top: 0,
             "& .MuiCircularProgress-circle": {
-              stroke: "#66bb6a", // green progress
+              stroke: theme.palette.success.main, // ✅ theme green
               strokeLinecap: "round",
             },
           }}
@@ -84,7 +82,7 @@ export default function CircularProgressBar({ value = 30 }) {
         >
           <Typography
             sx={{
-              color: "#000000",
+              color: theme.palette.text.primary,
               fontWeight: 800,
               fontSize: { xs: "1.1rem", sm: "1.3rem", md: "1.5rem" },
             }}
@@ -93,7 +91,7 @@ export default function CircularProgressBar({ value = 30 }) {
           </Typography>
           <Typography
             sx={{
-              color: "#000000",
+              color: theme.palette.text.secondary,
               fontWeight: 600,
               fontSize: { xs: "0.75rem", sm: "0.9rem", md: "1rem" },
               textTransform: "lowercase",
