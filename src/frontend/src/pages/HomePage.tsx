@@ -1,6 +1,6 @@
 import Grid from "@mui/material/Grid";
 import { useTheme, alpha } from "@mui/material/styles";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import SecurityIcon from "@mui/icons-material/Security";
 import CircularProgressBar from "../components/CircularProgressBar";
@@ -30,9 +30,12 @@ import {
 } from "recharts";
 
 export default function HomePage() {
+  const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
   const tasksCompleted = 30;
   const cardBorder = `1px solid ${theme.palette.divider}`;
+
+  console.log("Team Id", teamId);
 
   const reviewData = [
     { hour: "1h ago", reviewed: 3 },

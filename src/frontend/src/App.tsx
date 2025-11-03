@@ -6,7 +6,7 @@ import HomePage from './pages/HomePage';
 import theme from './theme';
 import { ThemeProvider } from '@emotion/react';
 import { CssBaseline } from '@mui/material';
-import TeamsPage from './pages/WorkspacePage';
+import TeamsPage from './pages/TeamspacePage';
 
 export default function App() {
   return (
@@ -17,8 +17,8 @@ export default function App() {
           <Route path="/" element={<HeroPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/product/item" element={<ProductReviewPage />} />
-          <Route path="/workspace" element={<TeamsPage />} />
-          <Route path="/home" element={<HomePage />} /> 
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/teams/home/:teamId" element={<HomePage />} /> 
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
