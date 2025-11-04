@@ -22,7 +22,8 @@ import {
   emitCookiesToLambda,
   COOKIE_ACCESS,
 } from '../helpers/cookies';
-import cookie from 'cookie';
+import { decodeJwtNoVerify} from '../helpers/authUtils';
+import { ensureUserRecord } from '../helpers/awsUsers';
 
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
 const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
@@ -332,32 +333,45 @@ export const authRouter = router({
         throw new Error(`Challenge response failed: ${error.message}`);
       }
     }),
-
   me: publicProcedure.query(async ({ ctx }) => {
-    const cookies = parseCookiesFromCtx(ctx);
-    const accessToken = cookies[COOKIE_ACCESS];
+  const cookies = parseCookiesFromCtx(ctx);
+  const accessToken = cookies[COOKIE_ACCESS];
 
-    if (!accessToken) {
-      return { authenticated: false, message: 'No session' };
-    }
+  if (!accessToken) {
+    return { authenticated: false, message: "No session" };
+  }
 
-    // TODO Link with DynamoDB and abstract the method so isAuthed and this use the same function
-    
-    // Verify and decode the access token to get user info
-    try {
-      const decoded = await verifier.verify(accessToken);
-      return {
-        authenticated: true,
-        message: 'User session found',
-        userId: decoded.sub,
-        email: decoded.email,
-        username: decoded['cognito:username'],
-      };
-    } catch (err) {
-      // Token is invalid or expired
-      return { authenticated: false, message: 'Invalid or expired token' };
-    }
-  }),
+  try {
+    const decoded = await verifier.verify(accessToken);
+    const userId = decoded.sub;
+    const email =
+      typeof decoded.email === "string"
+        ? decoded.email
+        : typeof decoded["email"] === "string"
+        ? decoded["email"]
+        : decoded.username || "";
+    const username =
+      decoded["cognito:username"] ||
+      (email ? email.split("@")[0] : `user-${userId}`);
+
+    const userRecord = await ensureUserRecord({
+      sub: userId,
+      email,
+    });
+
+    return {
+      authenticated: true,
+      message: "User session verified",
+      userId: userRecord.sub,
+      email: userRecord.email,
+      username,
+      accountId: userRecord.accountId,
+    };
+  } catch (err) {
+    console.error("me() error:", err);
+    return { authenticated: false, message: "Invalid session token" };
+  }
+}),
 
   refresh: publicProcedure.mutation(async ({ ctx }) => {
     try {
