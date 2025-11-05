@@ -53,8 +53,8 @@ REMARKS_TABLE = {
     "x": 110,
     "y_start": 364,
     "row_gap": 24,
-    "max_rows": 14,
-    "max_width": 468,
+    "max_rows": 28,
+    "max_width": 194,
     "font": "Helvetica",
     "size": 8,
 }
@@ -107,7 +107,23 @@ def _clip_to_width(text: str, max_width: float, font: str, size: float) -> str:
             return cand
     return ell
 
+def _wrap_to_width(text: str, max_width: float, font: str, size: float):
+    words = (text or "").split()
+    lines, cur = [], ""
+    for w in words:
+        test = (cur + " " + w).strip()
+        if pdfmetrics.stringWidth(test, font, size) <= max_width:
+            cur = test
+        else:
+            if cur:
+                lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines
+
 def _draw_remarks_list(c: canvas.Canvas, values: dict):
+    # Prepare source rows
     rows = values.get("REMARKS_LIST")
     if rows is None:
         legacy = values.get("REMARKS", "")
@@ -118,20 +134,57 @@ def _draw_remarks_list(c: canvas.Canvas, values: dict):
             rows = [r for r in s.splitlines() if r] if s else []
     if not rows:
         rows = [PLACEHOLDERS["REMARKS"]]
+
+    # Layout config
     x = REMARKS_TABLE["x"]
-    y0 = REMARKS_TABLE["y_start"]
-    gap = REMARKS_TABLE["row_gap"]
-    max_rows = REMARKS_TABLE["max_rows"]
+    y = REMARKS_TABLE["y_start"]
+    row_gap = REMARKS_TABLE["row_gap"]          # baseline-to-baseline between different remarks
+    wrap_gap = REMARKS_TABLE.get("wrap_gap", 10) # small gap for wrapped lines inside same remark
+    max_rows = REMARKS_TABLE["max_rows"]        # counts remarks, not wrapped lines
     max_width = REMARKS_TABLE["max_width"]
     font = REMARKS_TABLE["font"]
     size = REMARKS_TABLE["size"]
+
     c.setFont(font, size)
-    y = y0 
-    for raw in rows[:max_rows]:
+
+    # Draw up to `max_rows` remarks
+    for idx, raw in enumerate(rows[:max_rows]):
+        group_start_y = y  # fixed baseline for this remark (first line)
+        # Normalize single-line input
         line = str(raw).replace("\n", " ").strip()
-        line = _clip_to_width(line, max_width, font, size)
-        c.drawString(x, int(round(y)), line)
-        y -= gap 
+
+        # Wrap to width
+        wrapped = _wrap_to_width(line, max_width, font, size)
+
+        # Ensure wrapped lines fit within the row height box:
+        # The first line sits on group_start_y. Each extra wrapped line goes down by wrap_gap.
+        # Allowed extra lines within the row:
+        # (n_lines - 1) * wrap_gap <= (row_gap - size_pad)
+        # Use a tiny padding (2) to reduce overlap risk with the next row’s baseline.
+        size_pad = 2
+        avail = max(row_gap - size_pad, 0)
+        max_lines_in_row = max(1, 1 + (avail // max(wrap_gap, 1)))
+
+        if len(wrapped) > max_lines_in_row:
+            # Truncate and add ellipsis to last visible line if needed
+            visible = wrapped[:max_lines_in_row]
+            # Add ellipsis to last visible line (fit within width)
+            last = visible[-1]
+            ell = " …"
+            # If appending ellipsis exceeds width, trim until it fits
+            while last and pdfmetrics.stringWidth(last + ell, font, size) > max_width:
+                last = last[:-1].rstrip()
+            visible[-1] = (last + ell) if last else "…"
+            wrapped = visible
+
+        # Draw each wrapped line relative to the fixed group baseline
+        for i, wl in enumerate(wrapped):
+            c.drawString(x, int(round(group_start_y - i * wrap_gap)), wl)
+
+        # Move baseline to the next remark: fixed row gap, regardless of wrapped count
+        y = group_start_y - row_gap
+
+
 
 def make_overlay(page_w, page_h, values, font="Helvetica", size=9):
     buf = io.BytesIO()

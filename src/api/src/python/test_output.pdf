@@ -37,7 +37,7 @@ endobj
 endobj
 5 0 obj
 <<
-/Length 1528860
+/Length 1529152
 >>
 stream
 q
@@ -41849,17 +41849,32 @@ BT
 ET
 BT
 1 0 0 1 110 364 Tm
-(Checked oil\054 coolant\054 and transmission fluid levels \226 all within spec\056) Tj
+(Checked oil\054 coolant\054 and transmission fluid levels \226 all) Tj
+T*
+ET
+BT
+1 0 0 1 110 354 Tm
+(within spec\056) Tj
 T*
 ET
 BT
 1 0 0 1 110 340 Tm
-(Lubricated door hinges and inspected weather seals for cracks\056) Tj
+(Lubricated door hinges and inspected weather seals) Tj
+T*
+ET
+BT
+1 0 0 1 110 330 Tm
+(for cracks\056) Tj
 T*
 ET
 BT
 1 0 0 1 110 316 Tm
-(Tested brake lights\054 turn signals\054 and headlights for functionality\056) Tj
+(Tested brake lights\054 turn signals\054 and headlights for) Tj
+T*
+ET
+BT
+1 0 0 1 110 306 Tm
+(functionality\056) Tj
 T*
 ET
 BT
@@ -41874,22 +41889,42 @@ T*
 ET
 BT
 1 0 0 1 110 244 Tm
-(Tightened loose battery terminals and applied anti\055corrosion gel\056) Tj
+(Tightened loose battery terminals and applied) Tj
+T*
+ET
+BT
+1 0 0 1 110 234 Tm
+(anti\055corrosion gel\056) Tj
 T*
 ET
 BT
 1 0 0 1 110 220 Tm
-(Checked wiper blades for wear and ensured washer fluid is full\056) Tj
+(Checked wiper blades for wear and ensured washer) Tj
+T*
+ET
+BT
+1 0 0 1 110 210 Tm
+(fluid is full\056) Tj
 T*
 ET
 BT
 1 0 0 1 110 196 Tm
-(Confirmed horn operation and instrument panel indicator lights\056) Tj
+(Confirmed horn operation and instrument panel) Tj
+T*
+ET
+BT
+1 0 0 1 110 186 Tm
+(indicator lights\056) Tj
 T*
 ET
 BT
 1 0 0 1 110 172 Tm
-(Reviewed maintenance log for overdue services \226 none pending\056) Tj
+(Reviewed maintenance log for overdue services \226) Tj
+T*
+ET
+BT
+1 0 0 1 110 162 Tm
+(none pending\056) Tj
 T*
 ET
 BT
@@ -41899,7 +41934,12 @@ T*
 ET
 BT
 1 0 0 1 110 124 Tm
-(Checked tire tread depth and adjusted air pressure to spec\056) Tj
+(Checked tire tread depth and adjusted air pressure to) Tj
+T*
+ET
+BT
+1 0 0 1 110 114 Tm
+(spec\056) Tj
 T*
 ET
 BT
@@ -41909,17 +41949,27 @@ T*
 ET
 BT
 1 0 0 1 110 76 Tm
-(Performed 10\055minute idle test\073 engine stable\054 no warning lights\056) Tj
+(Performed 10\055minute idle test\073 engine stable\054 no) Tj
+T*
+ET
+BT
+1 0 0 1 110 66 Tm
+(warning lights\056) Tj
 T*
 ET
 BT
 1 0 0 1 110 52 Tm
-(Recorded inspection results in logbook and signed off by inspector\056) Tj
+(Recorded inspection results in logbook and signed off) Tj
+T*
+ET
+BT
+1 0 0 1 110 42 Tm
+(by inspector\056) Tj
 T*
 ET
 BT
 1 0 0 1 90 720 Tm
-(1\055110th Aviation Regiment) Tj
+(1st Battalion\054 182nd Infantry) Tj
 T*
 ET
 BT
@@ -41929,17 +41979,17 @@ T*
 ET
 BT
 1 0 0 1 500 720 Tm
-(M998) Tj
+(M1151A1) Tj
 T*
 ET
 BT
 1 0 0 1 90 690 Tm
-(SN\055123456) Tj
+(H12345) Tj
 T*
 ET
 BT
 1 0 0 1 490 690 Tm
-(Annual) Tj
+(Monthly) Tj
 T*
 ET
 BT
@@ -41949,42 +41999,42 @@ T*
 ET
 BT
 1 0 0 1 220 660 Tm
-(2024\05502\05515) Tj
+(2024\05510\05501) Tj
 T*
 ET
 BT
 1 0 0 1 190 690 Tm
-(\074miles\076) Tj
+(1234) Tj
 T*
 ET
 BT
 1 0 0 1 250 690 Tm
-(\074hours\076) Tj
+(56) Tj
 T*
 ET
 BT
 1 0 0 1 290 690 Tm
-(\074rounds\076) Tj
+(N\057A) Tj
 T*
 ET
 BT
 1 0 0 1 340 690 Tm
-(\074hotstarts\076) Tj
+(N\057A) Tj
 T*
 ET
 BT
 1 0 0 1 400 690 Tm
-(2025\05511\05501) Tj
+(2025\05511\05505) Tj
 T*
 ET
 BT
 1 0 0 1 330 660 Tm
-(TM 9\0552320\055280\05520) Tj
+(TM 9\0552320\055280\05524P) Tj
 T*
 ET
 BT
 1 0 0 1 500 660 Tm
-(2024\05502\05515) Tj
+(2024\05509\05515) Tj
 T*
 ET
 Q
@@ -42095,10 +42145,10 @@ xref
 0000000119 00000 n 
 0000000168 00000 n 
 0000000399 00000 n 
-0001529314 00000 n 
-0001529421 00000 n 
-0001529574 00000 n 
-0001542787 00000 n 
+0001529606 00000 n 
+0001529713 00000 n 
+0001529866 00000 n 
+0001543079 00000 n 
 trailer
 <<
 /Size 10
@@ -42106,5 +42156,5 @@ trailer
 /Info 1 0 R
 >>
 startxref
-1542808
+1543100
 %%EOF
