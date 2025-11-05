@@ -10,56 +10,118 @@ import {
   CircularProgress,
   Container,
   FormControl,
-  IconButton,
   MenuItem,
   Select,
   Snackbar,
   TextField,
   Typography
 } from '@mui/material';
+import { useParams } from 'react-router-dom';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import { getItem, updateItem, createItem } from '../api/items';
 
 interface ItemViewModel {
-  productName: string;
-  actualName: string;
-  level: string;
+  productName: string; // Generic profile name (e.g., "M4 Carbine")
+  actualName: string;  // Specific item name (e.g., "Weapon #5", "Alpha Team Rifle")
   description: string;
   imageLink: string;
   serialNumber: string;
-  AuthQuantity: number;
+  quantity: number;
+  status: string;
 }
-
-interface ProductCardProps {
-  product: ItemViewModel;
-}
-
-const FAKE_ITEM: ItemViewModel = {
-  productName: "M4 Carbine Rifle",
-  actualName: "5.56mm Rifle, M4A1",
-  level: "Sensitive",
-  description: "Standard issue carbine rifle for infantry units. Regular maintenance required.",
-  imageLink: "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=800",
-  serialNumber: "W123456789",
-  AuthQuantity: 1
-};
 
 const PercentageBar = () => <Box sx={{ height: 4, bgcolor: '#e0e0e0', mb: 2 }} />;
 const NavBar = () => <Box sx={{ height: 56, bgcolor: '#f5f5f5', position: 'fixed', bottom: 0, left: 0, right: 0 }} />;
 
-const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [product, setProduct] = useState(initialProduct);
-  const [status, setStatus] = useState('Found');
-  const [notes, setNotes] = useState(initialProduct.description);
+const ProductReviewPage = () => {
+  const { teamId, itemId } = useParams<{ teamId: string; itemId: string }>();
+  const isCreateMode = itemId === 'new';
+
+  const [product, setProduct] = useState<ItemViewModel | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [isEditMode, setIsEditMode] = useState(isCreateMode);
+  const [editedProduct, setEditedProduct] = useState<ItemViewModel | null>(null);
+  const [notes, setNotes] = useState('');
   const [damageReports, setDamageReports] = useState<string[]>([]);
   const [currentDamageReport, setCurrentDamageReport] = useState('');
   const [showError, setShowError] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>(initialProduct.imageLink);
+  const [imagePreview, setImagePreview] = useState<string>('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!teamId) {
+        setError('Missing team ID');
+        setLoading(false);
+        return;
+      }
+
+      // If creating new item, set placeholder data
+      if (isCreateMode) {
+        const placeholderItem: ItemViewModel = {
+          productName: '',
+          actualName: '',
+          description: '',
+          imageLink: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=800',
+          serialNumber: '',
+          quantity: 1,
+          status: 'Found'
+        };
+        setProduct(placeholderItem);
+        setEditedProduct(placeholderItem);
+        setImagePreview(placeholderItem.imageLink);
+        setLoading(false);
+        return;
+      }
+
+      // Otherwise fetch existing item
+      if (!itemId) {
+        setError('Missing item ID');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        const result = await getItem(teamId, itemId);
+
+        if (result.success && result.item) {
+          const itemData: ItemViewModel = {
+            productName: result.item.name,
+            actualName: result.item.actualName || result.item.name, // fallback to name if actualName not set
+            description: result.item.description || '',
+            imageLink: result.item.imageLink || '',
+            serialNumber: result.item.serialNumber || '',
+            quantity: result.item.quantity || 1,
+            status: result.item.status || 'Found'
+          };
+          setProduct(itemData);
+          setEditedProduct(itemData);
+          setNotes(itemData.description);
+          setImagePreview(itemData.imageLink);
+        } else {
+          setError(result.error || 'Item not found');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [teamId, itemId, isCreateMode]);
 
   const handleFieldChange = (field: keyof ItemViewModel, value: string | number) => {
-    setProduct(prev => ({ ...prev, [field]: value }));
+    if (editedProduct) {
+      setEditedProduct({ ...editedProduct, [field]: value });
+    }
   };
 
   const handleAddDamageReport = () => {
@@ -76,7 +138,6 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select a valid image file');
         return;
@@ -84,7 +145,6 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
 
       setSelectedImageFile(file);
 
-      // Create preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -95,36 +155,31 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
 
   const uploadImageToS3 = async (file: File): Promise<string> => {
     // TODO: Implement S3 upload logic
-    // This is a placeholder for the actual S3 upload implementation
-    // Return the S3 URL after upload
     console.log('Uploading file to S3:', file.name);
-
-    // Placeholder - replace with actual S3 upload
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // const response = await fetch('/api/upload-to-s3', {
-    //   method: 'POST',
-    //   body: formData
-    // });
-    // const data = await response.json();
-    // return data.s3Url;
-
     return 'https://example-bucket.s3.amazonaws.com/' + file.name;
   };
 
   const handleSave = async () => {
-    // Check if status is Damaged and no damage reports
-    if (status === 'Damaged' && damageReports.length === 0) {
+    if (!teamId || !editedProduct) {
+      alert('Missing required data');
+      return;
+    }
+
+    if (editedProduct.status === 'Damaged' && damageReports.length === 0) {
       setShowError(true);
       return;
     }
 
-    // Upload image to S3 if a new image was selected
-    let finalImageUrl = product.imageLink;
+    // Validate required fields for new items
+    if (isCreateMode && !editedProduct.productName.trim()) {
+      alert('Product name is required');
+      return;
+    }
+
+    let finalImageUrl = editedProduct.imageLink;
     if (selectedImageFile) {
       try {
         finalImageUrl = await uploadImageToS3(selectedImageFile);
-        handleFieldChange('imageLink', finalImageUrl);
       } catch (error) {
         console.error('Failed to upload image:', error);
         alert('Failed to upload image. Please try again.');
@@ -132,56 +187,113 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
       }
     }
 
-    // TODO: Implement save logic with API
-    console.log('Saving product:', { ...product, imageLink: finalImageUrl });
-    console.log('Status:', status);
-    console.log('Notes:', notes);
-    console.log('Damage Reports:', damageReports);
-    setIsEditMode(false);
-    setSelectedImageFile(null);
+    try {
+      if (isCreateMode) {
+        // Create new item
+        const result = await createItem(
+          teamId,
+          editedProduct.productName,
+          editedProduct.actualName,
+          '', // nsn
+          editedProduct.serialNumber,
+          'user-id-placeholder' // TODO: Get actual user ID from auth context
+        );
+
+        if (result.success) {
+          console.log('Item created successfully:', result.item);
+          setShowSuccess(true);
+          // Redirect to the new item's page after a delay
+          setTimeout(() => {
+            window.location.href = `/teams/${teamId}/items/${result.itemId}`;
+          }, 1500);
+        } else {
+          alert('Failed to create item: ' + result.error);
+        }
+      } else {
+        // Update existing item (works in both edit and view mode now)
+        if (!itemId) {
+          alert('Missing item ID');
+          return;
+        }
+
+        const result = await updateItem(teamId, itemId, {
+          name: editedProduct.productName,
+          actualName: editedProduct.actualName,
+          serialNumber: editedProduct.serialNumber,
+          quantity: editedProduct.quantity,
+          description: notes, // Save the notes field
+          imageLink: finalImageUrl,
+          status: editedProduct.status
+        });
+
+        if (result.success) {
+          console.log('Item updated successfully:', result.item);
+          // Update local state with saved notes
+          const updatedProduct = { ...editedProduct, description: notes };
+          setProduct(updatedProduct);
+          setEditedProduct(updatedProduct);
+          setIsEditMode(false);
+          setSelectedImageFile(null);
+          setShowSuccess(true);
+        } else {
+          alert('Failed to update item: ' + result.error);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving item:', error);
+      alert('Failed to save item. Please try again.');
+    }
   };
 
   const handleCancel = () => {
-    setProduct(initialProduct);
-    setNotes(initialProduct.description);
-    setSelectedImageFile(null);
-    setImagePreview(initialProduct.imageLink);
-    setIsEditMode(false);
+    if (product) {
+      setEditedProduct(product);
+      setNotes(product.description);
+      setSelectedImageFile(null);
+      setImagePreview(product.imageLink);
+      setIsEditMode(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
+
+  if (!product || !editedProduct) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Alert severity="info">No product data available</Alert>
+      </Container>
+    );
+  }
 
   return (
     <div>
       <PercentageBar />
-      <Container maxWidth="md" sx={{
-        px: { xs: 0, sm: 2, md: 3 },
-        pb: 10,
-      }}>
-        <Card sx={{
-          '&:hover': {
-            transform: 'none',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-          }
-        }}>
+      <Container maxWidth="md" sx={{ px: { xs: 0, sm: 2, md: 3 }, pb: 10 }}>
+        <Card sx={{ '&:hover': { transform: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } }}>
           {/* Product Image */}
           <Box sx={{ position: 'relative' }}>
             <CardMedia
               component="img"
               image={imagePreview}
-              alt={product.productName}
-              sx={{
-                maxHeight: '45vh',
-                objectFit: 'contain',
-                bgcolor: '#f5f5f5'
-              }}
+              alt={editedProduct.productName}
+              sx={{ maxHeight: '45vh', objectFit: 'contain', bgcolor: '#f5f5f5' }}
             />
             {isEditMode && (
-              <Box sx={{
-                position: 'absolute',
-                bottom: 8,
-                right: 8,
-                display: 'flex',
-                gap: 1
-              }}>
+              <Box sx={{ position: 'absolute', bottom: 8, right: 8, display: 'flex', gap: 1 }}>
                 <input
                   accept="image/*"
                   style={{ display: 'none' }}
@@ -198,9 +310,7 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
                     sx={{
                       bgcolor: 'rgba(255, 255, 255, 0.95)',
                       color: 'primary.main',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 1)',
-                      },
+                      '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' },
                       textTransform: 'none',
                       boxShadow: 2
                     }}
@@ -214,95 +324,84 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
 
           <CardContent>
             {/* Edit Mode Toggle */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-              {!isEditMode ? (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h5" fontWeight="bold">
+                {isCreateMode ? 'Create New Item' : editedProduct.productName}
+              </Typography>
+              {!isCreateMode && !isEditMode ? (
                 <Button
                   variant="outlined"
                   size="small"
                   startIcon={<EditIcon />}
                   onClick={() => setIsEditMode(true)}
-                  sx={{
-                    textTransform: 'none',
-                    color: 'primary.main',
-                    borderColor: 'primary.main'
-                  }}
+                  sx={{ textTransform: 'none', color: 'primary.main', borderColor: 'primary.main' }}
                 >
                   Edit
                 </Button>
-              ) : (
+              ) : !isCreateMode && (
                 <Button
                   variant="outlined"
                   size="small"
                   onClick={handleCancel}
-                  sx={{
-                    textTransform: 'none',
-                    color: 'error.main',
-                    borderColor: 'error.main'
-                  }}
+                  sx={{ textTransform: 'none', color: 'error.main', borderColor: 'error.main' }}
                 >
                   Cancel
                 </Button>
               )}
             </Box>
 
-            {/* Product Name */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Product Name:
-              </Typography>
-              {isEditMode ? (
+            {/* Product Name - Only editable in edit mode */}
+            {isEditMode ? (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                  Product Name:
+                </Typography>
                 <TextField
                   fullWidth
-                  value={product.productName}
+                  value={editedProduct.productName}
                   onChange={(e) => handleFieldChange('productName', e.target.value)}
                   size="small"
+                  placeholder="e.g., M4 Carbine"
                 />
-              ) : (
-                <Typography variant="h6" fontWeight="bold">
-                  {product.productName}
-                </Typography>
-              )}
-            </Box>
+              </Box>
+            ) : null}
 
             {/* Actual Name */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Actual Name:
+                Item Name:
               </Typography>
               {isEditMode ? (
                 <TextField
                   fullWidth
-                  value={product.actualName}
+                  value={editedProduct.actualName}
                   onChange={(e) => handleFieldChange('actualName', e.target.value)}
                   size="small"
+                  placeholder="e.g., Alpha Team Rifle #1"
                 />
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {product.actualName}
+                <Typography variant="body1" color="text.secondary">
+                  {editedProduct.actualName || 'N/A'}
                 </Typography>
               )}
             </Box>
 
-            {/* Description */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Description:
-              </Typography>
-              {isEditMode ? (
+            {/* Description - Only shown in edit mode */}
+            {isEditMode && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                  Description:
+                </Typography>
                 <TextField
                   fullWidth
                   multiline
                   rows={3}
-                  value={product.description}
+                  value={editedProduct.description}
                   onChange={(e) => handleFieldChange('description', e.target.value)}
                   size="small"
                 />
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {product.description}
-                </Typography>
-              )}
-            </Box>
+              </Box>
+            )}
 
             {/* Selected Image File Indicator */}
             {isEditMode && selectedImageFile && (
@@ -321,42 +420,32 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
               {isEditMode ? (
                 <TextField
                   fullWidth
-                  value={product.serialNumber}
+                  value={editedProduct.serialNumber}
                   onChange={(e) => handleFieldChange('serialNumber', e.target.value)}
                   size="small"
                 />
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  {product.serialNumber || 'N/A'}
+                  {editedProduct.serialNumber || 'N/A'}
                 </Typography>
               )}
             </Box>
 
-            {/* Auth Quantity */}
+            {/* Quantity */}
             {isEditMode && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  Authorized Quantity:
+                  Quantity:
                 </Typography>
                 <TextField
                   fullWidth
                   type="number"
-                  value={product.AuthQuantity}
-                  onChange={(e) => handleFieldChange('AuthQuantity', parseInt(e.target.value) || 0)}
+                  value={editedProduct.quantity}
+                  onChange={(e) => handleFieldChange('quantity', parseInt(e.target.value) || 0)}
                   size="small"
                 />
               </Box>
             )}
-
-            {/* Additional Info (Read-only) */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Date Last Scanned: N/A
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Last Known Location: N/A
-              </Typography>
-            </Box>
 
             {/* Notes Section */}
             <Box sx={{ mb: 2 }}>
@@ -370,12 +459,7 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add notes here..."
-                sx={{
-                  borderRadius: 2,
-                  '& .MuiInputBase-input': {
-                    fontSize: { xs: '0.75rem', sm: '0.9rem', md: '1rem' }
-                  }
-                }}
+                sx={{ borderRadius: 2 }}
               />
             </Box>
 
@@ -386,8 +470,8 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
               </Typography>
               <FormControl fullWidth size="small">
                 <Select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
+                  value={editedProduct.status}
+                  onChange={(e) => handleFieldChange('status', e.target.value)}
                   sx={{ bgcolor: 'white' }}
                 >
                   <MenuItem value="Found">Found</MenuItem>
@@ -398,14 +482,13 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
               </FormControl>
             </Box>
 
-            {/* Damage Reports Section (Only shows when status is Damaged) */}
-            {status === 'Damaged' && (
+            {/* Damage Reports Section */}
+            {editedProduct.status === 'Damaged' && (
               <Box sx={{ mb: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 2 }}>
                 <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
                   Damage Reports:
                 </Typography>
 
-                {/* Display existing damage reports */}
                 <Box sx={{ mb: 2 }}>
                   {damageReports.length === 0 ? (
                     <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
@@ -426,7 +509,6 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
                   )}
                 </Box>
 
-                {/* Add new damage report */}
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <TextField
                     fullWidth
@@ -452,7 +534,7 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
               </Box>
             )}
 
-            {/* Save Button */}
+            {/* Save Button - Always visible */}
             <Button
               variant="contained"
               fullWidth
@@ -465,7 +547,7 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
                 fontWeight: 'bold'
               }}
             >
-              Save
+              {isCreateMode ? 'Create Item' : isEditMode ? 'Save Changes' : 'Save Notes'}
             </Button>
           </CardContent>
         </Card>
@@ -477,12 +559,20 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
           onClose={() => setShowError(false)}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
-          <Alert
-            onClose={() => setShowError(false)}
-            severity="error"
-            sx={{ width: '100%' }}
-          >
+          <Alert onClose={() => setShowError(false)} severity="error" sx={{ width: '100%' }}>
             Please add at least one damage report before saving
+          </Alert>
+        </Snackbar>
+
+        {/* Success Snackbar */}
+        <Snackbar
+          open={showSuccess}
+          autoHideDuration={3000}
+          onClose={() => setShowSuccess(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
+            Item updated successfully!
           </Alert>
         </Snackbar>
       </Container>
@@ -491,59 +581,4 @@ const ProductCard = ({ product: initialProduct }: ProductCardProps) => {
   );
 };
 
-const ProductDisplay = () => {
-  const [product, setProduct] = useState<ItemViewModel | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        setProduct(FAKE_ITEM);
-
-        // Fetch item data (TODO comment back in when api works!)
-        // const itemData = await getItem();
-        // if (itemData) {
-        //   setProduct(itemData);
-        // }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
-  }
-
-  if (!product) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="info">No product data available</Alert>
-      </Container>
-    );
-  }
-
-  return <ProductCard product={product} />;
-};
-
-export default ProductDisplay;
+export default ProductReviewPage;

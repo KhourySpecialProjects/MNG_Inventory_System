@@ -1,4 +1,4 @@
-import { router, publicProcedure, mergeRouters } from "./trpc";
+import { router, publicProcedure } from "./trpc";
 
 // Import your feature routers here
 import { helloRouter } from "./hello";
@@ -6,14 +6,20 @@ import { s3Router } from "./s3";
 import { authRouter } from "./auth";
 import { teamspaceRouter } from "./teamspace";
 import { rolesRouter } from "./roles";
+import { itemsRouter } from "./items";
 
-// Core/health router
-const coreRouter = router({
+// Combine all routers - use nested structure
+export const appRouter = router({
+  hello: helloRouter,
+  s3: s3Router,
+  auth: authRouter,
+  teamspace: teamspaceRouter,
+  roles: rolesRouter,
+  items: itemsRouter,
+
+  // Core health check
   health: publicProcedure.query(() => ({ ok: true })),
 });
-
-// Merge all routers
-export const appRouter = mergeRouters(coreRouter, helloRouter, s3Router, authRouter, teamspaceRouter, rolesRouter);
 
 // Export type for client
 export type AppRouter = typeof appRouter;

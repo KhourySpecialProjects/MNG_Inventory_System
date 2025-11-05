@@ -16,7 +16,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HeroPage />} />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/product/item" element={<ProductReviewPage />} />
+          <Route path="/teams/:teamId/items/new" element={<ProductReviewPage />} />
+          <Route path="/teams/:teamId/items/:itemId" element={<ProductReviewPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/teams/home/:teamId" element={<HomePage />} />
         </Routes>
