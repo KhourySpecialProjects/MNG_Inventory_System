@@ -9,6 +9,7 @@ import { Construct } from "constructs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as cdk from "aws-cdk-lib";
 
 export interface S3UploadsStackProps extends StackProps {
   stage: string;
@@ -26,9 +27,6 @@ export class S3UploadsStack extends Stack {
     const isProd = stage === "prod";
     const service = (props.serviceName ?? "mng-uploads").toLowerCase();
 
-    /* =========================================================================
-       KMS Key (encryption for S3 uploads)
-    ========================================================================= */
     this.key = new kms.Key(this, "UploadsKey", {
       alias: `${service}-${stage}-kms-key`,
       enableKeyRotation: true,
@@ -36,11 +34,9 @@ export class S3UploadsStack extends Stack {
       description: `KMS key for encrypting uploaded files in ${stage}`,
     });
 
-    /* =========================================================================
-       S3 Bucket (private, encrypted, SSL enforced)
-    ========================================================================= */
+
     this.bucket = new s3.Bucket(this, "UploadsBucket", {
-      bucketName: `${service}-${stage}`,
+      bucketName: `mng-${stage}-uploads-${cdk.Aws.ACCOUNT_ID}`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.KMS,
       encryptionKey: this.key,
@@ -72,9 +68,7 @@ export class S3UploadsStack extends Stack {
       autoDeleteObjects: !isProd,
     });
 
-    /* =========================================================================
-       Security Policy: Deny Unencrypted Uploads
-    ========================================================================= */
+
     this.bucket.addToResourcePolicy(
       new iam.PolicyStatement({
         sid: "DenyUnEncryptedUploads",
@@ -90,19 +84,14 @@ export class S3UploadsStack extends Stack {
       })
     );
 
-    /* =========================================================================
-        Outputs (for cross-stack imports, monitoring, and CI visibility)
-    ========================================================================= */
+
     new CfnOutput(this, "BucketName", { value: this.bucket.bucketName });
     new CfnOutput(this, "BucketArn", { value: this.bucket.bucketArn });
     new CfnOutput(this, "KmsKeyArn", { value: this.key.keyArn });
     new CfnOutput(this, "BucketRegion", { value: this.region });
   }
 
-  /**
-   * Grants full read/write/delete + KMS encrypt/decrypt permissions
-   * to another role (e.g., API Lambda)
-   */
+
   grantApiAccess(role: iam.IRole) {
     this.bucket.grantReadWrite(role);
     this.key.grantEncryptDecrypt(role);

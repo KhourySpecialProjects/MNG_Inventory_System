@@ -9,8 +9,11 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import crypto from "crypto";
 import { doc } from "../aws";
+import { loadConfig } from "../process"; 
 
-const TABLE_NAME = process.env.DDB_TABLE_NAME || "mng-dev-data";
+const config = loadConfig();
+const TABLE_NAME = config.TABLE_NAME;
+
 
 export type Permission =
   // Team management

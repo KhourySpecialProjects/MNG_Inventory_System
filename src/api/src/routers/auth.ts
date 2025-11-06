@@ -24,12 +24,13 @@ import {
 } from '../helpers/cookies';
 import { decodeJwtNoVerify} from '../helpers/authUtils';
 import { ensureUserRecord } from '../helpers/awsUsers';
-import { config } from "../process"; 
+import { loadConfig } from "../process"; 
 
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
-const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
-// export const SES_FROM_ADDRESS = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
-const APP_SIGNIN_URL = process.env.APP_SIGNIN_URL || 'https://d2cktegyq4qcfk.cloudfront.net/signin';
+const config = loadConfig();
+export const USER_POOL_ID = config.COGNITO_USER_POOL_ID;
+export const USER_POOL_CLIENT_ID = config.COGNITO_CLIENT_ID;
+export const SES_FROM_ADDRESS = config.SES_FROM;
+export const APP_SIGNIN_URL = config.APP_SIGNIN_URL || `${config.WEB_URL}/signin`;
 
 const verifier = CognitoJwtVerifier.create({
   userPoolId: USER_POOL_ID,

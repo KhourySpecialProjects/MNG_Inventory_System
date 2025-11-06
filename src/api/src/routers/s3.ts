@@ -1,7 +1,3 @@
-// File: src/api/src/routers/s3.ts
-// s3 router (images folded in). Private-by-default uploads, presigned access.
-// Uses Zod + tRPC, AWS SDK v3. Keys are stable for DB joins.
-
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "./trpc";
 import {
@@ -13,24 +9,8 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
+import { loadConfig } from "../process";
 
-/**
- * ---------------------------------------------------------------------------
- * S3 Router — Unified Image and File Upload Service
- * ---------------------------------------------------------------------------
- * Endpoints
- *   • `s3health` — ping
- *   • `uploadImage` — upload from data URL; server derives teamId and uses serialNumber as filename
- *   • `getSignedUrl` — presigned HEAD URL
- *   • `deleteObject` — delete by key (+ optional DB cleanup)
- *   • `listImages` — list objects under team/scope/item prefix (teamId derived server-side)
- * Behavior
- *   • Objects private by default; presign to access.
- *   • In tests, a dummy bucket is used.
- * ---------------------------------------------------------------------------
- */
-
-/* ------------------------- Local Context Typing ------------------------- */
 
 type ImageRepo = {
   save?: (row: {
@@ -64,7 +44,9 @@ type ProcArgs<T> = { input: T; ctx: S3Ctx };
 
 /* ------------------------- Env / Client ------------------------- */
 
-const REGION = process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? "us-east-1";
+const config = loadConfig();
+const REGION = config.REGION;
+
 const s3 = new S3Client({ region: REGION });
 
 function requireBucket(): string {

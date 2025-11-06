@@ -14,10 +14,13 @@ import {
 } from "@aws-sdk/client-s3";
 import crypto from "crypto";
 import { doc } from "../aws";
+import { loadConfig } from "../process"; 
 
-const TABLE_NAME = process.env.DDB_TABLE_NAME || "mng-dev-data";
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || "mng-dev-uploads";
-const REGION = process.env.AWS_REGION || "us-east-1";
+const config = loadConfig();
+const TABLE_NAME = config.TABLE_NAME;
+const BUCKET_NAME = config.BUCKET_NAME;
+const REGION = config.REGION;
+
 const s3 = new S3Client({ region: REGION });
 
 

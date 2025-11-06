@@ -223,15 +223,38 @@ const web = new WebStack(app, `MngWeb-${cfg.name}`, {
   apiPaths: ["/trpc/*", "/health", "/hello"],
 });
 
+// pass web URL to API for email links, etc.
+const webUrl = process.env.WEB_URL ?? "https://d2cktegyq4qcfk.cloudfront.net";
+api.apiFn.addEnvironment("WEB_URL", webUrl);
+
 // Create uploads bucket
-const uploads = new S3UploadsStack(app, `MngUploads-${cfg.name}`, {
+const uploads = new S3UploadsStack(app, `MngS3-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
-  serviceName: "mng-uploads",
+  serviceName: "mng-s3",
 });
 
 // Give API Lambda access to bucket + key
-uploads.grantApiAccess(api.apiFn.role!);
+api.apiFn.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:BatchGetItem",
+      "dynamodb:BatchWriteItem",
+      "dynamodb:DescribeTable",
+    ],
+    resources: [
+      dynamo.table.tableArn,
+      `${dynamo.table.tableArn}/index/*`, 
+    ],
+  })
+);
+api.apiFn.addEnvironment("DDB_TABLE_NAME", dynamo.table.tableName);
 
 // Pass bucket info to Lambda environment
 api.apiFn.addEnvironment("S3_BUCKET_NAME", uploads.bucket.bucketName);

@@ -8,14 +8,15 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { doc } from "../aws";
+import { loadConfig } from "../process"; 
 
-const TABLE_NAME = process.env.DDB_TABLE_NAME || "mng-dev-data";
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || "mng-dev-uploads";
-const s3 = new S3Client({ region: process.env.AWS_REGION || "us-east-1" });
+const config = loadConfig();
+const TABLE_NAME = config.TABLE_NAME;
+const BUCKET_NAME = config.BUCKET_NAME;
+const REGION = config.REGION;
 
-/* =============================================================================
-   HELPERS
-============================================================================= */
+const s3 = new S3Client({ region: REGION });
+
 
 /** Get total stats from DynamoDB */
 async function getInventorySummary(teamId: string) {

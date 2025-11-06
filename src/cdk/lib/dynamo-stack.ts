@@ -25,18 +25,14 @@ export class DynamoStack extends Stack {
     const stage = props.stage.toLowerCase();
     const isProd = stage === "prod";
 
-    /* =========================================================================
-       KMS Key
-    ========================================================================= */
+
     const key = new kms.Key(this, "TableKey", {
       alias: `${service}-${stage}-dynamodb-key`,
       enableKeyRotation: true,
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
-    /* =========================================================================
-       DynamoDB Table
-    ========================================================================= */
+
     this.table = new dynamodb.Table(this, "Table", {
       tableName: `${service}-${stage}-data`,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -216,9 +212,6 @@ export class DynamoStack extends Stack {
     // Run seeder after table creation
     seedProvider.node.addDependency(this.table);
 
-    /* =========================================================================
-        Outputs
-    ========================================================================= */
     new CfnOutput(this, "TableName", { value: this.table.tableName });
     new CfnOutput(this, "TableArn", { value: this.table.tableArn });
     new CfnOutput(this, "KmsKeyArn", { value: key.keyArn });
