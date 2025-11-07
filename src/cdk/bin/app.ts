@@ -8,6 +8,8 @@ import { DynamoStack } from "../lib/dynamo-stack";
 import { ApiStack } from "../lib/api-stack";
 import { WebStack } from "../lib/web-stack";
 import { SesStack } from "../lib/ses-stack";
+import { S3UploadsStack } from "../lib/s3-stack";
+
 
 const app = new cdk.App();
 
@@ -221,9 +223,49 @@ const web = new WebStack(app, `MngWeb-${cfg.name}`, {
   apiPaths: ["/trpc/*", "/health", "/hello"],
 });
 
+// pass web URL to API for email links, etc.
+const webUrl = process.env.WEB_URL ?? "https://d2cktegyq4qcfk.cloudfront.net";
+api.apiFn.addEnvironment("WEB_URL", webUrl);
+
+// Create uploads bucket
+const uploads = new S3UploadsStack(app, `MngS3-${cfg.name}`, {
+  env: { account, region },
+  stage: cfg.name,
+  serviceName: "mng-s3",
+});
+
+// Grant API Lambda full access to uploads bucket + KMS key
+uploads.grantApiAccess(api.apiFn.role!);
+
+// Give API Lambda access to bucket + key
+api.apiFn.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:BatchGetItem",
+      "dynamodb:BatchWriteItem",
+      "dynamodb:DescribeTable",
+    ],
+    resources: [
+      dynamo.table.tableArn,
+      `${dynamo.table.tableArn}/index/*`, 
+    ],
+  })
+);
+api.apiFn.addEnvironment("DDB_TABLE_NAME", dynamo.table.tableName);
+
+// Pass bucket info to Lambda environment
+api.apiFn.addEnvironment("S3_BUCKET_NAME", uploads.bucket.bucketName);
+api.apiFn.addEnvironment("S3_KMS_KEY_ARN", uploads.key.keyArn);
+
 // Tag stacks if you have tagging config
 if (cfg.tags) {
-  [auth, dynamo, api, web, ses].forEach((stack) => {
+  [auth, dynamo, api, web, uploads, ses].forEach((stack) => {
     Object.entries(cfg.tags!).forEach(([k, v]) => {
       cdk.Tags.of(stack).add(k, v);
     });

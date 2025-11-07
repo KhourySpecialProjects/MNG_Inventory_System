@@ -22,13 +22,15 @@ import {
   emitCookiesToLambda,
   COOKIE_ACCESS,
 } from '../helpers/cookies';
-import { decodeJwtNoVerify} from '../helpers/authUtils';
+import { decodeJwtNoVerify } from '../helpers/authUtils';
 import { ensureUserRecord } from '../helpers/awsUsers';
+import { loadConfig } from "../process";
 
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
-const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
-// export const SES_FROM_ADDRESS = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
-const APP_SIGNIN_URL = process.env.APP_SIGNIN_URL || 'https://d2cktegyq4qcfk.cloudfront.net/signin';
+const config = loadConfig();
+export const USER_POOL_ID = config.COGNITO_USER_POOL_ID;
+export const USER_POOL_CLIENT_ID = config.COGNITO_CLIENT_ID;
+export const SES_FROM_ADDRESS = config.SES_FROM;
+export const APP_SIGNIN_URL = config.APP_SIGNIN_URL || `${config.WEB_URL}/signin`;
 
 const verifier = CognitoJwtVerifier.create({
   userPoolId: USER_POOL_ID,
@@ -89,7 +91,7 @@ const inviteUser = async (params: { email: string }) => {
 const signIn = async (params: { email: string; password: string }) => {
   const command = new AdminInitiateAuthCommand({
     UserPoolId: USER_POOL_ID,
-    ClientId: USER_POOL_CLIENT_ID, // must be your current no-secret client
+    ClientId: USER_POOL_CLIENT_ID, 
     AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
     AuthParameters: { USERNAME: params.email, PASSWORD: params.password },
   });
@@ -334,66 +336,66 @@ export const authRouter = router({
       }
     }),
   me: publicProcedure.query(async ({ ctx }) => {
-  const cookies = parseCookiesFromCtx(ctx);
-  const accessToken = cookies[COOKIE_ACCESS];
+    const cookies = parseCookiesFromCtx(ctx);
+    const accessToken = cookies[COOKIE_ACCESS];
 
-  if (!accessToken) {
-    return { authenticated: false, message: "No session" };
-  }
-
-  try {
-    const decoded = await verifier.verify(accessToken);
-    const userId = decoded.sub;
-
-    // Try to extract email safely from all possible Cognito token fields
-    let email: string | undefined =
-      typeof decoded.email === "string"
-        ? decoded.email
-        : typeof decoded["email"] === "string"
-        ? decoded["email"]
-        : typeof decoded["cognito:username"] === "string" &&
-          decoded["cognito:username"].includes("@")
-        ? decoded["cognito:username"]
-        : undefined;
-
-    // If still missing, fetch it directly from Cognito
-    if (!email) {
-      console.warn("⚠️ No email claim in access token; fetching from Cognito...");
-      const user = await cognitoClient.send(
-        new AdminGetUserCommand({
-          UserPoolId: USER_POOL_ID,
-          Username: userId,
-        })
-      );
-      const emailAttr = user.UserAttributes?.find((a) => a.Name === "email");
-      email = emailAttr?.Value ?? `unknown-${userId}@example.com`;
+    if (!accessToken) {
+      return { authenticated: false, message: "No session" };
     }
 
+    try {
+      const decoded = await verifier.verify(accessToken);
+      const userId = decoded.sub;
 
-    // Build a username from email or fallback
-    const username =
-      decoded["cognito:username"] ||
-      (email ? email.split("@")[0] : `user-${userId}`);
+      // Try to extract email safely from all possible Cognito token fields
+      let email: string | undefined =
+        typeof decoded.email === "string"
+          ? decoded.email
+          : typeof decoded["email"] === "string"
+            ? decoded["email"]
+            : typeof decoded["cognito:username"] === "string" &&
+              decoded["cognito:username"].includes("@")
+              ? decoded["cognito:username"]
+              : undefined;
 
-    // Ensure user record exists in Dynamo
-    const userRecord = await ensureUserRecord({
-      sub: userId,
-      email,
-    });
+      // If still missing, fetch it directly from Cognito
+      if (!email) {
+        console.warn("⚠️ No email claim in access token; fetching from Cognito...");
+        const user = await cognitoClient.send(
+          new AdminGetUserCommand({
+            UserPoolId: USER_POOL_ID,
+            Username: userId,
+          })
+        );
+        const emailAttr = user.UserAttributes?.find((a) => a.Name === "email");
+        email = emailAttr?.Value ?? `unknown-${userId}@example.com`;
+      }
 
-    return {
-      authenticated: true,
-      message: "User session verified",
-      userId: userRecord.sub,
-      email: userRecord.email,
-      username,
-      accountId: userRecord.accountId,
-    };
-  } catch (err) {
-    console.error("me() error:", err);
-    return { authenticated: false, message: "Invalid session token" };
-  }
-}),
+
+      // Build a username from email or fallback
+      const username =
+        decoded["cognito:username"] ||
+        (email ? email.split("@")[0] : `user-${userId}`);
+
+      // Ensure user record exists in Dynamo
+      const userRecord = await ensureUserRecord({
+        sub: userId,
+        email,
+      });
+
+      return {
+        authenticated: true,
+        message: "User session verified",
+        userId: userRecord.sub,
+        email: userRecord.email,
+        username,
+        accountId: userRecord.accountId,
+      };
+    } catch (err) {
+      console.error("me() error:", err);
+      return { authenticated: false, message: "Invalid session token" };
+    }
+  }),
 
   refresh: publicProcedure.mutation(async ({ ctx }) => {
     try {

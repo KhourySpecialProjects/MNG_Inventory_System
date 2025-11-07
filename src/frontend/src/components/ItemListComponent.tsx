@@ -1,0 +1,130 @@
+import React from 'react';
+import { Box, Card, CardMedia, Typography, Stack } from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
+
+export interface ItemListItem {
+  id: string | number;
+  productName: string;
+  actualName: string;
+  subtitle: string;
+  image: string;
+  date: string;
+}
+
+interface ItemListComponentProps {
+  items?: ItemListItem[];
+}
+
+export default function ItemListComponent({ items = [] }: ItemListComponentProps) {
+  const navigate = useNavigate();
+  const { teamId } = useParams<{ teamId: string }>();
+
+  if (items.length === 0) {
+    return (
+      <Typography sx={{ textAlign: 'center', color: '#999', py: 4 }}>
+        No items to display
+      </Typography>
+    );
+  }
+
+  const handleItemClick = (itemId: string | number) => {
+    navigate(`/teams/${teamId}/items/${itemId}`);
+  };
+
+  return (
+    <Stack spacing={1.5}>
+      {items.map((item) => (
+        <Card
+          key={item.id}
+          onClick={() => handleItemClick(item.id)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: { xs: 1.5, sm: 2 },
+            backgroundColor: 'white',
+            boxShadow: 'none',
+            borderRadius: 2,
+            '&:hover': {
+              boxShadow: 2,
+              cursor: 'pointer',
+            },
+          }}
+        >
+          {/* Image Section */}
+          <Box
+            sx={{
+              width: { xs: 70, sm: 85, md: 100 },
+              height: { xs: 70, sm: 85, md: 100 },
+              borderRadius: 2,
+              overflow: 'hidden',
+              backgroundColor: '#f0f0f0',
+              flexShrink: 0,
+            }}
+          >
+            <CardMedia
+              component="img"
+              image={item.image}
+              alt={item.productName}
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          </Box>
+          {/* Text Section */}
+          <Box sx={{ ml: { xs: 1.5, sm: 2 }, flex: 1, display: 'flex', flexDirection: 'column', alignSelf: 'start' }}>
+            {/* Title and Date Row */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+              <Typography
+                variant="h6"
+                component="h2"
+                sx={{
+                  fontWeight: 500,
+                  color: '#333',
+                  fontSize: { xs: '0.95rem', sm: '1rem', md: '1.1rem' },
+                }}
+              >
+                {item.productName}
+              </Typography>
+              <Typography
+                sx={{
+                  color: '#999',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                  fontWeight: 400,
+                  ml: 2,
+                  flexShrink: 0,
+                }}
+              >
+                {item.date}
+              </Typography>
+            </Box>
+            {/* Actual Name */}
+            <Typography
+              variant="body2"
+              component="h2"
+              sx={{
+                fontWeight: 500,
+                color: 'primary.main',
+                fontSize: { xs: '0.75rem', sm: '0.825rem' },
+                marginBottom: '0.4rem'
+              }}
+            >
+              {item.actualName}
+            </Typography>
+            {/* Subtitle */}
+            <Typography
+              variant="body2"
+              sx={{
+                color: '#333',
+                fontSize: { xs: '0.8rem', sm: '0.875rem' },
+              }}
+            >
+              {item.subtitle}
+            </Typography>
+          </Box>
+        </Card>
+      ))}
+    </Stack>
+  );
+}

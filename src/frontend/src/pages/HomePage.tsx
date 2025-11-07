@@ -56,19 +56,19 @@ export default function HomePage() {
 
 
 
-    // Load teams
-    async function getDashboardData(): Promise<void> {
-      try {
-        if(!teamId) {
-          console.log("teamId is undefined");
-          return
-        }
-        const data = await loadDashboard(teamId);
-        console.log("📋 Loaded dashboard:", data);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to load dashboard data";
-      } 
+  // Load teams
+  async function getDashboardData(): Promise<void> {
+    try {
+      if (!teamId) {
+        console.log("teamId is undefined");
+        return
+      }
+      const data = await loadDashboard(teamId);
+      console.log("📋 Loaded dashboard:", data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load dashboard data";
     }
+  }
 
   const handleProfileImageChange = (file: File) => {
     const reader = new FileReader();
@@ -99,11 +99,11 @@ export default function HomePage() {
         overflowX: "hidden",
       }}
     >
-    <TopBar
-      isLoggedIn={true}                // user is logged in
-      profileImage={profileImage}      // optional: shows avatar
-      onProfileClick={() => setProfileOpen(true)}
-    />
+      <TopBar
+        isLoggedIn={true}                // user is logged in
+        profileImage={profileImage}      // optional: shows avatar
+        onProfileClick={() => setProfileOpen(true)}
+      />
 
 
 
@@ -471,7 +471,13 @@ export default function HomePage() {
                 <Typography variant="body2" sx={{ mb: 2 }}>
                   Register new inventory items to be reviewed
                 </Typography>
-                <Button variant="contained" fullWidth color="primary">
+                <Button
+                  variant="contained"
+                  fullWidth
+                  color="primary"
+                  component={Link}
+                  to={`/teams/${teamId}/items/new`}
+                >
                   Add New Inventory Item
                 </Button>
               </Paper>
