@@ -484,7 +484,6 @@ export default function HomePage() {
       </Box>
 
       <Profile
-        <Profile
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         profileImage={profileImage}
