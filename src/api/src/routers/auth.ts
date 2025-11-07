@@ -91,7 +91,7 @@ const inviteUser = async (params: { email: string }) => {
 const signIn = async (params: { email: string; password: string }) => {
   const command = new AdminInitiateAuthCommand({
     UserPoolId: USER_POOL_ID,
-    ClientId: USER_POOL_CLIENT_ID, // must be your current no-secret client
+    ClientId: USER_POOL_CLIENT_ID, 
     AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
     AuthParameters: { USERNAME: params.email, PASSWORD: params.password },
   });

@@ -1,7 +1,7 @@
 const TRPC = '/trpc';
 
 export async function loginUser(email: string, password: string) {
-  const res = await fetch(`${TRPC}/auth.signIn`, {
+  const res = await fetch(`${TRPC}/signIn`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -15,7 +15,7 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function inviteUser(email: string) {
-  const res = await fetch(`${TRPC}/auth.inviteUser`, {
+  const res = await fetch(`${TRPC}/inviteUser`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ export async function inviteUser(email: string) {
 }
 
 export async function completeNewPassword(session: string, newPassword: string, email: string) {
-  const res = await fetch(`${TRPC}/auth.respondToChallenge`, {
+  const res = await fetch(`${TRPC}/respondToChallenge`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -46,7 +46,7 @@ export async function completeNewPassword(session: string, newPassword: string, 
 }
 
 export async function refresh() {
-  const res = await fetch(`${TRPC}/auth.refresh`, {
+  const res = await fetch(`${TRPC}/refresh`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -58,7 +58,7 @@ export async function refresh() {
 }
 
 export async function logout() {
-  const res = await fetch(`${TRPC}/auth.logout`, {
+  const res = await fetch(`${TRPC}/logout`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -70,7 +70,7 @@ export async function logout() {
 }
 
 export async function me() {
-  const res = await fetch(`${TRPC}/auth.me?input=${encodeURIComponent(JSON.stringify(null))}`, {
+  const res = await fetch(`${TRPC}/me?input=${encodeURIComponent(JSON.stringify(null))}`, {
     method: "GET",
     credentials: "include",
   });
@@ -93,7 +93,7 @@ export async function submitOtp(
   mfaCode: string,
   email: string,
 ) {
-  const res = await fetch(`/trpc/auth.respondToChallenge`, {
+  const res = await fetch(`/trpc/respondToChallenge`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },

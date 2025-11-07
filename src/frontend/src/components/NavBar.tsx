@@ -12,13 +12,13 @@ export default function NavBar() {
   const { teamId } = useParams<{ teamId: string }>();
 
   const currentValue =
-    location.pathname.includes("/teams/home/")
+    location.pathname.includes(`/teams/home/${teamId}`)
       ? "home"
-      : location.pathname.includes("/to-review")
+      : location.pathname.includes(`/teams/to-review/${teamId}`)
         ? "toReview"
-        : location.pathname.includes("/reviewed")
+        : location.pathname.includes(`/teams/reviewed/${teamId}`)
           ? "reviewed"
-          : location.pathname.includes("/send")
+          : location.pathname.includes(`/teams/send/${teamId}`)
             ? "send"
             : "";
 
