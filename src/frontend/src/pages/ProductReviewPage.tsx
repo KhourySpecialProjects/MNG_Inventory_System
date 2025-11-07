@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -14,18 +14,19 @@ import {
   Select,
   Snackbar,
   TextField,
-  Typography
-} from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { getItem, updateItem, createItem } from '../api/items';
-import NavBar from '../components/NavBar';
+  Typography,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { getItem, updateItem, createItem, uploadImage } from "../api/items";
+import { me } from "../api/auth";
+import NavBar from "../components/NavBar";
 
 interface ItemViewModel {
-  productName: string; // Generic profile name (e.g., "M4 Carbine")
-  actualName: string;  // Specific item name (e.g., "Weapon #5", "Alpha Team Rifle")
+  productName: string;
+  actualName: string;
   description: string;
   imageLink: string;
   serialNumber: string;
@@ -33,12 +34,12 @@ interface ItemViewModel {
   status: string;
 }
 
-const PercentageBar = () => <Box sx={{ height: 4, bgcolor: '#e0e0e0', mb: 2 }} />;
+const PercentageBar = () => <Box sx={{ height: 4, bgcolor: "#e0e0e0", mb: 2 }} />;
 
 const ProductReviewPage = () => {
   const { teamId, itemId } = useParams<{ teamId: string; itemId: string }>();
   const navigate = useNavigate();
-  const isCreateMode = itemId === 'new';
+  const isCreateMode = itemId === "new";
 
   const [product, setProduct] = useState<ItemViewModel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,72 +47,80 @@ const ProductReviewPage = () => {
 
   const [isEditMode, setIsEditMode] = useState(isCreateMode);
   const [editedProduct, setEditedProduct] = useState<ItemViewModel | null>(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState("");
   const [damageReports, setDamageReports] = useState<string[]>([]);
-  const [currentDamageReport, setCurrentDamageReport] = useState('');
+  const [currentDamageReport, setCurrentDamageReport] = useState("");
   const [showError, setShowError] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imagePreview, setImagePreview] = useState<string>("");
 
+  // -------------------- Fetch Item --------------------
   useEffect(() => {
     const fetchData = async () => {
+      console.log("🌀 Fetching item data...");
       if (!teamId) {
-        setError('Missing team ID');
+        console.error("❌ Missing team ID");
+        setError("Missing team ID");
         setLoading(false);
         return;
       }
 
-      // If creating new item, set placeholder data
       if (isCreateMode) {
-        const placeholderItem: ItemViewModel = {
-          productName: '',
-          actualName: '',
-          description: '',
-          imageLink: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=800',
-          serialNumber: '',
+        console.log("🆕 Entered Create Mode");
+        const placeholder: ItemViewModel = {
+          productName: "",
+          actualName: "",
+          description: "",
+          imageLink:
+            "https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=800",
+          serialNumber: "",
           quantity: 1,
-          status: 'Incomplete'
+          status: "Incomplete",
         };
-        setProduct(placeholderItem);
-        setEditedProduct(placeholderItem);
-        setImagePreview(placeholderItem.imageLink);
+        setProduct(placeholder);
+        setEditedProduct(placeholder);
+        setImagePreview(placeholder.imageLink);
         setLoading(false);
+        console.log("✅ Placeholder item set for new item creation");
         return;
       }
 
-      // Otherwise fetch existing item
       if (!itemId) {
-        setError('Missing item ID');
+        console.error("❌ Missing item ID");
+        setError("Missing item ID");
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        setError(null);
-
+        console.log(`📡 Calling getItem(${teamId}, ${itemId})`);
         const result = await getItem(teamId, itemId);
+        console.log("🧩 getItem result:", result);
 
         if (result.success && result.item) {
           const itemData: ItemViewModel = {
             productName: result.item.name,
-            actualName: result.item.actualName || result.item.name, // fallback to name if actualName not set
-            description: result.item.description || '',
-            imageLink: result.item.imageLink || '',
-            serialNumber: result.item.serialNumber || '',
+            actualName: result.item.actualName || result.item.name,
+            description: result.item.description || "",
+            imageLink: result.item.imageLink || "",
+            serialNumber: result.item.serialNumber || "",
             quantity: result.item.quantity || 1,
-            status: result.item.status || 'Found'
+            status: result.item.status || "Found",
           };
+          console.log("✅ Item loaded:", itemData);
           setProduct(itemData);
           setEditedProduct(itemData);
           setNotes(itemData.description);
           setImagePreview(itemData.imageLink);
         } else {
-          setError(result.error || 'Item not found');
+          console.warn("⚠️ Item not found:", result.error);
+          setError(result.error || "Item not found");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
+        console.error("❌ Error fetching item:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch data");
       } finally {
         setLoading(false);
       }
@@ -120,7 +129,9 @@ const ProductReviewPage = () => {
     fetchData();
   }, [teamId, itemId, isCreateMode]);
 
+  // -------------------- Helpers --------------------
   const handleFieldChange = (field: keyof ItemViewModel, value: string | number) => {
+    console.log(`✏️ Field updated: ${field} =`, value);
     if (editedProduct) {
       setEditedProduct({ ...editedProduct, [field]: value });
     }
@@ -128,126 +139,148 @@ const ProductReviewPage = () => {
 
   const handleAddDamageReport = () => {
     if (currentDamageReport.trim()) {
-      setDamageReports(prev => [...prev, currentDamageReport.trim()]);
-      setCurrentDamageReport('');
+      console.log("➕ Adding damage report:", currentDamageReport);
+      setDamageReports((prev) => [...prev, currentDamageReport.trim()]);
+      setCurrentDamageReport("");
     }
   };
 
   const handleRemoveDamageReport = (index: number) => {
-    setDamageReports(prev => prev.filter((_, i) => i !== index));
+    console.log("🗑️ Removing damage report:", index);
+    setDamageReports((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please select a valid image file');
+      if (!file.type.startsWith("image/")) {
+        alert("Please select a valid image file");
         return;
       }
-
+      console.log("🖼️ Image selected:", file.name);
       setSelectedImageFile(file);
-
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
   const uploadImageToS3 = async (file: File): Promise<string> => {
-    // TODO: Implement S3 upload logic
-    console.log('Uploading file to S3:', file.name);
-    return 'https://example-bucket.s3.amazonaws.com/' + file.name;
+    console.log("🚀 Starting upload to S3:", file.name);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Data = reader.result as string;
+          const nsn =
+            editedProduct?.serialNumber ||
+            (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 12));
+          console.log("🧾 Uploading with NSN:", nsn);
+          const res = await uploadImage(teamId!, nsn, base64Data);
+          console.log("✅ Upload success:", res);
+          if (!res.success) throw new Error(res.error || "Upload failed");
+          resolve(res.imageLink);
+        } catch (err) {
+          console.error("❌ Upload failed:", err);
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
   };
 
+  // -------------------- Save Handler --------------------
   const handleSave = async () => {
+    console.log("💾 handleSave triggered");
     if (!teamId || !editedProduct) {
-      alert('Missing required data');
+      console.error("❌ Missing required data before save");
+      alert("Missing required data");
       return;
     }
 
-    if (editedProduct.status === 'Damaged' && damageReports.length === 0) {
+    if (editedProduct.status === "Damaged" && damageReports.length === 0) {
+      console.warn("⚠️ Attempted to save damaged item without reports");
       setShowError(true);
       return;
     }
 
-    // Validate required fields for new items
-    if (isCreateMode && !editedProduct.productName.trim()) {
-      alert('Product name is required');
-      return;
-    }
-
-    let finalImageUrl = editedProduct.imageLink;
-    if (selectedImageFile) {
-      try {
-        finalImageUrl = await uploadImageToS3(selectedImageFile);
-      } catch (error) {
-        console.error('Failed to upload image:', error);
-        alert('Failed to upload image. Please try again.');
-        return;
-      }
-    }
-
     try {
+      const currentUser = await me();
+      const userId = currentUser?.userId || "unknown-user";
+      console.log("👤 Authenticated user:", userId);
+
+      let finalImageUrl = editedProduct.imageLink;
+      if (selectedImageFile) {
+        try {
+          finalImageUrl = await uploadImageToS3(selectedImageFile);
+          console.log("🖼️ Image uploaded. URL:", finalImageUrl);
+        } catch (err) {
+          console.error("❌ Image upload error:", err);
+          alert("Image upload failed.");
+          return;
+        }
+      }
+
       if (isCreateMode) {
-        // Create new item
+        console.log("🆕 Creating new item...");
         const result = await createItem(
           teamId,
           editedProduct.productName,
           editedProduct.actualName,
-          '', // nsn
           editedProduct.serialNumber,
-          'user-id-placeholder' // TODO: Get actual user ID from auth context
+          editedProduct.serialNumber,
+          userId,
+          finalImageUrl
         );
+        console.log("📤 Create result:", result);
 
         if (result.success) {
-          console.log('Item created successfully:', result.item);
+          console.log("✅ Item created successfully:", result.itemId);
           setShowSuccess(true);
-          // Redirect to the new item's page and replace history so back button works correctly
-          setTimeout(() => {
-            navigate(`/teams/${teamId}/items/${result.itemId}`, { replace: true });
-          }, 1500);
+          setTimeout(
+            () =>
+              navigate(`/teams/${teamId}/items/${result.itemId}`, {
+                replace: true,
+              }),
+            1500
+          );
         } else {
-          alert('Failed to create item: ' + result.error);
+          console.error("❌ Create failed:", result.error);
+          alert("Create failed: " + result.error);
         }
       } else {
-        // Update existing item (works in both edit and view mode now)
-        if (!itemId) {
-          alert('Missing item ID');
-          return;
-        }
-
-        const result = await updateItem(teamId, itemId, {
+        console.log("📝 Updating item:", itemId);
+        const result = await updateItem(teamId, itemId!, {
           name: editedProduct.productName,
           actualName: editedProduct.actualName,
           serialNumber: editedProduct.serialNumber,
           quantity: editedProduct.quantity,
-          description: notes, // Save the notes field
+          description: notes,
           imageLink: finalImageUrl,
-          status: editedProduct.status
+          status: editedProduct.status,
+          damageReports,
         });
+        console.log("📤 Update result:", result);
 
         if (result.success) {
-          console.log('Item updated successfully:', result.item);
-          // Update local state with saved notes
-          const updatedProduct = { ...editedProduct, description: notes };
-          setProduct(updatedProduct);
-          setEditedProduct(updatedProduct);
+          console.log("✅ Item updated successfully!");
+          setProduct({ ...editedProduct, description: notes });
           setIsEditMode(false);
-          setSelectedImageFile(null);
           setShowSuccess(true);
         } else {
-          alert('Failed to update item: ' + result.error);
+          console.error("❌ Update failed:", result.error);
+          alert("Update failed: " + result.error);
         }
       }
-    } catch (error) {
-      console.error('Error saving item:', error);
-      alert('Failed to save item. Please try again.');
+    } catch (err) {
+      console.error("❌ Save process crashed:", err);
+      alert("Failed to save item.");
     }
   };
 
   const handleCancel = () => {
+    console.log("↩️ Cancel changes");
     if (product) {
       setEditedProduct(product);
       setNotes(product.description);
@@ -257,83 +290,68 @@ const ProductReviewPage = () => {
     }
   };
 
-  if (loading) {
+  // -------------------- UI --------------------
+  if (loading)
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
         <CircularProgress />
       </Box>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Alert severity="error">{error}</Alert>
       </Container>
     );
-  }
 
-  if (!product || !editedProduct) {
+  if (!product || !editedProduct)
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Alert severity="info">No product data available</Alert>
       </Container>
     );
-  }
 
   return (
     <div>
       <PercentageBar />
       <Container maxWidth="md" sx={{ px: { xs: 0, sm: 2, md: 3 }, pb: 10 }}>
-        {/* Back Button */}
         <Box sx={{ mb: 2, pt: 2 }}>
           <Button
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              console.log("⬅️ Back clicked");
+              navigate(-1);
+            }}
             sx={{
-              textTransform: 'none',
-              color: 'text.secondary',
-              '&:hover': {
-                bgcolor: 'rgba(0, 0, 0, 0.04)'
-              }
+              textTransform: "none",
+              color: "text.secondary",
+              "&:hover": { bgcolor: "rgba(0,0,0,0.04)" },
             }}
           >
             Back
           </Button>
         </Box>
 
-        <Card sx={{ '&:hover': { transform: 'none', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' } }}>
-          {/* Product Image */}
-          <Box sx={{ position: 'relative' }}>
+        <Card>
+          <Box sx={{ position: "relative" }}>
             <CardMedia
               component="img"
               image={imagePreview}
               alt={editedProduct.productName}
-              sx={{ maxHeight: '45vh', objectFit: 'contain', bgcolor: '#f5f5f5' }}
+              sx={{ maxHeight: "45vh", objectFit: "contain", bgcolor: "#f5f5f5" }}
             />
             {isEditMode && (
-              <Box sx={{ position: 'absolute', bottom: 8, right: 8, display: 'flex', gap: 1 }}>
+              <Box sx={{ position: "absolute", bottom: 8, right: 8 }}>
                 <input
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  id="image-upload-button"
+                  id="image-upload"
                   type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
                   onChange={handleImageChange}
                 />
-                <label htmlFor="image-upload-button">
-                  <Button
-                    variant="contained"
-                    component="span"
-                    size="small"
-                    startIcon={<EditIcon />}
-                    sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.95)',
-                      color: 'primary.main',
-                      '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' },
-                      textTransform: 'none',
-                      boxShadow: 2
-                    }}
-                  >
+                <label htmlFor="image-upload">
+                  <Button component="span" variant="contained" size="small" startIcon={<EditIcon />}>
                     Change Image
                   </Button>
                 </label>
@@ -342,196 +360,103 @@ const ProductReviewPage = () => {
           </Box>
 
           <CardContent>
-            {/* Edit Mode Toggle */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5" fontWeight="bold">
-                {isCreateMode ? 'Create New Item' : editedProduct.productName}
-              </Typography>
-              {!isCreateMode && !isEditMode ? (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<EditIcon />}
-                  onClick={() => setIsEditMode(true)}
-                  sx={{ textTransform: 'none', color: 'primary.main', borderColor: 'primary.main' }}
-                >
-                  Edit
-                </Button>
-              ) : !isCreateMode && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={handleCancel}
-                  sx={{ textTransform: 'none', color: 'error.main', borderColor: 'error.main' }}
-                >
-                  Cancel
-                </Button>
-              )}
-            </Box>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
+              {isCreateMode ? "Create New Item" : editedProduct.productName}
+            </Typography>
 
-            {/* Product Name - Only editable in edit mode */}
-            {isEditMode ? (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  Product Name:
-                </Typography>
-                <TextField
-                  fullWidth
-                  value={editedProduct.productName}
-                  onChange={(e) => handleFieldChange('productName', e.target.value)}
-                  size="small"
-                  placeholder="e.g., M4 Carbine"
-                />
-              </Box>
-            ) : null}
-
-            {/* Actual Name */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Item Name:
-              </Typography>
-              {isEditMode ? (
-                <TextField
-                  fullWidth
-                  value={editedProduct.actualName}
-                  onChange={(e) => handleFieldChange('actualName', e.target.value)}
-                  size="small"
-                  placeholder="e.g., Alpha Team Rifle #1"
-                />
-              ) : (
-                <Typography variant="body1" color="text.secondary">
-                  {editedProduct.actualName || 'N/A'}
-                </Typography>
-              )}
-            </Box>
-
-            {/* Description - Only shown in edit mode */}
             {isEditMode && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  Description:
-                </Typography>
+              <>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Product Name"
+                  value={editedProduct.productName}
+                  onChange={(e) => handleFieldChange("productName", e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Item Name"
+                  value={editedProduct.actualName}
+                  onChange={(e) => handleFieldChange("actualName", e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Serial Number"
+                  value={editedProduct.serialNumber}
+                  onChange={(e) => handleFieldChange("serialNumber", e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Quantity"
+                  type="number"
+                  value={editedProduct.quantity}
+                  onChange={(e) => handleFieldChange("quantity", parseInt(e.target.value) || 0)}
+                  sx={{ mb: 2 }}
+                />
                 <TextField
                   fullWidth
                   multiline
                   rows={3}
+                  label="Description"
                   value={editedProduct.description}
-                  onChange={(e) => handleFieldChange('description', e.target.value)}
-                  size="small"
+                  onChange={(e) => handleFieldChange("description", e.target.value)}
+                  sx={{ mb: 2 }}
                 />
-              </Box>
+              </>
             )}
 
-            {/* Selected Image File Indicator */}
-            {isEditMode && selectedImageFile && (
-              <Box sx={{ mb: 2, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
-                <Typography variant="body2" color="primary">
-                  New image selected: {selectedImageFile.name}
-                </Typography>
-              </Box>
-            )}
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              sx={{ mb: 2 }}
+            />
 
-            {/* Serial Number */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Serial Number:
-              </Typography>
-              {isEditMode ? (
-                <TextField
-                  fullWidth
-                  value={editedProduct.serialNumber}
-                  onChange={(e) => handleFieldChange('serialNumber', e.target.value)}
-                  size="small"
-                />
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {editedProduct.serialNumber || 'N/A'}
-                </Typography>
-              )}
-            </Box>
-
-            {/* Quantity */}
-            {isEditMode && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  Quantity:
-                </Typography>
-                <TextField
-                  fullWidth
-                  type="number"
-                  value={editedProduct.quantity}
-                  onChange={(e) => handleFieldChange('quantity', parseInt(e.target.value) || 0)}
-                  size="small"
-                />
-              </Box>
-            )}
-
-            {/* Notes Section */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Notes:
-              </Typography>
-              <TextField
-                multiline
-                fullWidth
-                rows={4}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add notes here..."
-                sx={{ borderRadius: 2 }}
-              />
-            </Box>
-
-            {/* Status Dropdown - Only for existing items */}
             {!isCreateMode && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  Status:
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={editedProduct.status}
-                    onChange={(e) => handleFieldChange('status', e.target.value)}
-                    sx={{ bgcolor: 'white' }}
-                  >
-                    <MenuItem value="Incomplete">Incomplete</MenuItem>
-                    <MenuItem value="Found">Found</MenuItem>
-                    <MenuItem value="Damaged">Damaged</MenuItem>
-                    <MenuItem value="Missing">Missing</MenuItem>
-                    <MenuItem value="In Repair">In Repair</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
+              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+                <Select
+                  value={editedProduct.status}
+                  onChange={(e) => handleFieldChange("status", e.target.value)}
+                >
+                  <MenuItem value="Incomplete">Incomplete</MenuItem>
+                  <MenuItem value="Found">Found</MenuItem>
+                  <MenuItem value="Damaged">Damaged</MenuItem>
+                  <MenuItem value="Missing">Missing</MenuItem>
+                  <MenuItem value="In Repair">In Repair</MenuItem>
+                </Select>
+              </FormControl>
             )}
 
-            {/* Damage Reports Section */}
-            {editedProduct.status === 'Damaged' && (
-              <Box sx={{ mb: 2, p: 2, bgcolor: '#fff3e0', borderRadius: 2 }}>
+            {editedProduct.status === "Damaged" && (
+              <Box sx={{ mb: 2, p: 2, bgcolor: "#fff3e0", borderRadius: 2 }}>
                 <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                  Damage Reports:
+                  Damage Reports
                 </Typography>
-
-                <Box sx={{ mb: 2 }}>
-                  {damageReports.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                      No damage reports added yet
-                    </Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {damageReports.map((report, index) => (
-                        <Chip
-                          key={index}
-                          label={report}
-                          onDelete={() => handleRemoveDamageReport(index)}
-                          deleteIcon={<DeleteIcon />}
-                          sx={{ width: '100%', justifyContent: 'space-between' }}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                {damageReports.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
+                    No damage reports added yet
+                  </Typography>
+                ) : (
+                  damageReports.map((report, i) => (
+                    <Chip
+                      key={i}
+                      label={report}
+                      onDelete={() => handleRemoveDamageReport(i)}
+                      deleteIcon={<DeleteIcon />}
+                      sx={{ m: 0.5 }}
+                    />
+                  ))
+                )}
+                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -539,63 +464,36 @@ const ProductReviewPage = () => {
                     onChange={(e) => setCurrentDamageReport(e.target.value)}
                     placeholder="Describe damage..."
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleAddDamageReport();
                       }
                     }}
                   />
-                  <Button
-                    variant="outlined"
-                    onClick={handleAddDamageReport}
-                    sx={{ textTransform: 'none', minWidth: 'auto', px: 2 }}
-                  >
+                  <Button variant="outlined" onClick={handleAddDamageReport}>
                     Add
                   </Button>
                 </Box>
               </Box>
             )}
 
-            {/* Save Button - Always visible */}
             <Button
-              variant="contained"
               fullWidth
+              variant="contained"
+              sx={{ mt: 2, bgcolor: "#6ec972", "&:hover": { bgcolor: "#39c03f" } }}
               onClick={handleSave}
-              sx={{
-                mt: 2,
-                bgcolor: '#6ec972',
-                '&:hover': { bgcolor: '#39c03f' },
-                textTransform: 'none',
-                fontWeight: 'bold'
-              }}
             >
-              {isCreateMode ? 'Create Item' : isEditMode ? 'Save Changes' : 'Save Notes'}
+              {isCreateMode ? "Create Item" : "Save Changes"}
             </Button>
           </CardContent>
         </Card>
 
-        {/* Error Snackbar */}
-        <Snackbar
-          open={showError}
-          autoHideDuration={4000}
-          onClose={() => setShowError(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert onClose={() => setShowError(false)} severity="error" sx={{ width: '100%' }}>
-            Please add at least one damage report before saving
-          </Alert>
+        <Snackbar open={showError} autoHideDuration={4000} onClose={() => setShowError(false)}>
+          <Alert severity="error">Add at least one damage report</Alert>
         </Snackbar>
 
-        {/* Success Snackbar */}
-        <Snackbar
-          open={showSuccess}
-          autoHideDuration={3000}
-          onClose={() => setShowSuccess(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert onClose={() => setShowSuccess(false)} severity="success" sx={{ width: '100%' }}>
-            Item updated successfully!
-          </Alert>
+        <Snackbar open={showSuccess} autoHideDuration={3000} onClose={() => setShowSuccess(false)}>
+          <Alert severity="success">Item updated successfully!</Alert>
         </Snackbar>
       </Container>
       <NavBar />
@@ -604,4 +502,3 @@ const ProductReviewPage = () => {
 };
 
 export default ProductReviewPage;
-

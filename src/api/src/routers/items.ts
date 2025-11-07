@@ -358,6 +358,40 @@ export const itemsRouter = router({
         return { success: false, error: err.message || "Failed to delete item." };
       }
     }),
+    uploadImage: publicProcedure
+  .input(
+    z.object({
+      teamId: z.string().min(1),
+      nsn: z.string().min(1),
+      imageBase64: z.string().min(10),
+    })
+  )
+  .mutation(async ({ input }) => {
+    try {
+      const ext = getImageExtension(input.imageBase64);
+      const key = `items/${input.teamId}/${input.nsn}.${ext}`;
+      const body = Buffer.from(stripBase64Header(input.imageBase64), "base64");
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: key,
+          Body: body,
+          ContentEncoding: "base64",
+          ContentType: `image/${ext}`,
+          ServerSideEncryption: "aws:kms",
+          SSEKMSKeyId: config.KMS_KEY_ARN,
+        })
+      );
+
+      const imageLink = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
+      return { success: true, imageLink };
+    } catch (err: any) {
+      console.error("❌ uploadImage error:", err);
+      return { success: false, error: err.message || "Failed to upload image" };
+    }
+  }),
+
 });
 
 

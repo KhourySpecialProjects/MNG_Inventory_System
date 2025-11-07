@@ -195,7 +195,7 @@ export const s3Router = router({
   // FRONTEND INPUT NOW: { scope, serialNumber?, itemId?, dataUrl, alt? }
   // - teamId is derived from ctx
   // - filename uses serialNumber (or itemId) automatically
-  uploadImage: publicProcedure
+  uploadProfileImage: publicProcedure
     .input(UploadInput)
     .mutation(async (opts) => {
       const { input, ctx } = opts as ProcArgs<z.infer<typeof UploadInput>>;
