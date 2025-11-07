@@ -133,12 +133,14 @@ export const itemsRouter = router({
               Body: body,
               ContentEncoding: "base64",
               ContentType: `image/${ext}`,
-              ACL: "private",
+              ServerSideEncryption: "aws:kms",
+              SSEKMSKeyId: config.KMS_KEY_ARN,
             })
           );
 
           imageLink = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
         }
+
 
         const item = {
           PK: `TEAM#${input.teamId}`,

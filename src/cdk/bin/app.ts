@@ -234,6 +234,9 @@ const uploads = new S3UploadsStack(app, `MngS3-${cfg.name}`, {
   serviceName: "mng-s3",
 });
 
+// Grant API Lambda full access to uploads bucket + KMS key
+uploads.grantApiAccess(api.apiFn.role!);
+
 // Give API Lambda access to bucket + key
 api.apiFn.addToRolePolicy(
   new iam.PolicyStatement({
