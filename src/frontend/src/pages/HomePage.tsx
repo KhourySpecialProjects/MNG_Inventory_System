@@ -33,9 +33,16 @@ import {
   CartesianGrid,
 } from "recharts";
 
+import { useColorMode } from "../ThemeContext";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import { loadDashboard } from "../api/home";
+import TopBar from "../components/TopBar";
+
 export default function HomePage() {
   const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
+  const { mode, toggleTheme } = useColorMode();
   const tasksCompleted = 30;
   const cardBorder = `1px solid ${theme.palette.divider}`;
 
@@ -46,6 +53,22 @@ export default function HomePage() {
   const email = "tran.b@northeastern.edu";
   const team = "MNG INVENTORY";
   const permissions = "Admin";
+
+
+
+    // Load teams
+    async function getDashboardData(): Promise<void> {
+      try {
+        if(!teamId) {
+          console.log("teamId is undefined");
+          return
+        }
+        const data = await loadDashboard(teamId);
+        console.log("📋 Loaded dashboard:", data);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load dashboard data";
+      } 
+    }
 
   const handleProfileImageChange = (file: File) => {
     const reader = new FileReader();
@@ -68,47 +91,21 @@ export default function HomePage() {
   ];
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", overflowX: "hidden" }}>
-      {/* Top AppBar */}
-      <AppBar position="sticky" elevation={0}>
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 60 } }}>
-          <Stack
-            direction="row"
-            spacing={1.2}
-            alignItems="center"
-            sx={{
-              flexGrow: 1,
-              color: theme.palette.primary.contrastText,
-              textDecoration: "none",
-            }}
-            component={Link}
-            to="/"
-          >
-            <MilitaryTechIcon sx={{ color: theme.palette.primary.contrastText }} />
-            <Typography variant="h6">SupplyNet</Typography>
-          </Stack>
-
-        
-          <IconButton
-            size="large"
-            sx={{
-              color: theme.palette.primary.contrastText,
-              "&:hover": {
-                bgcolor: theme.palette.primary.dark,
-              },
-            }}
-            onClick={() => setProfileOpen(true)}
-          >
-            {profileImage ? (
-              <Avatar src={profileImage} alt="Profile" />
-            ) : (
-              <AccountCircleIcon fontSize="large" />
-            )}
-          </IconButton>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflowX: "hidden",
+      }}
+    >
+    <TopBar
+      isLoggedIn={true}                // user is logged in
+      profileImage={profileImage}      // optional: shows avatar
+      onProfileClick={() => setProfileOpen(true)}
+    />
 
 
-        </Toolbar>
-      </AppBar>
 
       {/* Main Content */}
       <Box
@@ -117,7 +114,7 @@ export default function HomePage() {
           bgcolor: theme.palette.background.default,
           p: { xs: 2, sm: 3, md: 4 },
           color: theme.palette.text.primary,
-          pb: { xs: 12, sm: 14 }, // extra padding for fixed bottom nav
+          pb: { xs: 12, sm: 14 },
         }}
       >
         <Grid container spacing={3}>
@@ -125,7 +122,14 @@ export default function HomePage() {
           <Grid size={{ xs: 12, md: 8 }}>
             <Stack spacing={3}>
               {/* Inventory Status */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: theme.palette.background.paper,
+                  border: cardBorder,
+                }}
+              >
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   MNG Inventory's Inventory Status
                 </Typography>
@@ -157,7 +161,14 @@ export default function HomePage() {
               </Paper>
 
               {/* Inventory Reviewed */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: theme.palette.background.paper,
+                  border: cardBorder,
+                }}
+              >
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Inventory Reviewed
                 </Typography>
@@ -167,37 +178,62 @@ export default function HomePage() {
                   spacing={3}
                   sx={{ flexWrap: "wrap" }}
                 >
-                  {/* Circular Progress */}
                   <CircularProgressBar value={tasksCompleted} />
 
-                  {/* Reviews in Last 5 Hours */}
-                  <Box sx={{ flex: 1, minHeight: 180, minWidth: { xs: 180, sm: 200 } }}>
-                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minHeight: 180,
+                      minWidth: { xs: 180, sm: 200 },
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ mb: 1, fontWeight: 700 }}
+                    >
                       Reviews in Last 5 Hours
                     </Typography>
                     <ResponsiveContainer width="100%" height={120}>
-                      <BarChart data={reviewData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                      <BarChart
+                        data={reviewData}
+                        margin={{ top: 5, right: 5, left: -10, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke={theme.palette.divider}
+                        />
                         <XAxis
                           dataKey="hour"
-                          tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                          tick={{
+                            fill: theme.palette.text.primary,
+                            fontSize: 12,
+                          }}
                           axisLine={false}
                           tickLine={false}
                         />
                         <YAxis
-                          tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                          tick={{
+                            fill: theme.palette.text.primary,
+                            fontSize: 12,
+                          }}
                           axisLine={false}
                           tickLine={false}
                           width={30}
                         />
                         <Tooltip
-                          cursor={{ fill: alpha(theme.palette.primary.main, 0.05) }}
+                          cursor={{
+                            fill: alpha(theme.palette.primary.main, 0.05),
+                          }}
                           contentStyle={{
                             backgroundColor: theme.palette.background.paper,
                             border: cardBorder,
                             borderRadius: 6,
                           }}
-                          labelStyle={{ color: theme.palette.text.primary, fontWeight: 700 }}
+                          labelStyle={{
+                            color: theme.palette.text.primary,
+                            fontWeight: 700,
+                          }}
                           itemStyle={{ color: theme.palette.text.primary }}
                         />
                         <Bar
@@ -208,7 +244,10 @@ export default function HomePage() {
                         />
                       </BarChart>
                     </ResponsiveContainer>
-                    <Typography variant="caption" sx={{ mt: 1, display: "block", textAlign: "right" }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ mt: 1, display: "block", textAlign: "right" }}
+                    >
                       Last updated 1 hr ago
                     </Typography>
                   </Box>
@@ -216,7 +255,14 @@ export default function HomePage() {
               </Paper>
 
               {/* Follow-Ups */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: theme.palette.background.paper,
+                  border: cardBorder,
+                }}
+              >
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Follow-Ups
                 </Typography>
@@ -225,7 +271,11 @@ export default function HomePage() {
                   sx={{
                     width: "100%",
                     borderCollapse: "collapse",
-                    fontSize: { xs: "0.75rem", sm: "0.8rem", md: "0.9rem" },
+                    fontSize: {
+                      xs: "0.75rem",
+                      sm: "0.8rem",
+                      md: "0.9rem",
+                    },
                     "& th, & td": {
                       textAlign: "left",
                       padding: "6px 8px",
@@ -274,7 +324,14 @@ export default function HomePage() {
           <Grid size={{ xs: 12, md: 4 }}>
             <Stack spacing={3}>
               {/* Recent Notes */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: theme.palette.background.paper,
+                  border: cardBorder,
+                }}
+              >
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Recent Notes
                 </Typography>
@@ -292,7 +349,14 @@ export default function HomePage() {
               </Paper>
 
               {/* Team Activity */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: theme.palette.background.paper,
+                  border: cardBorder,
+                }}
+              >
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Team Activity
                 </Typography>
@@ -307,44 +371,84 @@ export default function HomePage() {
                       ]}
                       margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke={theme.palette.divider}
+                      />
                       <XAxis
                         dataKey="name"
-                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                        tick={{
+                          fill: theme.palette.text.primary,
+                          fontSize: 12,
+                        }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                        tick={{
+                          fill: theme.palette.text.primary,
+                          fontSize: 12,
+                        }}
                         axisLine={false}
                         tickLine={false}
                         allowDecimals={false}
                       />
                       <Tooltip
-                        cursor={{ fill: alpha(theme.palette.primary.main, 0.05) }}
+                        cursor={{
+                          fill: alpha(theme.palette.primary.main, 0.05),
+                        }}
                         contentStyle={{
                           backgroundColor: theme.palette.background.paper,
                           border: cardBorder,
                           borderRadius: 6,
                         }}
-                        labelStyle={{ color: theme.palette.text.primary, fontWeight: 700 }}
+                        labelStyle={{
+                          color: theme.palette.text.primary,
+                          fontWeight: 700,
+                        }}
                         itemStyle={{ color: theme.palette.text.primary }}
                       />
-                      <Bar dataKey="completed" stackId="a" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="shortages" stackId="a" fill={theme.palette.warning.main} />
-                      <Bar dataKey="damaged" stackId="a" fill={theme.palette.error.main} />
+                      <Bar
+                        dataKey="completed"
+                        stackId="a"
+                        fill={theme.palette.success.main}
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="shortages"
+                        stackId="a"
+                        fill={theme.palette.warning.main}
+                      />
+                      <Bar
+                        dataKey="damaged"
+                        stackId="a"
+                        fill={theme.palette.error.main}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
 
-                <Stack direction="row" justifyContent="center" spacing={3} sx={{ mt: 2, flexWrap: "wrap" }}>
+                <Stack
+                  direction="row"
+                  justifyContent="center"
+                  spacing={3}
+                  sx={{ mt: 2, flexWrap: "wrap" }}
+                >
                   {[
                     { label: "Completed", color: theme.palette.success.main },
                     { label: "Shortages", color: theme.palette.warning.main },
                     { label: "Damaged", color: theme.palette.error.main },
                   ].map((item, i) => (
                     <Stack key={i} direction="row" alignItems="center" spacing={1}>
-                      <Box sx={{ width: 16, height: 16, bgcolor: item.color, borderRadius: 0.5 }} />
+                      <Box
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          bgcolor: item.color,
+                          borderRadius: 0.5,
+                        }}
+                      />
                       <Typography variant="body2">{item.label}</Typography>
                     </Stack>
                   ))}
@@ -352,7 +456,15 @@ export default function HomePage() {
               </Paper>
 
               {/* Add Inventory */}
-              <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder, textAlign: "center" }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  bgcolor: theme.palette.background.paper,
+                  border: cardBorder,
+                  textAlign: "center",
+                }}
+              >
                 <Typography variant="h6" fontWeight={800} mb={2}>
                   Add Inventory
                 </Typography>
@@ -371,7 +483,7 @@ export default function HomePage() {
         </Grid>
       </Box>
 
-        <Profile
+      <Profile
         open={profileOpen}
         onClose={() => setProfileOpen(false)}
         profileImage={profileImage}
