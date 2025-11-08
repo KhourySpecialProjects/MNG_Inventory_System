@@ -23,7 +23,6 @@ import {
   COOKIE_ACCESS,
 } from '../helpers/cookies';
 import { decodeJwtNoVerify } from '../helpers/authUtils';
-import { decodeJwtNoVerify } from '../helpers/authUtils';
 import { ensureUserRecord } from '../helpers/awsUsers';
 import { loadConfig } from "../process";
 
@@ -334,16 +333,11 @@ export const authRouter = router({
   me: publicProcedure.query(async ({ ctx }) => {
     const cookies = parseCookiesFromCtx(ctx);
     const accessToken = cookies[COOKIE_ACCESS];
-    const cookies = parseCookiesFromCtx(ctx);
-    const accessToken = cookies[COOKIE_ACCESS];
 
     if (!accessToken) {
       return { authenticated: false, message: 'No session' };
     }
 
-    try {
-      const decoded = await verifier.verify(accessToken);
-      const userId = decoded.sub;
     try {
       const decoded = await verifier.verify(accessToken);
       const userId = decoded.sub;
