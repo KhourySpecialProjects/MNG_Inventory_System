@@ -18,7 +18,7 @@ export default function ActionPanel({
   imagePreview,
   setShowSuccess,
 }: any) {
-  const handleSave = async () => {
+  const handleSave = async (isQuickUpdate = false) => {
     try {
       let finalImage = imagePreview;
       if (selectedImageFile) {
@@ -30,6 +30,19 @@ export default function ActionPanel({
         const up = await uploadImage(teamId, editedProduct.serialNumber, base64);
         finalImage = up.imageLink;
       }
+
+      const payload = {
+        name: editedProduct.productName,
+        actualName: editedProduct.actualName,
+        nsn: editedProduct.serialNumber,
+        serialNumber: editedProduct.serialNumber,
+        quantity: editedProduct.quantity,
+        description: editedProduct.description,
+        imageLink: finalImage,
+        status: editedProduct.status,
+        notes: editedProduct.notes,
+        parent: editedProduct.parent?.itemId || null,
+      };
 
       if (isCreateMode) {
         const res = await createItem(
@@ -43,18 +56,11 @@ export default function ActionPanel({
         );
         if (res.success) setShowSuccess(true);
       } else {
-        const res = await updateItem(teamId, itemId, {
-          name: editedProduct.productName,
-          actualName: editedProduct.actualName,
-          nsn: editedProduct.serialNumber,
-          serialNumber: editedProduct.serialNumber,
-          quantity: editedProduct.quantity,
-          description: editedProduct.description,
-          imageLink: finalImage,
-          status: editedProduct.status,
-          parent: editedProduct.parent?.itemId || null,
-        });
-        if (res.success) setShowSuccess(true);
+        const res = await updateItem(teamId, itemId, payload);
+        if (res.success) {
+          if (!isQuickUpdate) setIsEditMode(false);
+          setShowSuccess(true);
+        }
       }
     } catch (err) {
       console.error("Save error:", err);
@@ -68,7 +74,15 @@ export default function ActionPanel({
   };
 
   return (
-    <Card variant="outlined" sx={{ position: "sticky", top: 16 }}>
+    <Card
+      variant="outlined"
+      sx={{
+        position: "sticky",
+        top: 16,
+        borderRadius: 3,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      }}
+    >
       <CardHeader title="Actions" />
       <CardContent>
         <Stack spacing={1}>
@@ -78,8 +92,12 @@ export default function ActionPanel({
                 fullWidth
                 variant="contained"
                 startIcon={<SaveIcon />}
-                onClick={handleSave}
-                sx={{ bgcolor: "#6ec972", "&:hover": { bgcolor: "#39c03f" } }}
+                onClick={() => handleSave()}
+                sx={{
+                  bgcolor: "#2e7d32",
+                  "&:hover": { bgcolor: "#1b5e20" },
+                  fontWeight: 600,
+                }}
               >
                 {isCreateMode ? "Create Item" : "Save Changes"}
               </Button>
@@ -89,29 +107,63 @@ export default function ActionPanel({
                   variant="outlined"
                   startIcon={<CancelIcon />}
                   onClick={() => setIsEditMode(false)}
-                  sx={{ bgcolor: "#fff8e1", "&:hover": { bgcolor: "#ffecb3" } }}
+                  sx={{
+                    color: "#ef6c00",
+                    borderColor: "#ef6c00",
+                    "&:hover": { bgcolor: "#fff3e0" },
+                  }}
                 >
                   Cancel
                 </Button>
               )}
             </>
           )}
+
+          {/* Persistent Save for quick updates */}
           {!isEditMode && !isCreateMode && (
             <>
               <Button
                 fullWidth
-                variant="outlined"
+                variant="contained"
+                color="success"
+                startIcon={<SaveIcon />}
+                onClick={() => handleSave(true)}
+                sx={{
+                  fontWeight: 600,
+                  bgcolor: "#2e7d32",
+                  "&:hover": { bgcolor: "#1b5e20" },
+                }}
+              >
+                Save
+              </Button>
+
+              <Button
+                fullWidth
+                variant="contained"
+                color="primary"
                 startIcon={<EditIcon />}
                 onClick={() => setIsEditMode(true)}
+                sx={{
+                  bgcolor: "#1565c0",
+                  "&:hover": { bgcolor: "#0d47a1" },
+                  fontWeight: 600,
+                }}
               >
                 Edit
               </Button>
+
               <Button
                 fullWidth
+                variant="contained"
                 color="error"
-                variant="outlined"
                 startIcon={<DeleteIcon />}
                 onClick={handleDelete}
+                sx={{
+                  bgcolor: "#d32f2f",
+                  "&:hover": { bgcolor: "#b71c1c" },
+                  color: "white",
+                  fontWeight: 600,
+                }}
               >
                 Delete
               </Button>

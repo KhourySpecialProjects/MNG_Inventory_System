@@ -272,7 +272,7 @@ export const itemsRouter = router({
         userId: z.string(),
         name: z.string().optional(),
         actualName: z.string().optional(),
-        nsn: z.string(),
+        nsn: z.string().optional(),
         serialNumber: z.string().optional(),
         quantity: z.number().optional(),
         description: z.string().optional(),
@@ -313,7 +313,7 @@ export const itemsRouter = router({
             (i: any) =>
               i.nsn &&
               i.itemId !== input.itemId &&
-              i.nsn.trim().toLowerCase() === input.nsn.trim().toLowerCase()
+              i.nsn.trim().toLowerCase() === (input.nsn?.trim().toLowerCase() ?? "")
           );
           if (duplicate)
             return {

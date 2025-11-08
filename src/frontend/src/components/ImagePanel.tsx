@@ -1,5 +1,13 @@
 import React, { useRef } from "react";
-import { Box, Button, CardMedia, Stack, Avatar, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  CardMedia,
+  Stack,
+  Avatar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
@@ -31,13 +39,40 @@ export default function ImagePanel({
   };
 
   return (
-    <Box sx={{ position: "relative", bgcolor: "#f5f5f5", minHeight: 220, mb: 2 }}>
+    <Box
+      sx={{
+        position: "relative",
+        bgcolor: "#f8fafc",
+        borderRadius: 3,
+        border: "1px dashed #cbd5e1",
+        overflow: "hidden",
+        mb: 3,
+        aspectRatio: "1 / 1", 
+        width: "100%",
+        maxWidth: 400,
+        mx: "auto",
+      }}
+    >
       {imagePreview ? (
-        <CardMedia component="img" image={imagePreview} sx={{ maxHeight: "45vh", objectFit: "contain" }} />
+        <CardMedia
+          component="img"
+          image={imagePreview}
+          sx={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transition: "0.2s",
+          }}
+        />
       ) : (
-        <Box display="flex" alignItems="center" justifyContent="center" height={220}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          height="100%"
+        >
           <Stack alignItems="center" spacing={1}>
-            <ImageNotSupportedIcon sx={{ fontSize: 64, color: "gray" }} />
+            <ImageNotSupportedIcon sx={{ fontSize: 72, color: "gray" }} />
             <Typography variant="caption" color="text.secondary">
               No image available
             </Typography>
@@ -46,8 +81,14 @@ export default function ImagePanel({
       )}
 
       {isEditMode && (
-        <Box sx={{ position: "absolute", bottom: 8, right: 8 }}>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+        <Box sx={{ position: "absolute", bottom: 12, right: 12 }}>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleFile}
+          />
           <Stack direction="row" spacing={1}>
             <Button
               onClick={handlePick}

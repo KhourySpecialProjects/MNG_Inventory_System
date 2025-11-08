@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Card, Chip, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { StatusChip } from "./helpers";
+import { StatusChip } from "./Producthelpers";
 
 export default function ChildrenTree({
   editedProduct,

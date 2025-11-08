@@ -8,7 +8,7 @@ import {
   Typography,
   Stack,
 } from "@mui/material";
-import { StatusChip } from "./helpers";
+import { StatusChip } from "./Producthelpers";
 
 const STATUSES = ["Incomplete", "Found", "Damaged", "Missing", "In Repair"];
 

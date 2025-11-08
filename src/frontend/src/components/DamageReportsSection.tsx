@@ -2,82 +2,118 @@ import React, { useState } from "react";
 import {
   Box,
   Stack,
-  TextField,
   Typography,
   Chip,
-  Button,
+  TextField,
+  IconButton,
+  Tooltip,
   Alert,
+  Fade,
 } from "@mui/material";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
 import DeleteIcon from "@mui/icons-material/Delete";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
 export default function DamageReportsSection({
-  isEditMode,
-  editedProduct,
   damageReports,
   setDamageReports,
+  isEditMode,
 }: {
-  isEditMode: boolean;
-  editedProduct: any;
   damageReports: string[];
-  setDamageReports: (v: string[]) => void;
+  setDamageReports: (r: string[]) => void;
+  isEditMode?: boolean;
 }) {
   const [current, setCurrent] = useState("");
 
-  const addReport = () => {
-    if (current.trim()) {
-      setDamageReports([...damageReports, current.trim()]);
-      setCurrent("");
-    }
+  const handleAdd = () => {
+    const trimmed = current.trim();
+    if (!trimmed) return;
+    setDamageReports([...damageReports, trimmed]);
+    setCurrent("");
   };
 
-  const removeReport = (i: number) => {
-    setDamageReports(damageReports.filter((_, idx) => idx !== i));
+  const handleDelete = (index: number) => {
+    const updated = damageReports.filter((_, i) => i !== index);
+    setDamageReports(updated);
   };
-
-  if (editedProduct.status !== "Damaged" && !isEditMode) return null;
 
   return (
-    <Box sx={{ p: 2, bgcolor: "#fff3e0", borderRadius: 2, mb: 2 }}>
-      <Typography variant="subtitle1" fontWeight="bold">
-        Damage Reports
-      </Typography>
-      {damageReports.length === 0 ? (
-        <Alert severity="info" sx={{ my: 1 }}>
-          No damage reports yet.
-        </Alert>
-      ) : (
-        <Stack direction="row" flexWrap="wrap" spacing={1} sx={{ my: 1 }}>
-          {damageReports.map((r, i) => (
-            <Chip
-              key={i}
-              label={r}
-              onDelete={isEditMode ? () => removeReport(i) : undefined}
-              deleteIcon={isEditMode ? <DeleteIcon /> : undefined}
-              sx={{ bgcolor: "#ffe0b2" }}
-            />
-          ))}
-        </Stack>
-      )}
-      {isEditMode && (
-        <Stack direction="row" spacing={1}>
-          <TextField
-            fullWidth
-            size="small"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-            placeholder="Describe damage..."
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addReport();
-              }
+    <Fade in>
+      <Box
+        sx={{
+          mt: 2,
+          p: 2,
+          bgcolor: "#fff8e1",
+          borderRadius: 2,
+          border: "1px solid #ffe082",
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+          Damage Reports
+        </Typography>
+
+        {damageReports.length === 0 ? (
+          <Alert
+            icon={<InfoOutlinedIcon fontSize="small" />}
+            severity="info"
+            sx={{
+              bgcolor: "#e3f2fd",
+              color: "#0d47a1",
+              borderRadius: 2,
+              mb: 1.5,
             }}
-          />
-          <Button variant="outlined" onClick={addReport}>
-            Add
-          </Button>
-        </Stack>
-      )}
-    </Box>
+          >
+            No damage reports yet.
+          </Alert>
+        ) : (
+          <Stack direction="row" flexWrap="wrap" gap={1} mb={1.5}>
+            {damageReports.map((report, i) => (
+              <Chip
+                key={i}
+                label={report}
+                onDelete={() => handleDelete(i)}
+                deleteIcon={<DeleteIcon />}
+                sx={{
+                  bgcolor: "#fffde7",
+                  border: "1px solid #fbc02d",
+                  "& .MuiChip-deleteIcon": { color: "#f57f17" },
+                }}
+              />
+            ))}
+          </Stack>
+        )}
+
+        {isEditMode && (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Describe damage..."
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAdd();
+                }
+              }}
+            />
+            <Tooltip title="Add Report">
+              <IconButton
+                color="primary"
+                onClick={handleAdd}
+                sx={{
+                  bgcolor: "#1976d2",
+                  color: "white",
+                  "&:hover": { bgcolor: "#0d47a1" },
+                }}
+              >
+                <AddCircleIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        )}
+      </Box>
+    </Fade>
   );
 }

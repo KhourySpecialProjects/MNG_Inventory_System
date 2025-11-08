@@ -11,7 +11,7 @@ import DamageReportsSection from "../components/DamageReportsSection";
 import StatusSection from "../components/StatusSection";
 import ChildrenTree from "../components/ChildrenTree";
 import ActionPanel from "../components/ActionPanel";
-import { flattenTree, StatusChip } from "../components/helpers";
+import { flattenTree, StatusChip } from "../components/Producthelpers";
 import { getItem, getItems, createItem, updateItem, uploadImage, deleteItem } from "../api/items";
 
 export default function ProductReviewPage() {
@@ -121,8 +121,9 @@ return (
       </Button>
 
       {/* === Main Content === */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
+      <Grid container spacing={3} justifyContent="center" alignItems="flex-start">
+        {/* === LEFT: IMAGE === */}
+        <Grid item xs={12} md={4}>
           <ImagePanel
             imagePreview={imagePreview}
             setImagePreview={setImagePreview}
@@ -132,27 +133,25 @@ return (
           />
         </Grid>
 
-        <Grid item xs={12} md={7}>
+        {/* === CENTER: ITEM DETAILS === */}
+        <Grid item xs={12} md={5}>
           <ItemDetailsForm
             editedProduct={editedProduct}
             setEditedProduct={setEditedProduct}
             itemsList={itemsList}
             isEditMode={isEditMode}
+            alwaysEditableFields={["status", "description", "notes"]}
           />
           <DamageReportsSection
-            isEditMode={isEditMode}
+            isEditMode={true} // always allow adding damage notes
             editedProduct={editedProduct}
             damageReports={damageReports}
             setDamageReports={setDamageReports}
           />
         </Grid>
 
-        <Grid item xs={12} md={5}>
-          <StatusSection
-            editedProduct={editedProduct}
-            setEditedProduct={setEditedProduct}
-            isEditMode={isEditMode}
-          />
+        {/* === RIGHT: ACTIONS === */}
+        <Grid item xs={12} md={3}>
           <ActionPanel
             isCreateMode={isCreateMode}
             isEditMode={isEditMode}
@@ -167,6 +166,7 @@ return (
           />
         </Grid>
       </Grid>
+
 
       <Snackbar open={showSuccess} autoHideDuration={3000} onClose={() => setShowSuccess(false)}>
         <Alert severity="success">Item updated successfully!</Alert>
