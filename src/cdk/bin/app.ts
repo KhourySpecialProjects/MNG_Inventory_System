@@ -181,7 +181,12 @@ api.apiFn.addToRolePolicy(
 const ses = new SesStack(app, `MngSes-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
-  rootDomain: "example.com", // placeholder for real domain infra
+  // no Route53 lookup for dev or non-domain stages
+  rootDomain:
+    cfg.name.toLowerCase().startsWith("dev") ||
+    cfg.name.toLowerCase().includes("beta")
+      ? undefined
+      : "example.com",
   fromLocalPart: "noreply",
   createFeedbackTopic: true,
   emailFrom: sesFromAddress,
