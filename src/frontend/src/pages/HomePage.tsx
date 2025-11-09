@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import Grid from "@mui/material/Grid";
 import { useTheme, alpha } from "@mui/material/styles";
@@ -42,6 +44,8 @@ export default function HomePage() {
   const [dashboardData, setDashboardData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const navigate = useNavigate();
 
   const name = "Ben Tran";
   const email = "tran.b@northeastern.edu";
@@ -152,9 +156,34 @@ export default function HomePage() {
                     border: cardBorder,
                   }}
                 >
-                  <Typography variant="h6" fontWeight={800} mb={2}>
-                    {team}'s Inventory Status
-                  </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  mb={2}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Button
+                      startIcon={<ArrowBackIcon />}
+                      onClick={() => navigate("/teams")}
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 600,
+                        color: theme.palette.text.primary,
+                        "&:hover": {
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      Back
+                    </Button>
+
+                    <Typography variant="h6" fontWeight={800}>
+                      {team}'s Inventory Status
+                    </Typography>
+                  </Stack>
+                </Stack>
+
                   <Grid container spacing={2}>
                     {[
                       { title: "To Review", value: totals.toReview },
@@ -307,6 +336,36 @@ export default function HomePage() {
             {/* Right side */}
             <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={3}>
+                                {/* Add Inventory */}
+                                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    bgcolor: theme.palette.background.paper,
+                    border: cardBorder,
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography variant="h6" fontWeight={800} mb={2}>
+                    Add Inventory
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    Register new inventory items to be reviewed
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    color="primary"
+                    component={Link}
+                    to={`/teams/${teamId}/items/new`}
+                  >
+                    Add New Inventory Item
+                  </Button>
+                </Paper>
+
+                {/* Restart Process */}
+                <RestartProcess />
+
                 {/* Recent Notes */}
                 <Paper
                   elevation={0}
@@ -413,36 +472,6 @@ export default function HomePage() {
                     </ResponsiveContainer>
                   </Box>
                 </Paper>
-
-                {/* Add Inventory */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    bgcolor: theme.palette.background.paper,
-                    border: cardBorder,
-                    textAlign: "center",
-                  }}
-                >
-                  <Typography variant="h6" fontWeight={800} mb={2}>
-                    Add Inventory
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    Register new inventory items to be reviewed
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    color="primary"
-                    component={Link}
-                    to={`/teams/${teamId}/items/new`}
-                  >
-                    Add New Inventory Item
-                  </Button>
-                </Paper>
-
-                {/* Restart Process */}
-                <RestartProcess />
               </Stack>
             </Grid>
           </Grid>
