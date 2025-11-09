@@ -105,7 +105,7 @@ export class SesStack extends cdk.Stack {
       new ses.CfnConfigurationSetEventDestination(this, "CfgSetEvents", {
         configurationSetName: cfgName,
         eventDestination: {
-          name: "sns-destination",
+          name: `sns-destination-${stage.toLocaleLowerCase()}`,
           enabled: true,
           matchingEventTypes: [
             "SEND",
@@ -120,6 +120,7 @@ export class SesStack extends cdk.Stack {
           snsDestination: { topicArn: feedbackTopic.topicArn },
         },
       });
+
 
       this.feedbackTopicArn = feedbackTopic.topicArn;
     }
