@@ -1,5 +1,4 @@
 import request from 'supertest';
-import app from '../../src/server';
 import { ensureUserRecord } from '../../src/helpers/awsUsers';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import {
@@ -11,27 +10,25 @@ jest.mock('../../src/helpers/awsUsers', () => ({
   ensureUserRecord: jest.fn(),
 }));
 
+// Create a mock verify function that persists across tests
+const mockVerify = jest.fn();
+
 jest.mock('aws-jwt-verify', () => ({
   CognitoJwtVerifier: {
     create: jest.fn(() => ({
-      verify: jest.fn(),
+      verify: mockVerify,
     })),
   },
 }));
+
+// Import app AFTER mocks are set up
+import app from '../../src/server';
 
 // Utility: check command class in Cognito mock
 const isCmd = (cmd: unknown, ctor: any) =>
   Boolean(cmd) && (cmd as any).constructor?.name === ctor.name;
 
-// Helper to get the mocked verifier instance
-const getMockedVerifier = () => {
-  const mockCreate = CognitoJwtVerifier.create as jest.Mock;
-  // Get the latest call result (in case create is called multiple times)
-  const results = mockCreate.mock.results;
-  return results[results.length - 1]?.value;
-};
-
-// We'll stub client.send on Cognito
+// Spy on Cognito client.send
 let cognitoSendSpy: jest.SpyInstance;
 
 beforeAll(() => {
@@ -44,34 +41,16 @@ afterAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  // Don't clear the mocks on CognitoJwtVerifier.create itself, as that would break the verifier instance
-  // But DO clear any previous mock behaviors on the verify method
-  const verifier = getMockedVerifier();
-  if (verifier && verifier.verify) {
-    verifier.verify.mockClear();
-  }
+  mockVerify.mockClear();
 });
 
 describe('Auth Router - me', () => {
-  const mockedVerifier = getMockedVerifier();
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Clear call history but don't reset the mock implementation
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockClear();
-    }
-    (ensureUserRecord as jest.Mock).mockClear();
-  });
-
   it('returns authenticated true when user is CONFIRMED', async () => {
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockResolvedValue({
-        sub: 'user-123',
-        email: 'confirmed@example.com',
-        'cognito:username': 'confirmed',
-      });
-    }
+    mockVerify.mockResolvedValue({
+      sub: 'user-123',
+      email: 'confirmed@example.com',
+      'cognito:username': 'confirmed',
+    });
 
     cognitoSendSpy.mockImplementation(async (command: any) => {
       if (isCmd(command, AdminGetUserCommand)) {
@@ -107,7 +86,7 @@ describe('Auth Router - me', () => {
       email: 'confirmed@example.com',
       accountId: 'acc-confirmed-me-123',
     });
-    expect(mockedVerifier.verify).toHaveBeenCalledWith('valid.jwt.token');
+    expect(mockVerify).toHaveBeenCalledWith('valid.jwt.token');
   });
 
   it('returns authenticated false when no cookies at all', async () => {
@@ -120,14 +99,13 @@ describe('Auth Router - me', () => {
     });
 
     // should NOT attempt any verification if no cookies
+    expect(mockVerify).not.toHaveBeenCalled();
     expect(cognitoSendSpy).not.toHaveBeenCalled();
     expect(ensureUserRecord).not.toHaveBeenCalled();
   });
 
   it('returns authenticated false if access token is invalid', async () => {
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockRejectedValue(new Error('invalid token'));
-    }
+    mockVerify.mockRejectedValue(new Error('invalid token'));
 
     const res = await request(app)
       .get('/trpc/me')
@@ -144,13 +122,11 @@ describe('Auth Router - me', () => {
   });
 
   it('returns authenticated false if Cognito user is not CONFIRMED', async () => {
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockResolvedValue({
-        sub: 'user-456',
-        email: 'pending@example.com',
-        'cognito:username': 'pending',
-      });
-    }
+    mockVerify.mockResolvedValue({
+      sub: 'user-456',
+      email: 'pending@example.com',
+      'cognito:username': 'pending',
+    });
 
     cognitoSendSpy.mockImplementation(async (command: any) => {
       if (isCmd(command, AdminGetUserCommand)) {
@@ -180,13 +156,11 @@ describe('Auth Router - me', () => {
   });
 
   it('returns authenticated false and message if ensureUserRecord throws', async () => {
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockResolvedValue({
-        sub: 'user-789',
-        email: 'error@example.com',
-        'cognito:username': 'error',
-      });
-    }
+    mockVerify.mockResolvedValue({
+      sub: 'user-789',
+      email: 'error@example.com',
+      'cognito:username': 'error',
+    });
 
     cognitoSendSpy.mockImplementation(async (command: any) => {
       if (isCmd(command, AdminGetUserCommand)) {
@@ -218,13 +192,11 @@ describe('Auth Router - me', () => {
   });
 
   it('returns authenticated false if AdminGetUserCommand throws', async () => {
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockResolvedValue({
-        sub: 'user-999',
-        email: 'throw@example.com',
-        'cognito:username': 'throw',
-      });
-    }
+    mockVerify.mockResolvedValue({
+      sub: 'user-999',
+      email: 'throw@example.com',
+      'cognito:username': 'throw',
+    });
 
     cognitoSendSpy.mockImplementation(async (command: any) => {
       if (isCmd(command, AdminGetUserCommand)) {
@@ -248,11 +220,9 @@ describe('Auth Router - me', () => {
   });
 
   it('returns authenticated false if verify throws synchronously', async () => {
-    if (mockedVerifier && mockedVerifier.verify) {
-      mockedVerifier.verify.mockImplementation(() => {
-        throw new Error('sync verify error');
-      });
-    }
+    mockVerify.mockImplementation(() => {
+      throw new Error('sync verify error');
+    });
 
     const res = await request(app)
       .get('/trpc/me')
