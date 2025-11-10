@@ -94,6 +94,41 @@ export const s3Router = router({
       if (!foundUrl) console.log(`[S3] No profile image found for ${input.userId}`);
       return foundUrl ? { url: foundUrl } : { url: null };
     }),
+    
+getInventoryForm: publicProcedure
+  .input(
+    z.object({
+      teamId: z.string().optional(),
+      nsn: z.string().min(1, "NSN is required"),
+    })
+  )
+  .query(async ({ input }) => {
+    // Use BUCKET_NAME directly instead of requireBucket()
+    const bucket = BUCKET_NAME;
+
+    // Derive teamId (fallback to default if not provided)
+    const teamId = input.teamId ?? "defaultTeam";
+
+    // S3 key
+    const key = `Documents/${teamId}/inventoryForm/${input.nsn}.pdf`;
+
+    // Check if the object exists
+    try {
+      await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    } catch {
+      throw new Error(`Inventory form for NSN ${input.nsn} not found`);
+    }
+
+    // Generate a presigned GET URL
+    const url = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: 600 } // 10 minutes
+    );
+
+    return { url, key };
+  }),
+
 });
 
 export type S3Router = typeof s3Router;
