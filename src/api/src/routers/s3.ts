@@ -41,146 +41,94 @@ export const s3Router = router({
       const ext = mime.split("/")[1] || "jpg";
       const key = `Profile/${input.userId}.${ext}`;
 
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: BUCKET,
-          Key,
-          Body: buffer,
-          ContentType: mime,
-          Metadata: {
-            alt: input.alt ?? "",
-            teamId,
-            scope: input.scope,
-            itemId: input.itemId ?? "",
-            serialNumber: input.serialNumber ?? "",
-          },
-        })
-      );
-
-      const { repos, logger } = ctx ?? {};
-      try {
-        await repos?.images?.save?.({
-          teamId,
-          scope: input.scope,
-          itemId: input.itemId,
-          serialNumber: input.serialNumber,
-          key: Key,
-          contentType: mime,
-          alt: input.alt,
-          bytes: buffer.byteLength,
-          createdAt: new Date().toISOString(),
-        });
-      } catch (e) {
-        logger?.warn?.({ err: e, where: "s3.uploadImage.db" }, "Image metadata save failed");
-      }
-
-      const headUrl = await getSignedUrl(
-        s3 as unknown as any, // guard against AWS v3 minor skew in types
-        new HeadObjectCommand({ Bucket: BUCKET, Key }),
-        { expiresIn: 60 }
-      );
-
-      return { key: Key, contentType: mime, size: buffer.byteLength, headUrl };
-    }),
-
-  getSignedUrl: publicProcedure
-    .input(GetUrlInput)
-    .query(async (opts) => {
-      const { input } = opts as ProcArgs<z.infer<typeof GetUrlInput>>;
-      const BUCKET = requireBucket();
-
-      const exists = await headObjectExists(BUCKET, input.key);
-      if (!exists) throw new Error("Object not found");
-
-      // Generate a presigned URL for GET (download/view)
-      const url = await getSignedUrl(
-        s3 as unknown as any,
-        new HeadObjectCommand({ Bucket: BUCKET, Key: input.key }),
-        { expiresIn: input.expiresIn }
-      );
-      return { url };
-    }),
-
-  deleteObject: publicProcedure
-    .input(DeleteInput)
-    .mutation(async (opts) => {
-      const { input, ctx } = opts as ProcArgs<z.infer<typeof DeleteInput>>;
-      const BUCKET = requireBucket();
-
-      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: input.key }));
-      try {
-        await ctx?.repos?.images?.removeByKey?.(input.key);
-      } catch {
-        /* ignore */
-      }
-      return { ok: true };
-    }),
-
-  // FRONTEND INPUT NOW: { scope, serialNumber?, itemId?, limit?, cursor? }
-  // - teamId derived from ctx
-  listImages: publicProcedure
-    .input(ListInput)
-    .query(async (opts) => {
-      const { input, ctx } = opts as ProcArgs<z.infer<typeof ListInput>>;
-      const BUCKET = requireBucket();
-      const teamId = getTeamId(ctx);
-
-      const basePrefix = prefixFor(teamId, {
-        scope: input.scope,
-        itemId: input.itemId,
-        serialNumber: input.serialNumber,
-      });
-
-      const resp = await s3.send(
-        new ListObjectsV2Command({
-          Bucket: BUCKET,
-          Prefix: basePrefix,
-          ContinuationToken: input.cursor,
-          MaxKeys: input.limit,
-        })
-      );
-
-      return {
-        items: (resp.Contents ?? []).map((o) => ({
-          key: o.Key!,
-          size: o.Size ?? 0,
-          lastModified: o.LastModified?.toISOString(),
-        })),
-        nextCursor: resp.NextContinuationToken ?? undefined,
-        prefix: basePrefix,
+      const putParams: PutObjectCommandInput = {
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: mime,
+        ...(KMS_KEY_ARN
+          ? {
+              ServerSideEncryption: "aws:kms",
+              SSEKMSKeyId: KMS_KEY_ARN,
+            }
+          : {}),
       };
-    }),
 
-  getInventoryForm: protectedProcedure
-    .input(
-      z.object({
-        teamId: z.string().optional(),
-        nsn: z.string().min(1, "NSN is required"),
-      })
-    )
-    .query(async (opts) => {
-      const { input, ctx } = opts as ProcArgs<{ teamId?: string; nsn: string }>;
-      const BUCKET = requireBucket();
+      console.log(`[S3] Uploading ${key} (${buffer.byteLength} bytes)`);
 
-      // Derive teamId from context or override if provided
-      const teamId = input.teamId ?? getTeamId(ctx);
+      await s3.send(new PutObjectCommand(putParams));
 
-      // S3 key: Documents/:teamId/inventoryForm/:nsn.pdf
-      const Key = `Documents/${teamId}/inventoryForm/${input.nsn}.pdf`;
-
-      // Check existence first
-      const exists = await headObjectExists(BUCKET, Key);
-      if (!exists) throw new Error(`Inventory form for NSN ${input.nsn} not found`);
-
-      // Generate a presigned URL for GET (download/view)
       const url = await getSignedUrl(
-        s3 as unknown as any,
-        new HeadObjectCommand({ Bucket: BUCKET, Key }),
-        { expiresIn: 600 } // 10 min
+        s3,
+        new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
+        { expiresIn: 3600 }
       );
 
-      return { url, key: Key };
+      console.log(`[S3] ✅ Uploaded & signed URL generated for ${key}`);
+      return { key, url };
     }),
+
+  getProfileImage: publicProcedure
+    .input(z.object({ userId: z.string().min(3) }))
+    .query(async ({ input }) => {
+      const prefix = `Profile/${input.userId}`;
+      const exts = ["jpg", "jpeg", "png", "webp", "heic"];
+      let foundUrl: string | null = null;
+
+      for (const ext of exts) {
+        const key = `${prefix}.${ext}`;
+        try {
+          await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+          foundUrl = await getSignedUrl(
+            s3,
+            new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
+            { expiresIn: 3600 }
+          );
+          console.log(`[S3] Found profile image for ${input.userId}: ${key}`);
+          break;
+        } catch {
+          continue;
+        }
+      }
+
+      if (!foundUrl) console.log(`[S3] No profile image found for ${input.userId}`);
+      return foundUrl ? { url: foundUrl } : { url: null };
+    }),
+    
+getInventoryForm: publicProcedure
+  .input(
+    z.object({
+      teamId: z.string().optional(),
+      nsn: z.string().min(1, "NSN is required"),
+    })
+  )
+  .query(async ({ input }) => {
+    // Use BUCKET_NAME directly instead of requireBucket()
+    const bucket = BUCKET_NAME;
+
+    // Derive teamId (fallback to default if not provided)
+    const teamId = input.teamId ?? "defaultTeam";
+
+    // S3 key
+    const key = `Documents/${teamId}/inventoryForm/${input.nsn}.pdf`;
+
+    // Check if the object exists
+    try {
+      await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    } catch {
+      throw new Error(`Inventory form for NSN ${input.nsn} not found`);
+    }
+
+    // Generate a presigned GET URL
+    const url = await getSignedUrl(
+      s3,
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+      { expiresIn: 600 } // 10 minutes
+    );
+
+    return { url, key };
+  }),
+
 });
 
 export type S3Router = typeof s3Router;
