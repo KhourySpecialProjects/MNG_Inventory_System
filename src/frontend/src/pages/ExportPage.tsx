@@ -1,194 +1,126 @@
 import React, { useState } from "react";
 import {
-  AppBar,
-  Toolbar,
   Box,
-  Stack,
-  Typography,
-  IconButton,
   Button,
   Paper,
+  Typography,
   CircularProgress,
+  LinearProgress,
+  Fade,
   useTheme,
-  Avatar,
 } from "@mui/material";
-import { Link, useParams } from "react-router-dom";
-import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useParams } from "react-router-dom";
+import TopBar from "../components/TopBar";
 import NavBar from "../components/NavBar";
-import Profile from "../components/Profile";
-import ExportPreview from "../components/ExportPreview";
+import ExportPageContent from "./ExportPageContent";
 
 export default function ExportPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
 
-  const completion = 80;
-  const cardBorder = `1px solid ${theme.palette.divider}`;
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [documentsCreated, setDocumentsCreated] = useState(false);
+  const completion = 80; // mock value
 
-  const name = "Ben Tran";
-  const email = "tran.b@northeastern.edu";
-  const team = "MNG INVENTORY";
-  const permissions = "Admin";
-
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === "string") {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
+  const handleCreateDocuments = async () => {
+    setIsGenerating(true);
+    await new Promise((res) => setTimeout(res, 3000)); // simulate generation delay
+    setIsGenerating(false);
+    setDocumentsCreated(true);
   };
 
-  const handlePrint = () => window.print();
-  const handleDownloadPDF = () => alert("PDF downloaded (stubbed)");
-
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: theme.palette.background.default,
-        overflowX: "hidden",
-      }}
-    >
-      {/* Top AppBar */}
-      <AppBar position="sticky" elevation={0}>
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 60 } }}>
-          <Stack
-            direction="row"
-            spacing={1.2}
-            alignItems="center"
-            sx={{
-              flexGrow: 1,
-              color: theme.palette.primary.contrastText,
-              textDecoration: "none",
-            }}
-            component={Link}
-            to="/"
-          >
-            <MilitaryTechIcon sx={{ color: theme.palette.primary.contrastText }} />
-            <Typography variant="h6">SupplyNet</Typography>
-          </Stack>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default }}>
+      {/* ✅ TopBar always visible */}
+      <TopBar isLoggedIn={true} />
 
-      {/* Main Content */}
-      <Box
-        sx={{
-          flex: 1,
-          p: { xs: 2, sm: 3, md: 4 },
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          gap: 3,
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            p: 4,
-            border: cardBorder,
-            bgcolor: theme.palette.background.paper,
-            maxWidth: 500,
-            width: "100%",
-          }}
-        >
-          <Typography variant="h5" fontWeight={800} mb={1}>
-            Inventory Export
-          </Typography>
+      {/* Main Body */}
+      <Box sx={{ px: { xs: 2, md: 4 }, pt: { xs: 3, md: 5 }, pb: 10 }}>
+        {/* Step 1: Show Create Documents Card */}
+        {!documentsCreated && !isGenerating && (
+          <Fade in timeout={400}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 4,
+                maxWidth: 600,
+                mx: "auto",
+                textAlign: "center",
+                mt: { xs: 6, md: 10 },
+                borderRadius: 4,
+              }}
+            >
+              <Typography variant="h5" fontWeight={800} gutterBottom>
+                Create Inventory Documents
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Generate your team’s completed inventory form for export.
+              </Typography>
 
-          <Typography variant="body2" color="text.secondary" mb={3}>
-            Team ID: <strong>{teamId}</strong>
-          </Typography>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+                Inventory Completion: {completion}%
+              </Typography>
 
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Review and export your completed inventory report.
-          </Typography>
-
-          {/* Completion Status */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "column",
-              gap: 2,
-              my: 2,
-            }}
-          >
-            <Box position="relative" display="inline-flex">
-              <CircularProgress
+              <LinearProgress
                 variant="determinate"
                 value={completion}
-                size={100}
-                thickness={4.5}
-                sx={{ color: theme.palette.primary.main }}
-              />
-              <Box
                 sx={{
-                  top: 0,
-                  left: 0,
-                  bottom: 0,
-                  right: 0,
-                  position: "absolute",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  height: 10,
+                  borderRadius: 5,
+                  mb: 4,
+                }}
+              />
+
+              <Button
+                onClick={handleCreateDocuments}
+                variant="contained"
+                size="large"
+                sx={{
+                  borderRadius: 2,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 700,
+                  bgcolor: theme.palette.warning.main,
+                  color: theme.palette.getContrastText(theme.palette.warning.main),
+                  "&:hover": { bgcolor: theme.palette.warning.dark },
                 }}
               >
-                <Typography
-                  variant="h6"
-                  component="div"
-                  color="text.primary"
-                  fontWeight={700}
-                >
-                  {`${Math.round(completion)}%`}
-                </Typography>
-              </Box>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Inventory Completion
-            </Typography>
-          </Box>
+                Create Documents
+              </Button>
+            </Paper>
+          </Fade>
+        )}
 
-          {/* Export Button */}
-          <Box textAlign="center" mt={4}>
-            <Button
-              variant="contained"
-              color="primary"
+        {/* Step 2: Loading State */}
+        {isGenerating && (
+          <Fade in timeout={400}>
+            <Box
               sx={{
-                px: 3,
-                py: 1.2,
-                fontWeight: 700,
-                borderRadius: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "70vh",
+                textAlign: "center",
               }}
-              onClick={() => setPreviewOpen(true)}
             >
-              View Completed Form
-            </Button>
-          </Box>
-        </Paper>
+              <CircularProgress size={60} thickness={5} sx={{ mb: 3 }} />
+              <Typography variant="h6">Generating your documents...</Typography>
+            </Box>
+          </Fade>
+        )}
+
+        {/* Step 3: After Done -> Show Your Current Page */}
+        {documentsCreated && (
+          <Fade in timeout={500}>
+            <Box>
+              <ExportPageContent />
+            </Box>
+          </Fade>
+        )}
       </Box>
 
-      {/* PDF Preview Modal */}
-      <ExportPreview
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        completion={completion}
-        team={team}
-        onPrint={handlePrint}
-        onDownload={handleDownloadPDF}
-      />
-
-      {/* Bottom Nav */}
+      {/* NavBar always visible */}
       <Box sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
         <NavBar />
       </Box>
