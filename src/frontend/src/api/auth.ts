@@ -77,7 +77,9 @@ export async function me() {
     });
 
     if (!res.ok) {
-      window.location.href = "/signin";
+      if (window.location.pathname !== "/signin") {
+        window.location.href = "/signin";
+      }
       throw new Error(`me failed: ${res.status}`);
     }
 
@@ -85,7 +87,9 @@ export async function me() {
     const data = json?.result?.data;
 
     if (!data || data.authenticated === false) {
-      window.location.href = "/signin";
+      if (window.location.pathname !== "/signin") {
+        window.location.href = "/signin";
+      }
       throw new Error("unauthenticated");
     }
 
@@ -98,10 +102,13 @@ export async function me() {
     };
   } catch (error) {
     console.error("[me] failed, redirecting to /signin:", error);
-    window.location.href = "/signin";
+    if (window.location.pathname !== "/signin") {
+      window.location.href = "/signin";
+    }
     throw error;
   }
 }
+
 
 export async function submitOtp(
   challengeName: 'EMAIL_OTP' | 'SMS_MFA' | 'SOFTWARE_TOKEN_MFA',
