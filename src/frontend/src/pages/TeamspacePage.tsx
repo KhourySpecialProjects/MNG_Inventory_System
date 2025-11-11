@@ -131,18 +131,18 @@ function openDeleteFor(id: string, name: string): void {
       const result = await createTeamspace(workspaceName, workspaceDesc, userId);
 
       if (!result?.success) {
-        alert(`❌ ${result.error || "Failed to create team."}`);
+        // alert(`❌ ${result.error || "Failed to create team."}`);
         return;
       }
 
-      alert("✅ Teamspace created successfully!");
+      // alert("✅ Teamspace created successfully!");
       setOpenCreate(false);
       setWorkspaceName("");
       setWorkspaceDesc("");
       await refreshTeams();
     } catch (err) {
       console.error("❌ handleCreate error:", err);
-      alert(err instanceof Error ? err.message : String(err));
+      // alert(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -154,7 +154,7 @@ function openDeleteFor(id: string, name: string): void {
   async function handleInvite(): Promise<void> {
     try {
       if (!inviteWorkspaceId) {
-        alert("Please select a team first.");
+        // alert("Please select a team first.");
         return;
       }
       setLoading(true);
@@ -162,18 +162,18 @@ function openDeleteFor(id: string, name: string): void {
       const result = await addUserTeamspace(userId, memberEmail, inviteWorkspaceId);
 
       if (!result?.success) {
-        alert(`❌ ${result.error || "Failed to add member."}`);
+        // alert(`❌ ${result.error || "Failed to add member."}`);
         return;
       }
 
-      alert("✅ Member added successfully.");
+      // alert("✅ Member added successfully.");
       setOpenInvite(false);
       setInviteWorkspaceId("");
       setMemberEmail("");
       await refreshTeams();
     } catch (err) {
       console.error("❌ handleInvite error:", err);
-      alert(err instanceof Error ? err.message : String(err));
+      // alert(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -189,11 +189,11 @@ function openDeleteFor(id: string, name: string): void {
       const result = await removeUserTeamspace(userId, removeMemberEmail, removeWorkspaceId);
 
       if (!result?.success) {
-        alert(`❌ ${result.error || "Failed to remove member."}`);
+        // alert(`❌ ${result.error || "Failed to remove member."}`);
         return;
       }
 
-      alert("✅ Member removed successfully.");
+      // alert("✅ Member removed successfully.");
       setOpenRemove(false);
       setRemoveWorkspaceId("");
       setRemoveWorkspaceName("");
@@ -201,7 +201,7 @@ function openDeleteFor(id: string, name: string): void {
       await refreshTeams();
     } catch (err) {
       console.error("❌ handleRemove error:", err);
-      alert(err instanceof Error ? err.message : String(err));
+      // alert(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -217,18 +217,18 @@ function openDeleteFor(id: string, name: string): void {
       const result = await deleteTeamspace(deleteWorkspaceId, userId);
 
       if (!result?.success) {
-        alert(`❌ ${result.error || "Failed to delete team."}`);
+        // alert(`❌ ${result.error || "Failed to delete team."}`);
         return;
       }
 
-      alert("✅ Teamspace deleted successfully.");
+      // alert("✅ Teamspace deleted successfully.");
       setOpenDelete(false);
       setDeleteWorkspaceId("");
       setDeleteWorkspaceName("");
       await refreshTeams();
     } catch (err) {
-      console.error("❌ handleDelete error:", err);
-      alert(err instanceof Error ? err.message : String(err));
+      // console.error("❌ handleDelete error:", err);
+      // alert(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -243,10 +243,10 @@ function openDeleteFor(id: string, name: string): void {
       if (!email) return alert("Please enter an email.");
       const result = await inviteUser(email);
       console.log("✅ Invite success:", result);
-      alert(`✅ Invite sent to ${email}`);
+      // alert(`✅ Invite sent to ${email}`);
     } catch (err) {
-      console.error("❌ Invite failed:", err);
-      alert(err instanceof Error ? err.message : "Failed to send invite.");
+      // console.error("❌ Invite failed:", err);
+      // alert(err instanceof Error ? err.message : "Failed to send invite.");
     }
   }
 
