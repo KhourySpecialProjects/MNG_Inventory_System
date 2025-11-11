@@ -188,7 +188,7 @@ export default function TeamsPage() {
         return;
       }
 
-      setSnackbar({ open: true, message: "✅ Member removed successfully.", severity: "success" });
+      setSnackbar({ open: true, message: "Member removed successfully.", severity: "success" });
       setOpenRemove(false);
       setRemoveWorkspaceId("");
       setRemoveWorkspaceName("");
@@ -214,7 +214,7 @@ export default function TeamsPage() {
         return;
       }
 
-      setSnackbar({ open: true, message: "✅ Teamspace deleted successfully.", severity: "success" });
+      setSnackbar({ open: true, message: "Teamspace deleted successfully.", severity: "success" });
       setOpenDelete(false);
       setDeleteWorkspaceId("");
       setDeleteWorkspaceName("");
@@ -235,14 +235,29 @@ export default function TeamsPage() {
         setSnackbar({ open: true, message: "Please enter a valid email.", severity: "error" });
         return;
       }
+
       const result = await inviteUser(email);
-      setSnackbar({ open: true, message: `✅ Invite sent to ${email}`, severity: "success" });
-      console.log("✅ Invite success:", result);
+
+      setSnackbar({
+        open: true,
+        message: `Invitation sent to ${email}`,
+        severity: "success",
+      });
+
+      console.log("Invite success:", result);
+
+      setInviteEmail("");
+      setOpenInvite(false);
     } catch (err) {
       console.error("❌ Invite failed:", err);
-      setSnackbar({ open: true, message: "Failed to send invite.", severity: "error" });
+      setSnackbar({
+        open: true,
+        message: "Failed to send invite.",
+        severity: "error",
+      });
     }
   }
+
 
   const filteredTeams = teams.filter((t) =>
     t.GSI_NAME.toLowerCase().includes(search.toLowerCase())
