@@ -189,8 +189,8 @@ def render_inventory_pdf(d):
 
     # compute rows per page
     y = TOP_Y
-    y -= (HEADER_LINE_H * 4 + 4)  # header block
-    y -= (TITLE_H + 4)            # title line
+    y -= (HEADER_LINE_H * 4 + 4)  
+    y -= (TITLE_H + 4)            
     y -= GAP
     y -= TABLE_HDR_H
     usable = y - BOTTOM_MARGIN
