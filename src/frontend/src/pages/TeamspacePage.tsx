@@ -52,6 +52,7 @@ export default function TeamsPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showNameDialog, setShowNameDialog] = useState(false);
 
   const [inviteMode, setInviteMode] = useState<"teamspace" | "platform">("teamspace");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -104,7 +105,21 @@ export default function TeamsPage() {
   }
 
   useEffect(() => {
-    void refreshTeams();
+    async function checkUserProfile() {
+      try {
+        const user = await me();
+        if (!user?.name || user.name.trim() === "" || user.name == "User") {
+          setProfileOpen(true);
+          setShowNameDialog(true);
+        } else {
+          await refreshTeams();
+        }
+      } catch (err) {
+        console.error("Error checking user profile:", err);
+        await refreshTeams();
+      }
+    }
+    void checkUserProfile();
   }, []);
 
   function openRemoveFor(id: string, name: string): void {
@@ -436,6 +451,40 @@ export default function TeamsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* MISSING NAME DIALOG */}
+    <Dialog
+      open={showNameDialog}
+      onClose={() => setShowNameDialog(false)}
+      fullWidth
+      maxWidth="xs"
+    >
+      <DialogTitle sx={{ fontWeight: 700, textAlign: "center" }}>
+        Missing Name
+      </DialogTitle>
+      <DialogContent>
+        <Alert severity="warning" sx={{ mb: 2, fontSize: "0.95rem" }}>
+          Please insert your name in the profile before continuing.
+        </Alert>
+        <Typography align="center" sx={{ color: "text.secondary" }}>
+          Click Edit to switch your name and click save.
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+        <Button
+          onClick={() => {
+            setShowNameDialog(false);
+            setProfileOpen(true);
+          }}
+          variant="contained"
+          color="warning"
+          sx={{ fontWeight: 600 }}
+        >
+          Got It
+        </Button>
+      </DialogActions>
+    </Dialog>
+
 
       {/* SNACKBAR */}
       <Snackbar

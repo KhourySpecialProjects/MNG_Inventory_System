@@ -69,7 +69,7 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({
         });
 
         setEditedName(safeUser.name || "");
-        setEditedRole(safeUser.role || "User");
+        setEditedRole(safeUser.role || "");
 
         if (safeUser.authenticated) {
           const res = await getProfileImage(safeUser.userId);
