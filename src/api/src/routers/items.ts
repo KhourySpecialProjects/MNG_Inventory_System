@@ -328,6 +328,61 @@ export const itemsRouter = router({
         return { success: false, error: err.message };
       }
     }),
+    /** DELETE ITEM **/
+    deleteItem: publicProcedure
+      .input(
+        z.object({
+          teamId: z.string(),
+          itemId: z.string(),
+          userId: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        console.log(`[deleteItem] Deleting ITEM#${input.itemId} from TEAM#${input.teamId}`);
+
+        try {
+          const key = { PK: `TEAM#${input.teamId}`, SK: `ITEM#${input.itemId}` };
+
+          // Fetch existing item (to remove image if exists)
+          const getRes = await doc.send(
+            new GetCommand({ TableName: TABLE_NAME, Key: key })
+          );
+
+          if (!getRes.Item) {
+            return { success: false, error: "Item not found" };
+          }
+
+          // Delete image from S3 if exists
+          if (getRes.Item.imageLink?.includes(`${BUCKET_NAME}.s3.`)) {
+            const match = getRes.Item.imageLink.match(/amazonaws\.com\/(.+)/);
+            if (match) {
+              const s3Key = match[1];
+              await s3.send(
+                new (await import("@aws-sdk/client-s3")).DeleteObjectCommand({
+                  Bucket: BUCKET_NAME,
+                  Key: s3Key,
+                })
+              );
+            }
+          }
+
+          // Delete item from DynamoDB
+          await doc.send(
+            new (await import("@aws-sdk/lib-dynamodb")).DeleteCommand({
+              TableName: TABLE_NAME,
+              Key: key,
+            })
+          );
+
+          console.log(`[deleteItem] ✅ Successfully deleted ${input.itemId}`);
+          return { success: true, message: "Item deleted successfully" };
+        } catch (err: any) {
+          console.error("❌ deleteItem error:", err);
+          return { success: false, error: err.message };
+        }
+      }),
+
+
     uploadImage: publicProcedure
     .input(
       z.object({
