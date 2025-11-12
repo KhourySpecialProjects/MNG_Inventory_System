@@ -276,12 +276,32 @@ export const itemsRouter = router({
     .mutation(async ({ input }) => {
       const log = (m: string, ...args: any[]) =>
         console.log(`[updateItem][${input.itemId}] ${m}`, ...args);
+
       try {
         const now = new Date().toISOString();
         const updates: string[] = ["updatedAt = :updatedAt"];
         const values: Record<string, any> = { ":updatedAt": now };
         const names: Record<string, string> = {};
 
+        //  Fetch user name 
+        let userName = "Unknown User";
+        try {
+          const userRes = await doc.send(
+            new QueryCommand({
+              TableName: TABLE_NAME,
+              IndexName: "GSI_UsersByUid",
+              KeyConditionExpression: "GSI6PK = :uid",
+              ExpressionAttributeValues: { ":uid": `UID#${input.userId}` },
+              Limit: 1,
+            })
+          );
+          const user = userRes.Items?.[0];
+          if (user) userName = user.name || user.email || user.accountId || userName;
+        } catch (e) {
+          console.warn(`[updateItem] ⚠️ Could not fetch user name for ${input.userId}`);
+        }
+
+        //  Handle NSN duplicates
         if (input.nsn) {
           const existing = await doc.send(
             new QueryCommand({
@@ -308,6 +328,7 @@ export const itemsRouter = router({
           values[":nsn"] = input.nsn;
         }
 
+        //  Apply updates
         const push = (key: string, val: any, fieldName?: string) => {
           if (val !== undefined && val !== null) {
             updates.push(`${fieldName || key} = :${key}`);
@@ -327,14 +348,19 @@ export const itemsRouter = router({
         push("parent", input.parent);
         push("notes", input.notes);
 
-        updates.push(
-          "updateLog = list_append(if_not_exists(updateLog, :empty), :log)"
-        );
+        // Append full user activity log
+        updates.push("updateLog = list_append(if_not_exists(updateLog, :empty), :log)");
         values[":log"] = [
-          { userId: input.userId, action: "update", timestamp: now },
+          {
+            userId: input.userId,
+            userName,
+            action: "update",
+            timestamp: now,
+          },
         ];
         values[":empty"] = [];
 
+        // Execute update
         log("UpdateExpression:", updates.join(", "));
         const result = await doc.send(
           new UpdateCommand({
