@@ -179,6 +179,21 @@ export const itemsRouter = router({
     .input(z.object({ teamId: z.string(), userId: z.string() }))
     .query(async ({ input }) => {
       try {
+        // Fetch the team metadata for teamName
+        const teamRes = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEAM#${input.teamId}`, SK: "METADATA" },
+          })
+        );
+
+        const teamName =
+          teamRes.Item?.name ||
+          teamRes.Item?.GSI_NAME ||
+          teamRes.Item?.teamName ||
+          "Unknown Team";
+
+        // Query all items under this team
         const result = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
@@ -190,10 +205,21 @@ export const itemsRouter = router({
           })
         );
 
+        const rawItems = result.Items ?? [];
+
+        // Build a map of itemId -> name for parent lookup
+        const itemNameMap: Record<string, string> = {};
+        for (const i of rawItems) {
+          if (i.itemId && i.name) itemNameMap[i.itemId] = i.name;
+        }
+
+        // Attach presigned URL, teamName, and parent info
         const items = await Promise.all(
-          (result.Items ?? []).map(async (raw: any) => {
+          rawItems.map(async (raw: any) => {
             const imageLink = await getPresignedUrlIfNeeded(raw.imageLink);
-            return { ...raw, imageLink };
+            const parentId = raw.parent || null;
+            const parentName = parentId ? itemNameMap[parentId] || "Unknown Parent" : null;
+            return { ...raw, imageLink, teamName, parent: parentId, parentName };
           })
         );
 
@@ -250,12 +276,32 @@ export const itemsRouter = router({
     .mutation(async ({ input }) => {
       const log = (m: string, ...args: any[]) =>
         console.log(`[updateItem][${input.itemId}] ${m}`, ...args);
+
       try {
         const now = new Date().toISOString();
         const updates: string[] = ["updatedAt = :updatedAt"];
         const values: Record<string, any> = { ":updatedAt": now };
         const names: Record<string, string> = {};
 
+        //  Fetch user name 
+        let userName = "Unknown User";
+        try {
+          const userRes = await doc.send(
+            new QueryCommand({
+              TableName: TABLE_NAME,
+              IndexName: "GSI_UsersByUid",
+              KeyConditionExpression: "GSI6PK = :uid",
+              ExpressionAttributeValues: { ":uid": `UID#${input.userId}` },
+              Limit: 1,
+            })
+          );
+          const user = userRes.Items?.[0];
+          if (user) userName = user.name || user.email || user.accountId || userName;
+        } catch (e) {
+          console.warn(`[updateItem] ⚠️ Could not fetch user name for ${input.userId}`);
+        }
+
+        //  Handle NSN duplicates
         if (input.nsn) {
           const existing = await doc.send(
             new QueryCommand({
@@ -282,6 +328,7 @@ export const itemsRouter = router({
           values[":nsn"] = input.nsn;
         }
 
+        //  Apply updates
         const push = (key: string, val: any, fieldName?: string) => {
           if (val !== undefined && val !== null) {
             updates.push(`${fieldName || key} = :${key}`);
@@ -301,14 +348,19 @@ export const itemsRouter = router({
         push("parent", input.parent);
         push("notes", input.notes);
 
-        updates.push(
-          "updateLog = list_append(if_not_exists(updateLog, :empty), :log)"
-        );
+        // Append full user activity log
+        updates.push("updateLog = list_append(if_not_exists(updateLog, :empty), :log)");
         values[":log"] = [
-          { userId: input.userId, action: "update", timestamp: now },
+          {
+            userId: input.userId,
+            userName,
+            action: "update",
+            timestamp: now,
+          },
         ];
         values[":empty"] = [];
 
+        // Execute update
         log("UpdateExpression:", updates.join(", "));
         const result = await doc.send(
           new UpdateCommand({
@@ -328,6 +380,61 @@ export const itemsRouter = router({
         return { success: false, error: err.message };
       }
     }),
+    /** DELETE ITEM **/
+    deleteItem: publicProcedure
+      .input(
+        z.object({
+          teamId: z.string(),
+          itemId: z.string(),
+          userId: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        console.log(`[deleteItem] Deleting ITEM#${input.itemId} from TEAM#${input.teamId}`);
+
+        try {
+          const key = { PK: `TEAM#${input.teamId}`, SK: `ITEM#${input.itemId}` };
+
+          // Fetch existing item (to remove image if exists)
+          const getRes = await doc.send(
+            new GetCommand({ TableName: TABLE_NAME, Key: key })
+          );
+
+          if (!getRes.Item) {
+            return { success: false, error: "Item not found" };
+          }
+
+          // Delete image from S3 if exists
+          if (getRes.Item.imageLink?.includes(`${BUCKET_NAME}.s3.`)) {
+            const match = getRes.Item.imageLink.match(/amazonaws\.com\/(.+)/);
+            if (match) {
+              const s3Key = match[1];
+              await s3.send(
+                new (await import("@aws-sdk/client-s3")).DeleteObjectCommand({
+                  Bucket: BUCKET_NAME,
+                  Key: s3Key,
+                })
+              );
+            }
+          }
+
+          // Delete item from DynamoDB
+          await doc.send(
+            new (await import("@aws-sdk/lib-dynamodb")).DeleteCommand({
+              TableName: TABLE_NAME,
+              Key: key,
+            })
+          );
+
+          console.log(`[deleteItem] ✅ Successfully deleted ${input.itemId}`);
+          return { success: true, message: "Item deleted successfully" };
+        } catch (err: any) {
+          console.error("❌ deleteItem error:", err);
+          return { success: false, error: err.message };
+        }
+      }),
+
+
     uploadImage: publicProcedure
     .input(
       z.object({

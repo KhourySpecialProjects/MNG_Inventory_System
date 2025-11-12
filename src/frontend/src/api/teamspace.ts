@@ -46,7 +46,7 @@ export async function addUserTeamspace(
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, userEmail, teamspaceId }),
+    body: JSON.stringify({ userId, memberEmail: userEmail, inviteWorkspaceId: teamspaceId }),
   });
 
   if (!res.ok) throw new Error(`addUserTeamspace failed: ${res.status}`);
@@ -82,7 +82,7 @@ export async function deleteTeamspace(teamspaceId: string, userId: string) {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ teamspaceId, userId }),
+    body: JSON.stringify({ inviteWorkspaceId: teamspaceId, userId }),
   });
 
   if (!res.ok) throw new Error(`deleteTeamspace failed: ${res.status}`);
