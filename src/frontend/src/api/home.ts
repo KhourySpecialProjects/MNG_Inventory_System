@@ -19,7 +19,7 @@ export async function softReset(teamId: string) {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ input: { teamId } }),
+    body: JSON.stringify({ teamId }),
   });
 
   if (!res.ok) throw new Error(`softReset failed: ${res.status}`);
