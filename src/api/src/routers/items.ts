@@ -179,6 +179,21 @@ export const itemsRouter = router({
     .input(z.object({ teamId: z.string(), userId: z.string() }))
     .query(async ({ input }) => {
       try {
+        // Get the team metadata to extract the team name
+        const teamRes = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEAM#${input.teamId}`, SK: "METADATA" },
+          })
+        );
+
+        const teamName =
+          teamRes.Item?.name ||
+          teamRes.Item?.GSI_NAME ||
+          teamRes.Item?.teamName ||
+          "Unknown Team";
+
+        // Query all items under the same TEAM#
         const result = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
@@ -190,10 +205,11 @@ export const itemsRouter = router({
           })
         );
 
+        // Attach presigned URLs and team name inside every item
         const items = await Promise.all(
           (result.Items ?? []).map(async (raw: any) => {
             const imageLink = await getPresignedUrlIfNeeded(raw.imageLink);
-            return { ...raw, imageLink };
+            return { ...raw, imageLink, teamName };
           })
         );
 
