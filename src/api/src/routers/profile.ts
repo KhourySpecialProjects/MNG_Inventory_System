@@ -20,58 +20,66 @@ const verifier = CognitoJwtVerifier.create({
   tokenUse: "access",
 });
 
+function randomUsername(): string {
+  return "user-" + Math.random().toString(36).substring(2, 8);
+}
+
+async function ensureUniqueUsername(base: string): Promise<string> {
+  let username = base;
+  let counter = 1;
+
+  while (true) {
+    const res = await doc.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        IndexName: "GSI_UsersByUsername",
+        KeyConditionExpression: "username = :u",
+        ExpressionAttributeValues: { ":u": username },
+        Limit: 1,
+      })
+    );
+
+    if (!res.Items || res.Items.length === 0) return username;
+
+    username = `${base}${counter}`;
+    counter++;
+  }
+}
+
 export const profileRouter = router({
   getProfile: publicProcedure.query(async ({ ctx }) => {
     const cookies = parseCookiesFromCtx(ctx);
     const token = cookies[COOKIE_ACCESS];
-    if (!token) return { authenticated: false, message: "No session" };
+
+    if (!token)
+      return { authenticated: false, message: "No session" };
 
     try {
       const decoded = await verifier.verify(token);
       const userId = decoded.sub;
 
-      const decodedEmailRaw =
-        decoded.email ||
-        decoded["email"] ||
-        decoded["cognito:username"] ||
-        `${userId}@example.com`;
-
-      const decodedEmail =
-        typeof decodedEmailRaw === "string"
-          ? decodedEmailRaw
-          : `${userId}@example.com`;
-
-      console.log("🔹 [Profile] Fetching user:", userId);
-
-      // ---- GET USER RECORD ----
+      // FETCH USER RECORD
       const userRes = await doc.send(
         new GetCommand({
           TableName: TABLE_NAME,
           Key: { PK: `USER#${userId}`, SK: "METADATA" },
-          ProjectionExpression: "#nm, email, role",
-          ExpressionAttributeNames: { "#nm": "name" },
-          ConsistentRead: true,
         })
       );
 
       let user = userRes.Item;
 
-      // ---- CREATE RECORD IF MISSING ----
+      // CREATE USER IF MISSING
       if (!user) {
-        console.log("⚠️ No user record found, creating new one...");
         const now = new Date().toISOString();
 
-        const defaultName =
-          typeof decodedEmail === "string" && decodedEmail.includes("@")
-            ? decodedEmail.split("@")[0]
-            : "User";
+        let generated = await ensureUniqueUsername(randomUsername());
 
         user = {
           PK: `USER#${userId}`,
           SK: "METADATA",
           sub: userId,
-          email: decodedEmail,
-          name: defaultName,
+          username: generated,
+          name: generated,
           role: "User",
           createdAt: now,
           updatedAt: now,
@@ -85,37 +93,16 @@ export const profileRouter = router({
             Item: user,
           })
         );
-
-        console.log("✅ Created new user record:", decodedEmail);
-      } else if (
-        (!user.email || user.email !== decodedEmail) &&
-        typeof decodedEmail === "string" &&
-        decodedEmail.includes("@")
-      ) {
-        await doc.send(
-          new UpdateCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: `USER#${userId}`, SK: "METADATA" },
-            UpdateExpression: "SET email = :email, updatedAt = :u",
-            ExpressionAttributeValues: {
-              ":email": decodedEmail,
-              ":u": new Date().toISOString(),
-            },
-          })
-        );
-        user.email = decodedEmail;
-        console.log("🔄 Synced Dynamo email:", decodedEmail);
       }
-
-      // ---- TEAM LOOKUP ----
+      // -----------------------------
+      // TEAM LOOKUP
+      // -----------------------------
       const teamRes = await doc.send(
         new QueryCommand({
           TableName: TABLE_NAME,
-          IndexName: "GSI_MembersByUser",
-          KeyConditionExpression: "GSI3PK = :pk",
-          ExpressionAttributeValues: {
-            ":pk": `USER#${userId}`,
-          },
+          IndexName: "GSI_UserTeams",
+          KeyConditionExpression: "GSI1PK = :pk",
+          ExpressionAttributeValues: { ":pk": `USER#${userId}` },
           Limit: 1,
         })
       );
@@ -123,108 +110,96 @@ export const profileRouter = router({
       const teamItem = teamRes.Items?.[0];
       const teamName = teamItem?.teamName ?? "No Team Assigned";
 
-      console.log("📘 [Profile] Returning:", {
-        name: user.name,
-        role: user.role,
-        email: user.email,
-        team: teamName,
-      });
-
       return {
         authenticated: true,
         userId,
+        username: user.username,
         name: user.name,
-        email: user.email,
+        role: user.role,
         team: teamName,
-        role: user.role ?? "User",
       };
     } catch (err) {
-      console.error("❌ [Profile] getProfile error:", err);
-      return { authenticated: false, message: "Invalid or expired session" };
+      console.error("❌ getProfile error:", err);
+      return { authenticated: false, message: "Invalid session" };
     }
   }),
 
   updateProfile: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        name: z.string().optional(),
-        role: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      try {
-        console.log("🟡 [Profile] updateProfile input:", input);
+  .input(
+    z.object({
+      userId: z.string(),
+      name: z.string().optional(),
+      username: z.string().optional(),
+      role: z.string().optional(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    try {
+      const existing = await doc.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `USER#${input.userId}`, SK: "METADATA" },
+        })
+      );
 
-        const existing = await doc.send(
-          new GetCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: `USER#${input.userId}`, SK: "METADATA" },
-            ConsistentRead: true,
-          })
-        );
+      if (!existing.Item)
+        return { success: false, message: "User not found" };
 
-        if (!existing.Item) {
-          console.log("⚠️ Creating base user record...");
-          const now = new Date().toISOString();
-          const defaultEmail = `${input.userId}@example.com`;
-          const defaultName = defaultEmail.split("@")[0];
-          await doc.send(
-            new PutCommand({
-              TableName: TABLE_NAME,
-              Item: {
-                PK: `USER#${input.userId}`,
-                SK: "METADATA",
-                sub: input.userId,
-                email: defaultEmail,
-                name: defaultName,
-                role: "User",
-                createdAt: now,
-                updatedAt: now,
-                GSI6PK: `UID#${input.userId}`,
-                GSI6SK: `USER#${input.userId}`,
-              },
-            })
-          );
-        }
+      const updates: string[] = [];
+      const vars: Record<string, any> = {};
+      const names: Record<string, string> = {};
 
-        const updates: string[] = [];
-        const values: Record<string, any> = {
-          ":updatedAt": new Date().toISOString(),
-        };
-        const names: Record<string, string> = {
-          "#nm": "name",
-          "#rl": "role",
-        };
+      // USERNAME UPDATE (only if changed AND not empty)
+      if (
+        input.username &&
+        input.username.trim() &&
+        input.username.trim() !== existing.Item.username
+      ) {
+        const clean = input.username.trim().replace(/[^a-zA-Z0-9_-]/g, "");
+        const unique = await ensureUniqueUsername(clean);
 
-        if (input.name?.trim()) {
-          updates.push("#nm = :name");
-          values[":name"] = input.name.trim();
-        }
-
-        if (input.role?.trim()) {
-          updates.push("#rl = :role");
-          values[":role"] = input.role.trim();
-        }
-
-        updates.push("updatedAt = :updatedAt");
-        const updateExpr = `SET ${updates.join(", ")}`;
-
-        await doc.send(
-          new UpdateCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: `USER#${input.userId}`, SK: "METADATA" },
-            UpdateExpression: updateExpr,
-            ExpressionAttributeValues: values,
-            ExpressionAttributeNames: names,
-          })
-        );
-
-        console.log(`✅ [Profile] Updated user ${input.userId}`);
-        return { success: true, message: "Profile updated successfully" };
-      } catch (err) {
-        console.error("❌ [Profile] updateProfile error:", err);
-        return { success: false, message: "Failed to update profile" };
+        updates.push("#un = :username");
+        names["#un"] = "username";
+        vars[":username"] = unique;
       }
-    }),
+
+      // NAME UPDATE
+      if (input.name && input.name.trim() && input.name !== existing.Item.name) {
+        updates.push("#nm = :name");
+        names["#nm"] = "name";
+        vars[":name"] = input.name.trim();
+      }
+
+      // ROLE UPDATE
+      if (input.role && input.role.trim() && input.role !== existing.Item.role) {
+        updates.push("#rl = :role");
+        names["#rl"] = "role";
+        vars[":role"] = input.role.trim();
+      }
+
+      // No updates?
+      if (updates.length === 0) {
+        return { success: true, message: "No changes" };
+      }
+
+      // Always update timestamp
+      updates.push("updatedAt = :updatedAt");
+      vars[":updatedAt"] = new Date().toISOString();
+
+      await doc.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `USER#${input.userId}`, SK: "METADATA" },
+          UpdateExpression: `SET ${updates.join(", ")}`,
+          ExpressionAttributeValues: vars,
+          ExpressionAttributeNames: names,
+        })
+      );
+
+      return { success: true, message: "Profile updated" };
+    } catch (err) {
+      console.error("❌ updateProfile error:", err);
+      return { success: false, message: "Failed to update profile" };
+    }
+  }),
 });
