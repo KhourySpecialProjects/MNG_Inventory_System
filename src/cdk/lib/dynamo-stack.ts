@@ -8,7 +8,6 @@ import { Construct } from "constructs";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as kms from "aws-cdk-lib/aws-kms";
 import * as cr from "aws-cdk-lib/custom-resources";
-import * as iam from "aws-cdk-lib/aws-iam";
 
 export interface DynamoStackProps extends StackProps {
   stage: string;
@@ -25,14 +24,13 @@ export class DynamoStack extends Stack {
     const stage = props.stage.toLowerCase();
     const isProd = stage === "prod";
 
-
     const key = new kms.Key(this, "TableKey", {
       alias: `${service}-${stage}-dynamodb-key`,
       enableKeyRotation: true,
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
-
+    // MAIN TABLE
     this.table = new dynamodb.Table(this, "Table", {
       tableName: `${service}-${stage}-data`,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -47,53 +45,49 @@ export class DynamoStack extends Stack {
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
-    /* =========================================================================
-       Global Secondary Indexes
-    ========================================================================= */
+    /* ============================================================
+       GLOBAL SECONDARY INDEXES
+    ============================================================ */
 
-    // Team / Workspace uniqueness by name
     this.table.addGlobalSecondaryIndex({
       indexName: "GSI_WorkspaceByName",
       partitionKey: { name: "GSI_NAME", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // Users by Cognito UID (used by ensureUserRecord)
     this.table.addGlobalSecondaryIndex({
       indexName: "GSI_UsersByUid",
       partitionKey: { name: "GSI6PK", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "GSI6SK", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // Users by email (for invites / member lookup)
+    // 🔥 UNIQUE USERNAME INDEX
     this.table.addGlobalSecondaryIndex({
-      indexName: "GSI_UsersByEmail",
-      partitionKey: { name: "email", type: dynamodb.AttributeType.STRING },
+      indexName: "GSI_UsersByUsername",
+      partitionKey: { name: "username", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // Roles by name (used by role resolver)
     this.table.addGlobalSecondaryIndex({
       indexName: "GSI_RolesByName",
       partitionKey: { name: "ROLENAME", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // User → Team mapping (for getTeamspace queries)
     this.table.addGlobalSecondaryIndex({
       indexName: "GSI_UserTeams",
-      partitionKey: { name: "GSI1PK", type: dynamodb.AttributeType.STRING }, // USER#<userId>
-      sortKey: { name: "GSI1SK", type: dynamodb.AttributeType.STRING },       // TEAM#<teamId>
+      partitionKey: { name: "GSI1PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "GSI1SK", type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
+
+    /* ============================================================
+       DEFAULT ROLE SEEDER
+    ============================================================ */
 
     const seedProvider = new cr.AwsCustomResource(this, "SeedDefaultRoles", {
       onCreate: {
@@ -102,7 +96,7 @@ export class DynamoStack extends Stack {
         parameters: {
           RequestItems: {
             [`${service}-${stage}-data`]: [
-              // ==== OWNER ====
+              // OWNER
               {
                 PutRequest: {
                   Item: {
@@ -114,7 +108,6 @@ export class DynamoStack extends Stack {
                     },
                     permissions: {
                       S: JSON.stringify([
-                        // Core admin
                         "team.create",
                         "team.add_member",
                         "team.remove_member",
@@ -124,19 +117,16 @@ export class DynamoStack extends Stack {
                         "role.modify",
                         "role.remove",
                         "role.view",
-                        // Item admin
                         "item.create",
                         "item.update",
                         "item.delete",
                         "item.view",
                         "item.upload_image",
                         "item.manage_damage",
-                        // Damage reports
                         "damage.create",
                         "damage.update",
                         "damage.delete",
                         "damage.view",
-                        // S3 and logs
                         "s3.upload",
                         "s3.delete",
                         "s3.view",
@@ -148,7 +138,8 @@ export class DynamoStack extends Stack {
                   },
                 },
               },
-              // ==== MANAGER ====
+
+              // MANAGER
               {
                 PutRequest: {
                   Item: {
@@ -175,7 +166,8 @@ export class DynamoStack extends Stack {
                   },
                 },
               },
-              // ==== MEMBER ====
+
+              // MEMBER
               {
                 PutRequest: {
                   Item: {
@@ -186,11 +178,7 @@ export class DynamoStack extends Stack {
                       S: "Limited access to view and report items.",
                     },
                     permissions: {
-                      S: JSON.stringify([
-                        "item.view",
-                        "damage.create",
-                        "damage.view",
-                      ]),
+                      S: JSON.stringify(["item.view", "damage.create", "damage.view"]),
                     },
                     createdAt: { S: new Date().toISOString() },
                   },
@@ -206,10 +194,7 @@ export class DynamoStack extends Stack {
       }),
     });
 
-    // Allow custom resource to encrypt/decrypt items
     key.grantEncryptDecrypt(seedProvider);
-
-    // Run seeder after table creation
     seedProvider.node.addDependency(this.table);
 
     new CfnOutput(this, "TableName", { value: this.table.tableName });

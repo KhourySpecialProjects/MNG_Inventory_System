@@ -71,10 +71,13 @@ export async function logout() {
 
 export async function me() {
   try {
-    const res = await fetch(`${TRPC}/me?input=${encodeURIComponent(JSON.stringify(null))}`, {
-      method: "GET",
-      credentials: "include",
-    });
+    const res = await fetch(
+      `${TRPC}/me?input=${encodeURIComponent(JSON.stringify(null))}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
 
     if (!res.ok) {
       if (window.location.pathname !== "/signin") {
@@ -93,11 +96,11 @@ export async function me() {
       throw new Error("unauthenticated");
     }
 
-    const userId = data.userId || data.sub || data.id || data.email;
     return {
-      userId,
-      email: data.email,
+      userId: data.userId,
       name: data.name,
+      username: data.username,
+      role: data.role,
       authenticated: true,
     };
   } catch (error) {
@@ -108,6 +111,7 @@ export async function me() {
     throw error;
   }
 }
+
 
 
 export async function submitOtp(

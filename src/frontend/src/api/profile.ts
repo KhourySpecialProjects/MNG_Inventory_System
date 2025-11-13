@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const TRPC = '/trpc';
 
-export async function updateProfile(userId: string, name?: string, role?: string) {
-  const body: Record<string, any> = { userId };
-  if (name) body.name = name;
-  if (role) body.role = role;
-
+export async function updateProfile(
+  userId: string,
+  name: string,
+  username: string
+) {
   const res = await fetch(`${TRPC}/updateProfile`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ userId, name, username }),
   });
 
   if (!res.ok) throw new Error(`updateProfile failed: ${res.status}`);
@@ -27,13 +27,16 @@ export async function getProfileImage(userId: string) {
     method: 'GET',
     credentials: 'include',
   });
+
   if (!res.ok) throw new Error(`getProfileImage failed: ${res.status}`);
+
   const json = await res.json();
   const data = json?.result?.data;
   if (!data) throw new Error('unexpected response from getProfileImage');
-  const email = String(data?.email ?? '');
-  const safeName = email.includes('@') ? email.split('@')[0] : email || 'user';
-  return { ...data, safeName };
+
+  const username = data?.username || 'user';
+
+  return { ...data, safeName: username };
 }
 
 export async function uploadProfileImage(userId: string, dataUrl: string) {
@@ -43,9 +46,12 @@ export async function uploadProfileImage(userId: string, dataUrl: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, dataUrl }),
   });
+
   if (!res.ok) throw new Error(`uploadProfileImage failed: ${res.status}`);
+
   const json = await res.json();
   const data = json?.result?.data;
   if (!data) throw new Error('unexpected response from uploadProfileImage');
+
   return data; // { key, url }
 }
