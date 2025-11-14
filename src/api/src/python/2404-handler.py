@@ -13,8 +13,7 @@ import boto3
 # ====== Config ======
 TEMPLATE_PATH  = os.environ.get("TEMPLATE_PATH", "").strip()
 TABLE_NAME     = os.environ.get("TABLE_NAME", "").strip()
-UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "").strip()  # <-- uploads bucket
-
+UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "").strip() 
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
@@ -126,7 +125,7 @@ def _draw_remarks_list(c: canvas.Canvas, values: dict):
             s = (legacy or "").strip()
             rows = [r for r in s.splitlines() if r] if s else []
     if not rows:
-        rows = ["N/A"]  # <-- fill missing with N/A
+        rows = ["N/A"]  
 
     x = REMARKS_TABLE["x"]
     y = REMARKS_TABLE["y_start"]

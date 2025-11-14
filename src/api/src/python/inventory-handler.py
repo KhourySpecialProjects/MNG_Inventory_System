@@ -974,7 +974,7 @@ def lambda_handler(event, context):
     )
 
 
-# ---------- Local preview  ----------
+# ---------- Local prev  ----------
 
 def main():
     data = SAMPLE_DATA

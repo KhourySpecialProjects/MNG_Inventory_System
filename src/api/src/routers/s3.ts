@@ -1,6 +1,3 @@
-// File: src/api/src/routers/s3.ts
-// s3 router (images folded in). Private-by-default uploads, presigned access.
-// Uses Zod + tRPC, AWS SDK v3. Keys are stable for DB joins.
 
 import { z } from 'zod';
 import { router, protectedProcedure, publicProcedure } from './trpc';
@@ -50,8 +47,7 @@ type ImageRepo = {
 
 type AppLogger = { warn?: (meta: any, msg?: string) => void };
 
-// Your app likely provides teamId on the context via session/auth.
-// We support several common locations; customize if needed.
+
 type S3Ctx = {
   repos?: { images?: ImageRepo };
   logger?: AppLogger;
@@ -78,8 +74,7 @@ function requireBucket(): string {
 
 const Scope = z.enum(['item', 'team', 'report']);
 
-// NOTE: teamId REMOVED (derived from ctx)
-// NOTE: filenameHint REMOVED (we use serialNumber as filename)
+
 export const UploadInput = z.object({
   scope: Scope,
   serialNumber: z.string().optional(),
@@ -95,7 +90,7 @@ const GetUrlInput = z.object({
 
 const DeleteInput = z.object({ key: z.string().min(3) });
 
-// NOTE: teamId REMOVED (derived from ctx)
+
 const ListInput = z.object({
   scope: Scope,
   serialNumber: z.string().optional(),
@@ -144,7 +139,7 @@ const datePath = () => {
   return `${y}/${m}/${d}`;
 };
 
-// Pull team id from context in a flexible way (customize as needed for your app)
+// Pull team id from context in a flexible way 
 function getTeamId(ctx: S3Ctx): string {
   const fromCtx = ctx?.teamId ?? ctx?.session?.teamId ?? ctx?.user?.teamId ?? ctx?.auth?.teamId;
 
@@ -283,8 +278,7 @@ export const s3Router = router({
     return { ok: true };
   }),
 
-  // FRONTEND INPUT NOW: { scope, serialNumber?, itemId?, limit?, cursor? }
-  // - teamId derived from ctx
+
   listImages: publicProcedure.input(ListInput).query(async (opts) => {
     const { input, ctx } = opts as ProcArgs<z.infer<typeof ListInput>>;
     const BUCKET = requireBucket();
