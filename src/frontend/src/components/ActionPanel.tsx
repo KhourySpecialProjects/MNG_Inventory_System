@@ -42,6 +42,7 @@ export default function ActionPanel({
   selectedImageFile,
   imagePreview,
   setShowSuccess,
+  damageReports
 }: any) {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -70,7 +71,7 @@ export default function ActionPanel({
       setDeleteOpen(false);
       navigate(`/teams/to-review/${teamId}`);
     } catch (err) {
-      console.error('❌ Delete error:', err);
+      console.error('Delete error:', err);
       alert('Failed to delete item');
     } finally {
       setDeleting(false);
@@ -79,6 +80,13 @@ export default function ActionPanel({
 
   const handleSave = async (isQuickUpdate = false) => {
     try {
+
+      // Make sure an image is present in order to save
+      if (isCreateMode && !imagePreview) {
+        alert("Please add an image before creating the item");
+        return;
+      }
+
       const userId = await getUserId();
 
       let finalImage = imagePreview;
@@ -111,7 +119,7 @@ export default function ActionPanel({
         status: editedProduct.status || 'To Review',
         notes: editedProduct.notes || '',
         parent: editedProduct.parent?.itemId || null,
-        damageReports: editedProduct.damageReports || [],
+        damageReports: damageReports || [],
       };
 
       if (isCreateMode) {
@@ -147,7 +155,7 @@ export default function ActionPanel({
         }
       }
     } catch (err) {
-      console.error('❌ Save error:', err);
+      console.error('Save error:', err);
       alert('Failed to save item');
     }
   };

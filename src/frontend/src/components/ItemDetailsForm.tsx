@@ -7,12 +7,15 @@ import {
   Typography,
   IconButton,
   Tooltip,
-  FormControl,
-  Select,
-  MenuItem,
+  Button,
+  ButtonGroup,
   Box,
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ReportProblemIcon from "@mui/icons-material/ReportProblem";
+import WarningIcon from "@mui/icons-material/Warning";
+import PendingIcon from "@mui/icons-material/Pending";
 
 interface ItemDetailsFormProps {
   editedProduct: any;
@@ -23,12 +26,12 @@ interface ItemDetailsFormProps {
 }
 
 export default function ItemDetailsForm({
-  editedProduct,
-  setEditedProduct,
-  itemsList,
-  isEditMode,
-  alwaysEditableFields = [],
-}: ItemDetailsFormProps) {
+                                          editedProduct,
+                                          setEditedProduct,
+                                          itemsList,
+                                          isEditMode,
+                                          alwaysEditableFields = [],
+                                        }: ItemDetailsFormProps) {
   const handleChange = (field: string, value: any) => {
     setEditedProduct({ ...editedProduct, [field]: value });
   };
@@ -41,13 +44,20 @@ export default function ItemDetailsForm({
 
   const alwaysEditable = (field: string) => alwaysEditableFields.includes(field);
 
+  const statuses = [
+    { value: 'Incomplete', label: 'Incomplete', icon: <PendingIcon />, color: '#9e9e9e' },
+    { value: 'Found', label: 'Complete', icon: <CheckCircleIcon />, color: '#4caf50' },
+    { value: 'Damaged', label: 'Damaged', icon: <ReportProblemIcon />, color: '#f44336' },
+    { value: 'Missing', label: 'Shortage', icon: <WarningIcon />, color: '#ff9800' },
+  ];
+
   return (
     <Stack spacing={2} sx={{ mb: 2 }}>
       {/* ========== Product Name / Item Name ========== */}
       {isEditMode ? (
         <>
           <TextField
-            label="Product Name"
+            label="Display Name"
             size="small"
             fullWidth
             value={editedProduct.productName || ""}
@@ -55,7 +65,7 @@ export default function ItemDetailsForm({
             required
           />
           <TextField
-            label="Item Name"
+            label="Army Nomenclature"
             size="small"
             fullWidth
             value={editedProduct.actualName || ""}
@@ -65,12 +75,22 @@ export default function ItemDetailsForm({
         </>
       ) : (
         <>
-          <Typography variant="subtitle2" color="text.secondary">
-            Item Name
-          </Typography>
-          <Typography variant="body1" fontWeight={600}>
-            {editedProduct.actualName || "-"}
-          </Typography>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Display Name
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {editedProduct.productName || "-"}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Army Nomenclature
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {editedProduct.actualName || "-"}
+            </Typography>
+          </Box>
         </>
       )}
 
@@ -125,7 +145,7 @@ export default function ItemDetailsForm({
       )}
 
       {/* ========== Description ========== */}
-      {isEditMode ? (
+      {(isEditMode || alwaysEditable("description")) ? (
         <TextField
           label="Description"
           size="small"
@@ -134,7 +154,7 @@ export default function ItemDetailsForm({
           rows={3}
           value={editedProduct.description || ""}
           onChange={(e) => handleChange("description", e.target.value)}
-          required
+          required={isEditMode}
         />
       ) : (
         <Box>
@@ -170,23 +190,37 @@ export default function ItemDetailsForm({
         )
       )}
 
-      {/* ========== Status (always editable) ========== */}
+      {/* ========== Status Buttons (always visible for existing items) ========== */}
       {(isEditMode || alwaysEditable("status")) && (
         <Box>
-          <Typography variant="subtitle2" fontWeight="bold" color="text.secondary">
+          <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
             Status
           </Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={editedProduct.status}
-              onChange={(e) => handleChange("status", e.target.value)}
-            >
-              <MenuItem value="To Review">To Review</MenuItem>
-              <MenuItem value="Completed">Completed</MenuItem>
-              <MenuItem value="Shortages">Shortages</MenuItem>
-              <MenuItem value="Damaged">Damaged</MenuItem>
-            </Select>
-          </FormControl>
+          <ButtonGroup fullWidth orientation="vertical" sx={{ gap: 1 }}>
+            {statuses.map((s) => (
+              <Button
+                key={s.value}
+                onClick={() => handleChange("status", s.value)}
+                variant={editedProduct.status === s.value ? 'contained' : 'outlined'}
+                startIcon={s.icon}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: editedProduct.status === s.value ? 700 : 500,
+                  bgcolor: editedProduct.status === s.value ? s.color : 'transparent',
+                  color: editedProduct.status === s.value ? 'white' : s.color,
+                  borderColor: s.color,
+                  justifyContent: 'flex-start',
+                  py: 1.5,
+                  '&:hover': {
+                    bgcolor: editedProduct.status === s.value ? s.color : `${s.color}20`,
+                    borderColor: s.color,
+                  },
+                }}
+              >
+                {s.label}
+              </Button>
+            ))}
+          </ButtonGroup>
         </Box>
       )}
 
@@ -206,3 +240,4 @@ export default function ItemDetailsForm({
     </Stack>
   );
 }
+

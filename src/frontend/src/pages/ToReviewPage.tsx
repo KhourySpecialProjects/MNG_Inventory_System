@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress, Container, Typography } from '@mui/material';
-import { useTheme, alpha } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { useParams } from 'react-router-dom';
 import ItemListComponent, { ItemListItem } from '../components/ItemListComponent';
 import NavBar from '../components/NavBar';
@@ -18,7 +18,7 @@ export default function ToReviewPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchIncompleteItems = async () => {
@@ -102,16 +102,6 @@ export default function ToReviewPage() {
     fetchIncompleteItems();
   }, [teamId]);
 
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === "string") {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -121,7 +111,8 @@ export default function ToReviewPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: theme.palette.background.default }}>
+    <Box
+      sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: theme.palette.background.default }}>
       <TopBar
         isLoggedIn={true}
         profileImage={profileImage}
@@ -132,7 +123,7 @@ export default function ToReviewPage() {
         sx={{
           flex: 1,
           width: '100%',
-          bgcolor: theme.palette.background.default,
+          bgcolor: theme.palette.background.default
         }}
       >
         <Box
@@ -140,7 +131,7 @@ export default function ToReviewPage() {
             bgcolor: theme.palette.background.paper,
             borderBottom: 1,
             borderColor: theme.palette.divider,
-            py: 1.5,
+            py: 1.5
           }}
         >
           <Container maxWidth="md">
@@ -149,7 +140,7 @@ export default function ToReviewPage() {
               sx={{
                 fontWeight: 550,
                 color: theme.palette.text.primary,
-                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                fontSize: { xs: '1.25rem', sm: '1.5rem' }
               }}
             >
               Inventory To Review ({items.length})
@@ -175,7 +166,7 @@ export default function ToReviewPage() {
         onClose={() => setProfileOpen(false)}
       />
 
-      <Box sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
+      <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
         <NavBar />
       </Box>
     </Box>
