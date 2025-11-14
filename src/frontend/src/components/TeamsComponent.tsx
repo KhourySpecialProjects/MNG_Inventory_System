@@ -9,19 +9,20 @@ import {
   Menu,
   MenuItem,
   Divider,
-} from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { MouseEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+  Tooltip,
+} from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { MouseEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export interface TeamIconProps {
   id: string;
   name: string;
   description?: string;
-  onInvite?: (workspaceName: string) => void;
-  onRemove?: (workspaceName: string) => void;
-  onDelete?: (workspaceName: string) => void;
+  onInvite?: (teamName: string) => void;
+  onRemove?: (teamName: string) => void;
+  onDelete?: (teamName: string) => void;
 }
 
 export default function TeamIcon({
@@ -32,6 +33,7 @@ export default function TeamIcon({
   onRemove,
   onDelete,
 }: TeamIconProps) {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -41,31 +43,33 @@ export default function TeamIcon({
     setAnchorEl(e.currentTarget);
   };
   const handleClose = () => setAnchorEl(null);
-  const handleOpenTeam = () => navigate(`/teams/${id}`);
+  const handleOpenTeam = () => navigate(`/teams/home/${id}`);
 
-  const blue = '#283996';
-  const borderColor = alpha('#000', 0.08);
+  const blue = theme.palette.primary.main;
+  const borderColor = alpha(theme.palette.text.primary, 0.1);
+  const hoverShadow = alpha(theme.palette.primary.main, 0.25);
 
   return (
     <>
       <Card
         sx={{
+          position: "relative",
           borderRadius: 3,
-          bgcolor: 'white',
+          bgcolor: theme.palette.background.paper,
           border: `1px solid ${borderColor}`,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          transition: 'all 0.25s ease',
-          cursor: 'pointer',
-          '&:hover': {
-            transform: 'translateY(-5px)',
-            borderColor: blue,
-            boxShadow: '0 8px 24px rgba(40,57,150,0.15)',
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          transition: "all 0.25s ease",
+          cursor: "pointer",
+          "&:hover": {
+            transform: "translateY(-5px)",
+            borderColor: theme.palette.primary.main,
+            boxShadow: `0 8px 24px ${hoverShadow}`,
           },
-          height: 220,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
+          //height: 220,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
           p: 2,
         }}
       >
@@ -94,30 +98,36 @@ export default function TeamIcon({
               >
                 {getInitials(name)}
               </Avatar>
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: 800,
-                  color: '#1a1a1a',
-                  textAlign: 'center',
-                  maxWidth: 180,
-                }}
-                noWrap
-              >
-                {name}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#6b6b6b',
-                  fontSize: 13,
-                  textAlign: 'center',
-                  maxWidth: 200,
-                }}
-                noWrap
-              >
-                {description || 'No description'}
-              </Typography>
+
+              <Tooltip title={name}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 800,
+                    color: theme.palette.text.primary,
+                    textAlign: "center",
+                    maxWidth: 180,
+                  }}
+                  noWrap
+                >
+                  {name}
+                </Typography>
+              </Tooltip>
+
+              <Tooltip title={description || "No description"}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    fontSize: 13,
+                    textAlign: "center",
+                    maxWidth: 200,
+                  }}
+                  noWrap
+                >
+                  {description || "No description"}
+                </Typography>
+              </Tooltip>
             </Stack>
           </CardContent>
         </CardActionArea>
@@ -129,8 +139,8 @@ export default function TeamIcon({
             position: 'absolute',
             top: 10,
             right: 10,
-            color: '#666',
-            '&:hover': { color: blue },
+            color: theme.palette.text.secondary,
+            "&:hover": { color: theme.palette.primary.main },
           }}
         >
           <MoreVertIcon fontSize="small" />

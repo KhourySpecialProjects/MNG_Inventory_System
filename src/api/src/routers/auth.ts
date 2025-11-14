@@ -24,11 +24,13 @@ import {
 } from '../helpers/cookies';
 import { decodeJwtNoVerify } from '../helpers/authUtils';
 import { ensureUserRecord } from '../helpers/awsUsers';
+import { loadConfig } from '../process';
 
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
-const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
-// export const SES_FROM_ADDRESS = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
-const APP_SIGNIN_URL = process.env.APP_SIGNIN_URL || 'https://d2cktegyq4qcfk.cloudfront.net/signin';
+const config = loadConfig();
+export const USER_POOL_ID = config.COGNITO_USER_POOL_ID;
+export const USER_POOL_CLIENT_ID = config.COGNITO_CLIENT_ID;
+export const SES_FROM_ADDRESS = config.SES_FROM;
+export const APP_SIGNIN_URL = config.APP_SIGNIN_URL || `${config.WEB_URL}/signin`;
 
 const verifier = CognitoJwtVerifier.create({
   userPoolId: USER_POOL_ID,
@@ -89,7 +91,7 @@ const inviteUser = async (params: { email: string }) => {
 const signIn = async (params: { email: string; password: string }) => {
   const command = new AdminInitiateAuthCommand({
     UserPoolId: USER_POOL_ID,
-    ClientId: USER_POOL_CLIENT_ID, // must be your current no-secret client
+    ClientId: USER_POOL_CLIENT_ID,
     AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
     AuthParameters: { USERNAME: params.email, PASSWORD: params.password },
   });
@@ -134,7 +136,7 @@ export const authRouter = router({
     .input(
       z.object({
         email: z.string(),
-        password: z.string().min(12),
+        password: z.string().min(10),
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -328,129 +330,166 @@ export const authRouter = router({
         throw new Error(`Challenge response failed: ${error.message}`);
       }
     }),
-  me: publicProcedure.query(async ({ ctx }) => {
-    const cookies = parseCookiesFromCtx(ctx);
-    const accessToken = cookies[COOKIE_ACCESS];
+// ------------------------------
+// me()
+// ------------------------------
+me: publicProcedure.query(async ({ ctx }) => {
+  const cookies = parseCookiesFromCtx(ctx);
+  const accessToken = cookies[COOKIE_ACCESS];
 
     if (!accessToken) {
       return { authenticated: false, message: 'No session' };
     }
 
+  // 1. VERIFY TOKEN
+  let decoded;
+  try {
+    decoded = await verifier.verify(accessToken);
+  } catch (err: any) {
+    console.error("me() token verification error:", err);
+    return { authenticated: false, message: "Invalid session" };
+  }
+
+  const userId = decoded.sub;
+
+  // 2. LOOK UP USER IN DYNAMODB
+  const { doc } = await import("../aws");
+  const { GetCommand, PutCommand } = await import("@aws-sdk/lib-dynamodb");
+  const TABLE = config.TABLE_NAME;
+
+  let user: any = null;
+
+  try {
+    const res = await doc.send(
+      new GetCommand({
+        TableName: TABLE,
+        Key: { PK: `USER#${userId}`, SK: "METADATA" },
+      })
+    );
+    user = res.Item || null;
+  } catch (err) {
+    console.error("me() DynamoDB Get error:", err);
+  }
+
+  // 3. CREATE USER IF MISSING
+  if (!user) {
+    const now = new Date().toISOString();
+    const username = "user-" + Math.random().toString(36).substring(2, 8);
+    const accountId = crypto.randomUUID();
+
+    user = {
+      PK: `USER#${userId}`,
+      SK: "METADATA",
+      sub: userId,
+      username,
+      name: username,
+      role: "User",
+      accountId,
+      createdAt: now,
+      updatedAt: now,
+      GSI6PK: `UID#${userId}`,
+      GSI6SK: `USER#${userId}`,
+    };
+
     try {
-      const decoded = await verifier.verify(accessToken);
-      const userId = decoded.sub;
-
-      // Try to extract email safely from all possible Cognito token fields
-      let email: string | undefined =
-        typeof decoded.email === 'string'
-          ? decoded.email
-          : typeof decoded['email'] === 'string'
-            ? decoded['email']
-            : typeof decoded['cognito:username'] === 'string' &&
-                decoded['cognito:username'].includes('@')
-              ? decoded['cognito:username']
-              : undefined;
-
-      // If still missing, fetch it directly from Cognito
-      if (!email) {
-        console.warn('⚠️ No email claim in access token; fetching from Cognito...');
-        const user = await cognitoClient.send(
-          new AdminGetUserCommand({
-            UserPoolId: USER_POOL_ID,
-            Username: userId,
-          }),
-        );
-        const emailAttr = user.UserAttributes?.find((a) => a.Name === 'email');
-        email = emailAttr?.Value ?? `unknown-${userId}@example.com`;
-      }
-
-      // Build a username from email or fallback
-      const username =
-        decoded['cognito:username'] || (email ? email.split('@')[0] : `user-${userId}`);
-
-      // Ensure user record exists in Dynamo
-      const userRecord = await ensureUserRecord({
-        sub: userId,
-        email,
-      });
-
-      return {
-        authenticated: true,
-        message: 'User session verified',
-        userId: userRecord.sub,
-        email: userRecord.email,
-        username,
-        accountId: userRecord.accountId,
-      };
+      await doc.send(
+        new PutCommand({
+          TableName: TABLE,
+          Item: user,
+        })
+      );
+      console.log("Created new DynamoDB user record:", user);
     } catch (err) {
-      console.error('me() error:', err);
-      return { authenticated: false, message: 'Invalid session token' };
-    }
-  }),
-
-  refresh: publicProcedure.mutation(async ({ ctx }) => {
-    try {
-      const cookies = parseCookiesFromCtx(ctx);
-      const refreshToken = cookies['auth_refresh'];
-
-      if (!refreshToken) {
-        return { refreshed: false, message: 'No refresh token' };
-      }
-
-      // call Cognito REFRESH_TOKEN_AUTH
-      const cmd = new InitiateAuthCommand({
-        ClientId: USER_POOL_CLIENT_ID,
-        AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
-        AuthParameters: {
-          REFRESH_TOKEN: refreshToken,
-        },
-      });
-
-      const result = await cognitoClient.send(cmd);
-
-      if (!result.AuthenticationResult) {
-        return { refreshed: false, message: 'Token refresh failed' };
-      }
-
-      const headers = setAuthCookies(ctx.res, {
-        AccessToken: result.AuthenticationResult.AccessToken ?? null,
-        IdToken: result.AuthenticationResult.IdToken ?? null,
-        ExpiresIn: result.AuthenticationResult.ExpiresIn ?? null,
-      });
-      emitCookiesToLambda(ctx, headers);
-
-      const newAccess = result.AuthenticationResult.AccessToken ?? null;
-      const newId = result.AuthenticationResult.IdToken ?? null;
-
-      // decode new token so we know who's calling
-      const decoded = decodeJwtNoVerify(newId) || decodeJwtNoVerify(newAccess);
-
-      if (!decoded || !decoded.sub) {
-        return {
-          refreshed: false,
-          message: 'Token refresh succeeded but could not decode user identity',
-        };
-      }
-
-      // upsert/get user in Dynamo
-      const userRecord = await ensureUserRecord({
-        sub: decoded.sub,
-        email: decoded.email ?? 'unknown@example.com',
-      });
-
-      // respond
+      console.error("FAILED TO CREATE USER RECORD:", err);
       return {
-        refreshed: true,
-        expiresIn: result.AuthenticationResult.ExpiresIn,
-        sub: userRecord.sub,
-        email: userRecord.email,
-        accountId: userRecord.accountId,
+        authenticated: false,
+        message: "Could not create user record",
       };
-    } catch (err) {
-      console.error('refresh error:', err);
-      return { refreshed: false, message: 'Token refresh failed' };
     }
-  }),
+  }
+
+  // 4. RETURN PROFILE (NOW INCLUDES accountId)
+  return {
+    authenticated: true,
+    userId,
+    name: user.name,
+    username: user.username,
+    role: user.role,
+    accountId: user.accountId,
+  };
+}),
+
+
+// ------------------------------
+// refresh()
+// ------------------------------
+refresh: publicProcedure.mutation(async ({ ctx }) => {
+  try {
+    const cookies = parseCookiesFromCtx(ctx);
+    const refreshToken = cookies["auth_refresh"];
+
+    if (!refreshToken) {
+      return { refreshed: false, message: "No refresh token" };
+    }
+
+    // 1. REQUEST NEW TOKENS FROM COGNITO
+    const cmd = new InitiateAuthCommand({
+      ClientId: USER_POOL_CLIENT_ID,
+      AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
+      AuthParameters: {
+        REFRESH_TOKEN: refreshToken,
+      },
+    });
+
+    const result = await cognitoClient.send(cmd);
+
+    if (!result.AuthenticationResult) {
+      return { refreshed: false, message: "Token refresh failed" };
+    }
+
+    // 2. SET NEW COOKIES
+    const headers = setAuthCookies(ctx.res, {
+      AccessToken: result.AuthenticationResult.AccessToken ?? null,
+      IdToken: result.AuthenticationResult.IdToken ?? null,
+      ExpiresIn: result.AuthenticationResult.ExpiresIn ?? null,
+    });
+    emitCookiesToLambda(ctx, headers);
+
+    // 3. DECODE NEW TOKENS
+    const newAccess = result.AuthenticationResult.AccessToken;
+    const newId = result.AuthenticationResult.IdToken;
+
+    const decoded =
+      decodeJwtNoVerify(newId) ||
+      decodeJwtNoVerify(newAccess);
+
+    if (!decoded || !decoded.sub) {
+      return {
+        refreshed: false,
+        message: "Token refresh succeeded but missing userId (sub)",
+      };
+    }
+
+    const userId = decoded.sub;
+
+    // 4. CREATE OR FIX USER RECORD (ensureUserRecord always returns username + accountId)
+    const record = await ensureUserRecord({ sub: userId });
+
+    return {
+      refreshed: true,
+      userId,
+      username: record.username,
+      accountId: record.accountId,
+      authenticated: true,
+      expiresIn: result.AuthenticationResult.ExpiresIn,
+    };
+  } catch (err) {
+    console.error("refresh error:", err);
+    return { refreshed: false, message: "Token refresh failed" };
+  }
+}),
+
+
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
     const headers = clearAuthCookies(ctx.res);

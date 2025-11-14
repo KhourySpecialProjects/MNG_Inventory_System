@@ -1,64 +1,173 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import ProductDisplay from '../src/pages/ProductReviewPage';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ProductReviewPage from "../src/pages/ProductReviewPage";
+import * as itemsApi from "../src/api/items";
 
-const mockProduct = {
-  productName: 'Test Laptop',
-  actualName: 'Test Brand X1',
-  level: 'A',
-  description: 'Test description',
-  imageLink: 'https://example.com/image.png',
-  serialNumber: 'SN123',
-  AuthQuantity: 5,
+vi.mock("../src/api/items");
+
+const renderWithParams = (itemId = "1", teamId = "team-123") => {
+  window.history.pushState({}, '', `/teams/${teamId}/items/${itemId}`);
+  return render(
+    <BrowserRouter>
+      <Routes>
+        <Route path="/teams/:teamId/items/:itemId" element={<ProductReviewPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
-// Mock fetch globally
-global.fetch = vi.fn();
-
-describe('ProductDisplay', () => {
+describe("ProductReviewPage", () => {
   beforeEach(() => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ result: { data: mockProduct } }),
-    } as Response);
-  });
+    vi.clearAllMocks();
 
-  it('shows loading state initially', () => {
-    render(<ProductDisplay />);
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
-  });
-
-  it('renders product card after loading', async () => {
-    render(<ProductDisplay />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Laptop')).toBeInTheDocument();
+    vi.mocked(itemsApi.getItems).mockResolvedValue({
+      success: true,
+      items: [
+        { itemId: "1", name: "Rifle #1", serialNumber: "R001" },
+        { itemId: "2", name: "Pistol #1", serialNumber: "P001" },
+      ],
     });
 
-    expect(screen.getByPlaceholderText('Add notes here...')).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /complete/i })).toBeInTheDocument();
+    vi.mocked(itemsApi.getItem).mockResolvedValue({
+      success: true,
+      item: {
+        itemId: "1",
+        name: "Rifle #1",
+        actualName: "M4 Carbine",
+        description: "Standard issue",
+        serialNumber: "R001",
+        quantity: 1,
+        status: "Available",
+        children: [],
+      },
+    });
   });
 
-  it('allows editing notes', async () => {
-    render(<ProductDisplay />);
-
-    const notesField = await screen.findByPlaceholderText('Add notes here...');
-    fireEvent.change(notesField, { target: { value: 'Test notes' } });
-
-    expect(notesField).toHaveValue('Test notes');
+  it("renders loading state initially", () => {
+    renderWithParams("1", "team-123");
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
-  it('allows changing status', async () => {
-    render(<ProductDisplay />);
+  it("loads and displays existing item in view mode", async () => {
+    renderWithParams("1", "team-123");
 
-    const statusDropdown = await screen.findByRole('combobox');
-    fireEvent.mouseDown(statusDropdown);
+    await waitFor(() => {
+      expect(screen.getByText("Rifle #1")).toBeInTheDocument();
+    });
+  });
 
-    const damagedOption = await screen.findByText('Damaged');
-    fireEvent.click(damagedOption);
+  it("renders create mode when itemId is 'new'", async () => {
+    renderWithParams("new", "team-123");
 
-    expect(statusDropdown).toHaveTextContent('Damaged');
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Create Item/i })).toBeInTheDocument();
+    });
+  });
+
+  it("shows error alert when item fails to load", async () => {
+    vi.mocked(itemsApi.getItem).mockResolvedValueOnce({
+      success: false,
+      error: "Item not found",
+    });
+
+    renderWithParams("999", "team-123");
+
+    await waitFor(() => {
+      expect(screen.getByText("Item not found")).toBeInTheDocument();
+    });
+  });
+
+  it("displays back button that navigates back", async () => {
+    renderWithParams("1", "team-123");
+
+    await waitFor(() => {
+      expect(screen.getByText("Rifle #1")).toBeInTheDocument();
+    });
+
+    const backButton = screen.getByRole("button", { name: /back/i });
+    expect(backButton).toBeInTheDocument();
+  });
+
+  it("shows DamageReportsSection only when status is Damaged", async () => {
+    vi.mocked(itemsApi.getItem).mockResolvedValueOnce({
+      success: true,
+      item: {
+        itemId: "1",
+        name: "Damaged Rifle",
+        status: "Damaged",
+        damageReports: ["Scratched barrel"],
+      },
+    });
+
+    renderWithParams("1", "team-123");
+
+    await waitFor(() => {
+      expect(screen.getByText(/Damage Reports/i)).toBeInTheDocument();
+    });
+  });
+
+  it("does not show DamageReportsSection when status is not Damaged", async () => {
+    renderWithParams("1", "team-123");
+
+    await waitFor(() => {
+      expect(screen.getByText("Rifle #1")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Damage Reports/i)).not.toBeInTheDocument();
+  });
+
+  it("displays ChildrenTree when item has children", async () => {
+    vi.mocked(itemsApi.getItem).mockResolvedValueOnce({
+      success: true,
+      item: {
+        itemId: "1",
+        name: "Kit",
+        children: [],
+      },
+    });
+
+    vi.mocked(itemsApi.getItems).mockResolvedValue({
+      success: true,
+      items: [
+        { itemId: "1", name: "Kit", serialNumber: "K001" },
+        { itemId: "2", name: "Part 1", serialNumber: "P001", parent: "1" },
+        { itemId: "3", name: "Part 2", serialNumber: "P002", parent: "1" },
+        { itemId: "4", name: "Other Item", serialNumber: "O001" },
+      ],
+    });
+
+    renderWithParams("1", "team-123");
+
+    await waitFor(() => {
+      expect(screen.getByText(/Kit Contents/i)).toBeInTheDocument();
+    });
+  });
+
+  it("excludes current item from itemsList for parent selection", async () => {
+    const getItemsSpy = vi.mocked(itemsApi.getItems);
+
+    renderWithParams("1", "team-123");
+
+    await waitFor(() => {
+      expect(getItemsSpy).toHaveBeenCalled();
+    });
+  });
+
+  it("maps API 'name' field to 'productName' for component", async () => {
+    vi.mocked(itemsApi.getItem).mockResolvedValueOnce({
+      success: true,
+      item: {
+        itemId: "1",
+        name: "M4 Carbine",
+        actualName: "M4A1",
+      },
+    });
+
+    renderWithParams("1", "team-123");
+
+    await waitFor(() => {
+      expect(screen.getByText("M4 Carbine")).toBeInTheDocument();
+    });
   });
 });

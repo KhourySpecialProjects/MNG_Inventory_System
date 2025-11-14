@@ -6,22 +6,49 @@ import {
   QueryCommand,
   UpdateCommand,
   DeleteCommand,
-  BatchWriteCommand,
-} from '@aws-sdk/lib-dynamodb';
-import crypto from 'crypto';
-import { doc } from '../aws';
+} from "@aws-sdk/lib-dynamodb";
+import crypto from "crypto";
+import { doc } from "../aws";
+import { loadConfig } from "../process"; 
 
-const TABLE_NAME = process.env.DDB_TABLE_NAME || 'mng-dev-data';
+const config = loadConfig();
+const TABLE_NAME = config.TABLE_NAME;
+
 
 export type Permission =
-  | 'team.create'
-  | 'team.add_member'
-  | 'team.remove_member'
-  | 'workspace.create'
-  | 'workspace.delete'
-  | 'role.add'
-  | 'role.modify'
-  | 'role.remove';
+  // Team management
+  | "team.create"
+  | "team.add_member"
+  | "team.remove_member"
+  | "team.view"
+  // Workspace management
+  | "workspace.create"
+  | "workspace.delete"
+  | "workspace.view"
+  // Role management
+  | "role.add"
+  | "role.modify"
+  | "role.remove"
+  | "role.view"
+  // Item management
+  | "item.create"
+  | "item.view"
+  | "item.update"
+  | "item.delete"
+  | "item.upload_image"
+  | "item.manage_damage"
+  // Damage report handling
+  | "damage.create"
+  | "damage.update"
+  | "damage.view"
+  | "damage.delete"
+  // Audit / logs
+  | "log.view"
+  | "log.export"
+  // S3-related
+  | "s3.upload"
+  | "s3.delete"
+  | "s3.view";
 
 export interface RoleEntity {
   PK: `ROLE#${string}`;
@@ -46,10 +73,6 @@ const updateRoleInput = z.object({
   description: z.string().max(280).optional(),
   permissions: z.array(z.string().min(1)).min(1).optional(),
 });
-
-/* =============================================================================
-   Helpers
-============================================================================= */
 
 function id(n = 10): string {
   return crypto
@@ -94,37 +117,62 @@ async function getRoleByName(name: string): Promise<RoleEntity | null> {
   return getRole(roleId);
 }
 
-/* =============================================================================
-   Default Roles
-   - Owner: everything (includes role management)
-   - Manager: add/remove members, create workspaces
-   - Member: no admin actions
-============================================================================= */
-
-export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'permissions'>> = [
+export const DEFAULT_ROLES: Array<
+  Pick<RoleEntity, "name" | "description" | "permissions">
+> = [
   {
-    name: 'Owner',
-    description: 'Full control over the team and its workspaces.',
+    name: "Owner",
+    description: "Full administrative control over the system.",
     permissions: [
-      'team.create',
-      'team.add_member',
-      'team.remove_member',
-      'workspace.create',
-      'workspace.delete',
-      'role.add',
-      'role.modify',
-      'role.remove',
+      // Core admin
+      "team.create",
+      "team.add_member",
+      "team.remove_member",
+      "workspace.create",
+      "workspace.delete",
+      "role.add",
+      "role.modify",
+      "role.remove",
+      "role.view",
+      // Item admin
+      "item.create",
+      "item.update",
+      "item.delete",
+      "item.view",
+      "item.upload_image",
+      "item.manage_damage",
+      // Damage reports
+      "damage.create",
+      "damage.update",
+      "damage.delete",
+      "damage.view",
+      // S3 and logs
+      "s3.upload",
+      "s3.delete",
+      "s3.view",
+      "log.view",
+      "log.export",
     ],
   },
   {
-    name: 'Manager',
-    description: 'Manage members and create workspaces.',
-    permissions: ['team.add_member', 'team.remove_member', 'workspace.create'],
+    name: "Manager",
+    description: "Manage members, items, and reports.",
+    permissions: [
+      "team.add_member",
+      "team.remove_member",
+      "workspace.create",
+      "item.create",
+      "item.view",
+      "item.update",
+      "damage.create",
+      "damage.view",
+      "s3.upload",
+    ],
   },
   {
-    name: 'Member',
-    description: 'Basic access without administrative abilities.',
-    permissions: [],
+    name: "Member",
+    description: "Limited access to view and report items.",
+    permissions: ["item.view", "damage.create", "damage.view"],
   },
 ];
 

@@ -1,10 +1,17 @@
-import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
-import { GetCommand, PutCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
-import crypto from 'crypto';
-import { doc } from '../aws';
+import { z } from "zod";
+import { router, publicProcedure } from "./trpc";
+import {
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  DeleteCommand,
+} from "@aws-sdk/lib-dynamodb";
+import crypto from "crypto";
+import { doc } from "../aws";
+import { loadConfig } from "../process";
 
-const TABLE_NAME = process.env.DDB_TABLE_NAME || 'mng-dev-data';
+const config = loadConfig();
+const TABLE_NAME = config.TABLE_NAME;
 
 function newId(n = 10): string {
   return crypto
@@ -25,8 +32,7 @@ async function hasPermission(userId: string, teamId: string, permission: string)
     const member = res.Item as { role?: string } | undefined;
     if (!member) return false;
 
-    // ✅ Fast-path for owner
-    if (member.role?.toLowerCase() === 'owner') return true;
+    if (member.role?.toLowerCase() === "owner") return true;
 
     const roleRes = await doc.send(
       new GetCommand({
@@ -151,41 +157,35 @@ export const teamspaceRouter = router({
       }
     }),
 
-  /** ADD USER TO TEAMSPACE */
-  addUserTeamspace: publicProcedure
+    /** ADD USER TO TEAMSPACE */
+    addUserTeamspace: publicProcedure
     .input(
       z.object({
         userId: z.string().min(1),
-        memberEmail: z.string(),
+        memberUsername: z.string().min(1),
         inviteWorkspaceId: z.string().min(1),
       }),
     )
     .mutation(async ({ input }) => {
       try {
-        const allowed = await hasPermission(
-          input.userId,
-          input.inviteWorkspaceId,
-          'team.add_member',
-        );
-        if (!allowed) {
-          return { success: false, error: 'Not authorized to add members.' };
-        }
-
+        // lookup user by username using GSI_UsersByUsername
         const q = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
-            IndexName: 'GSI_UsersByEmail',
-            KeyConditionExpression: 'email = :e',
-            ExpressionAttributeValues: { ':e': input.memberEmail },
-          }),
+            IndexName: "GSI_UsersByUsername",
+            KeyConditionExpression: "username = :u",
+            ExpressionAttributeValues: { ":u": input.memberUsername.trim() },
+            Limit: 1,
+          })
         );
 
         const user = q.Items?.[0];
         if (!user) {
-          return { success: false, error: 'Target user not found.' };
+          return { success: false, error: "User not found by username." };
         }
 
         const now = new Date().toISOString();
+
         const member = {
           PK: `TEAM#${input.inviteWorkspaceId}`,
           SK: `MEMBER#${user.accountId}`,
@@ -198,64 +198,77 @@ export const teamspaceRouter = router({
           GSI1SK: `TEAM#${input.inviteWorkspaceId}`,
         };
 
-        await doc.send(new PutCommand({ TableName: TABLE_NAME, Item: member }));
-        return { success: true, added: user.email };
+        await doc.send(
+          new PutCommand({ TableName: TABLE_NAME, Item: member })
+        );
+
+        return { success: true, added: user.username };
       } catch (err: any) {
-        console.error('❌ addUserTeamspace error:', err);
-        return { success: false, error: err.message || 'Failed to add member.' };
+        console.error("❌ addUserTeamspace error:", err);
+        return {
+          success: false,
+          error: err.message || "Failed to add member.",
+        };
       }
     }),
 
   /** REMOVE USER FROM TEAMSPACE */
   removeUserTeamspace: publicProcedure
-    .input(
-      z.object({
-        userId: z.string().min(1),
-        memberEmail: z.string(),
-        inviteWorkspaceId: z.string().min(1),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      try {
-        const allowed = await hasPermission(
-          input.userId,
-          input.inviteWorkspaceId,
-          'team.remove_member',
-        );
-        if (!allowed) {
-          return { success: false, error: 'Not authorized to remove members.' };
-        }
-
-        const q = await doc.send(
-          new QueryCommand({
-            TableName: TABLE_NAME,
-            IndexName: 'GSI_UsersByEmail',
-            KeyConditionExpression: 'email = :e',
-            ExpressionAttributeValues: { ':e': input.memberEmail },
-          }),
-        );
-
-        const target = q.Items?.[0];
-        if (!target) {
-          return { success: false, error: 'User not found.' };
-        }
-
-        await doc.send(
-          new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: {
-              PK: `TEAM#${input.inviteWorkspaceId}`,
-              SK: `MEMBER#${target.accountId}`,
-            },
-          }),
-        );
-
-        return { success: true, removed: target.email };
-      } catch (err: any) {
-        console.error('❌ removeUserTeamspace error:', err);
-        return { success: false, error: err.message || 'Failed to remove member.' };
+  .input(
+    z.object({
+      userId: z.string().min(1),
+      memberUsername: z.string().min(1),
+      inviteWorkspaceId: z.string().min(1),
+    })
+  )
+  .mutation(async ({ input }) => {
+    try {
+      const allowed = await hasPermission(
+        input.userId,
+        input.inviteWorkspaceId,
+        "team.remove_member"
+      );
+      if (!allowed) {
+        return { success: false, error: "Not authorized to remove members." };
       }
-    }),
+
+      // 🔍 lookup user by username
+      const q = await doc.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          IndexName: "GSI_UsersByUsername",
+          KeyConditionExpression: "username = :u",
+          ExpressionAttributeValues: { ":u": input.memberUsername.trim() },
+          Limit: 1,
+        })
+      );
+
+      const target = q.Items?.[0];
+      if (!target) {
+        return { success: false, error: "User not found by username." };
+      }
+
+      // Delete membership record
+      await doc.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TEAM#${input.inviteWorkspaceId}`,
+            SK: `MEMBER#${target.accountId}`,
+          },
+        })
+      );
+
+      return { success: true, removed: target.username };
+    } catch (err: any) {
+      console.error("❌ removeUserTeamspace error:", err);
+      return {
+        success: false,
+        error: err.message || "Failed to remove member.",
+      };
+    }
+  }),
+
 
   /** DELETE TEAMSPACE */
   deleteTeamspace: publicProcedure

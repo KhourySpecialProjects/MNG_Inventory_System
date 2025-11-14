@@ -1,39 +1,45 @@
-import React from 'react';
-import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import CheckBoxBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import OutboxIcon from '@mui/icons-material/Outbox';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from "react";
+import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
+import HomeIcon from "@mui/icons-material/Home";
+import CheckBoxBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+import OutboxIcon from "@mui/icons-material/Outbox";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 export default function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { teamId } = useParams<{ teamId: string }>();
 
   const currentValue =
-    location.pathname === '/teams/home/:teamId'
-      ? 'home'
-      : location.pathname === '/to-review'
-        ? 'toReview'
-        : location.pathname === '/reviewed'
-          ? 'reviewed'
-          : location.pathname === '/send'
-            ? 'send'
-            : '';
+    location.pathname.includes(`/teams/home/${teamId}`)
+      ? "home"
+      : location.pathname.includes(`/teams/to-review/${teamId}`)
+        ? "toReview"
+        : location.pathname.includes(`/teams/reviewed/${teamId}`)
+          ? "reviewed"
+          : location.pathname.includes(`/teams/send/${teamId}`)
+            ? "send"
+            : "";
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    if (!teamId) {
+      console.warn('No teamId available for navigation');
+      return;
+    }
+
     switch (newValue) {
-      case 'home':
-        navigate('/teams/home/:teamId');
+      case "home":
+        navigate(`/teams/home/${teamId}`);
         break;
-      case 'toReview':
-        navigate('/to-review');
+      case "toReview":
+        navigate(`/teams/to-review/${teamId}`);
         break;
-      case 'reviewed':
-        navigate('/reviewed');
+      case "reviewed":
+        navigate(`/teams/reviewed/${teamId}`);
         break;
-      case 'send':
-        navigate('/send');
+      case "export":
+        navigate(`/teams/export/${teamId}`);
         break;
       default:
         break;
@@ -62,9 +68,21 @@ export default function NavBar() {
         }}
       >
         <BottomNavigationAction label="Home" value="home" icon={<HomeIcon />} />
-        <BottomNavigationAction label="To Review" value="toReview" icon={<CheckBoxBlankIcon />} />
-        <BottomNavigationAction label="Reviewed" value="reviewed" icon={<CheckBoxIcon />} />
-        <BottomNavigationAction label="Send" value="send" icon={<OutboxIcon />} />
+        <BottomNavigationAction
+          label="To Review"
+          value="toReview"
+          icon={<CheckBoxBlankIcon />}
+        />
+        <BottomNavigationAction
+          label="Reviewed"
+          value="reviewed"
+          icon={<CheckBoxIcon />}
+        />
+        <BottomNavigationAction
+          label="Export"
+          value="export"
+          icon={<OutboxIcon />}
+        />
       </BottomNavigation>
     </Paper>
   );
