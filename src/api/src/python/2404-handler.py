@@ -243,7 +243,6 @@ def to_pdf_values(payload):
         v = payload.get(name)
         if isinstance(v, str):
             v = v.strip()
-        # Use placeholders only in _labels mode; otherwise N/A for blanks
         if v:
             return v
         return "N/A"
@@ -343,7 +342,7 @@ def lambda_handler(event, context):
     except Exception as e:
         return _resp(500, {"error": f"Template read failed: {e}"})
 
-    # build values 
+
     try:
         if pk:
             ddb_item = ddb_get(pk, sk)
@@ -364,7 +363,7 @@ def lambda_handler(event, context):
         # choose team/asset fallbacks
         team_id = payload.get("teamId") or unit or "UnknownTeam"
         asset_id = asset or payload.get("asset") or form_id
-        key = f"Documents/{team_id}/2404/{filename}"  # <-- per your spec
+        key = f"Documents/{team_id}/2404/{filename}"  
         try:
             s3_put_pdf(UPLOADS_BUCKET, key, pdf_bytes)
         except Exception as e:
