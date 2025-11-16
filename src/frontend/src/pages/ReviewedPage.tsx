@@ -40,7 +40,7 @@ export default function ReviewedPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReviewedItems = async () => {
@@ -134,16 +134,6 @@ export default function ReviewedPage() {
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
-  };
-
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === "string") {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   if (loading) {

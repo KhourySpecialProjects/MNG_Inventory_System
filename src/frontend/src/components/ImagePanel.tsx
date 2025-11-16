@@ -1,25 +1,17 @@
-import React, { useRef } from "react";
-import {
-  Box,
-  Button,
-  CardMedia,
-  Stack,
-  Avatar,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import { useTheme, alpha } from "@mui/material/styles";
-import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
+import React, { useRef } from 'react';
+import { Avatar, Box, Button, CardMedia, Stack, Tooltip, Typography } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import ImageNotSupportedIcon from '@mui/icons-material/ImageNotSupported';
 
 export default function ImagePanel({
-  imagePreview,
-  setImagePreview,
-  setSelectedImageFile,
-  isEditMode,
-  isCreateMode,
-}: {
+                                     imagePreview,
+                                     setImagePreview,
+                                     setSelectedImageFile,
+                                     isEditMode,
+                                     isCreateMode
+                                   }: {
   imagePreview: string;
   setImagePreview: (v: string) => void;
   setSelectedImageFile: (f: File | null) => void;
@@ -32,34 +24,48 @@ export default function ImagePanel({
   const handlePick = () => fileRef.current?.click();
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f && f.type.startsWith("image/")) {
-      const r = new FileReader();
-      r.onloadend = () => setImagePreview(r.result as string);
-      r.readAsDataURL(f);
-      setSelectedImageFile(f);
+    if (!f) return;
+
+    // Check file type
+    if (!f.type.startsWith('image/')) {
+      alert('Please select a valid image file');
+      return;
     }
+
+    // Check file size (3MB = 3 * 1024 * 1024 bytes)
+    const maxSize = 3 * 1024 * 1024;
+    if (f.size > maxSize) {
+      alert('Image is too large. Please select an image smaller than 3MB.');
+      return;
+    }
+
+    // Process the file
+    const r = new FileReader();
+    r.onloadend = () => setImagePreview(r.result as string);
+    r.readAsDataURL(f);
+    setSelectedImageFile(f);
   };
 
   return (
     <Stack spacing={1} alignItems="center">
       <Box
         sx={{
-          position: "relative",
-          bgcolor: theme.palette.mode === "light"
+          position: 'relative',
+          bgcolor: theme.palette.mode === 'light'
             ? alpha(theme.palette.background.paper, 0.6)
             : alpha(theme.palette.background.default, 0.6),
           borderRadius: 3,
           border: `1px dashed ${alpha(theme.palette.text.primary, 0.2)}`,
-          overflow: "hidden",
+          overflow: 'hidden',
           mb: 1,
-          aspectRatio: "1 / 1",
-          width: "100%",
+          aspectRatio: '1 / 1',
+          width: '100%',
           maxWidth: 500,
-          mx: "auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 300, // make the box taller for placeholder
+          mx: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 300 // make the box taller for placeholder
         }}
       >
         {imagePreview ? (
@@ -67,10 +73,10 @@ export default function ImagePanel({
             component="img"
             image={imagePreview}
             sx={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              transition: "0.2s",
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transition: '0.2s'
             }}
           />
         ) : (
@@ -84,7 +90,7 @@ export default function ImagePanel({
               <ImageNotSupportedIcon
                 sx={{
                   fontSize: 96, // bigger placeholder
-                  color: theme.palette.text.disabled,
+                  color: theme.palette.text.disabled
                 }}
               />
               <Typography variant="h6" color="text.secondary">
@@ -101,7 +107,7 @@ export default function ImagePanel({
             ref={fileRef}
             type="file"
             accept="image/*"
-            style={{ display: "none" }}
+            style={{ display: 'none' }}
             onChange={handleFile}
           />
           <Button
@@ -110,7 +116,7 @@ export default function ImagePanel({
             size="small"
             startIcon={<AddPhotoAlternateIcon />}
           >
-            {imagePreview ? "Change Image" : "Add Image"}
+            {imagePreview ? 'Change Image' : 'Add Image'}
           </Button>
           {isCreateMode && !imagePreview && (
             <Tooltip title="Image required for new items">
@@ -118,7 +124,7 @@ export default function ImagePanel({
                 sx={{
                   width: 28,
                   height: 28,
-                  bgcolor: theme.palette.warning.main,
+                  bgcolor: theme.palette.warning.main
                 }}
               >
                 <WarningAmberIcon fontSize="small" />

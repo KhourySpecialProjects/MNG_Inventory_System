@@ -14,9 +14,6 @@ export default function ChildrenTree({ editedProduct, teamId }: ChildrenTreeProp
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  console.log('[ChildrenTree] editedProduct:', editedProduct);
-  console.log('[ChildrenTree] children:', editedProduct?.children);
-
   // Don't show anything if no children
   if (!editedProduct?.children || editedProduct.children.length === 0) {
     return null;
@@ -42,7 +39,7 @@ export default function ChildrenTree({ editedProduct, teamId }: ChildrenTreeProp
     return (
       <Box key={child.itemId}>
         <Card
-          onClick={() => navigate(`/teams/${teamId}/items/${child.itemId}`)}  // FIXED
+          onClick={() => navigate(`/teams/${teamId}/items/${child.itemId}`)}
           sx={{
             p: 1.5,
             cursor: 'pointer',

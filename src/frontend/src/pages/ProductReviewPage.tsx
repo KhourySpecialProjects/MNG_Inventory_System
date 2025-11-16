@@ -33,21 +33,18 @@ export default function ProductReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // shared item state
   const [product, setProduct] = useState<any>(null);
   const [editedProduct, setEditedProduct] = useState<any>(null);
   const [itemsList, setItemsList] = useState<any[]>([]);
   const [imagePreview, setImagePreview] = useState("");
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [damageReports, setDamageReports] = useState<string[]>([]);
-  const [notes, setNotes] = useState("");
 
   const [isEditMode, setIsEditMode] = useState(isCreateMode);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Profile state
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -66,7 +63,7 @@ export default function ProductReviewPage() {
             description: "",
             serialNumber: "",
             quantity: 1,
-            status: "To Review",
+            status: "Incomplete",
           };
           setProduct(blank);
           setEditedProduct(blank);
@@ -79,19 +76,26 @@ export default function ProductReviewPage() {
 
         const item = res.item;
 
+        // Map API fields to component fields
+        const mappedItem = {
+          ...item,
+          productName: item.name,  // Map 'name' to 'productName'
+          actualName: item.actualName,
+        };
+
         // Manually find children from the full items list
         const allItemsRes = await getItems(teamId);
         if (allItemsRes.success && allItemsRes.items) {
           const children = allItemsRes.items.filter((i: any) => i.parent === itemId);
-          item.children = children; // Add children to item
+          mappedItem.children = children;
         }
 
-        setProduct(item);
-        setEditedProduct(item);
-        setDamageReports(item.damageReports || []);
+        setProduct(mappedItem);
+        setEditedProduct(mappedItem);
+        setDamageReports(mappedItem.damageReports || []);
 
-        if (item.imageLink && item.imageLink.startsWith("http")) {
-          setImagePreview(item.imageLink);
+        if (mappedItem.imageLink && mappedItem.imageLink.startsWith("http")) {
+          setImagePreview(mappedItem.imageLink);
         } else {
           setImagePreview("");
         }
@@ -102,17 +106,7 @@ export default function ProductReviewPage() {
         setLoading(false);
       }
     })();
-  }, [teamId, itemId]);
-
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === "string") {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
+  }, [teamId, itemId, isCreateMode]);
 
   if (loading)
     return (
@@ -168,24 +162,14 @@ export default function ProductReviewPage() {
               color: theme.palette.text.secondary,
               mb: 2,
               "&:hover": {
-                bgcolor:
-                  theme.palette.mode === "dark"
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.04)",
+                bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
               },
             }}
           >
             Back
           </Button>
 
-          {/* === Main Content === */}
-          <Grid
-            container
-            spacing={3}
-            justifyContent="center"
-            alignItems="flex-start"
-          >
-            {/* === LEFT: IMAGE === */}
+          <Grid container spacing={3} justifyContent="center" alignItems="flex-start">
             <Grid item xs={12} md={4}>
               <ImagePanel
                 imagePreview={imagePreview}
@@ -196,7 +180,6 @@ export default function ProductReviewPage() {
               />
             </Grid>
 
-            {/* === CENTER: ITEM DETAILS === */}
             <Grid item xs={12} md={5}>
               <ItemDetailsForm
                 editedProduct={editedProduct}
@@ -218,7 +201,6 @@ export default function ProductReviewPage() {
               <ChildrenTree editedProduct={editedProduct} teamId={teamId!} />
             </Grid>
 
-            {/* === RIGHT: ACTIONS === */}
             <Grid item xs={12} md={3}>
               <ActionPanel
                 isCreateMode={isCreateMode}
@@ -231,6 +213,7 @@ export default function ProductReviewPage() {
                 selectedImageFile={selectedImageFile}
                 imagePreview={imagePreview}
                 setShowSuccess={setShowSuccess}
+                damageReports={damageReports}
               />
             </Grid>
           </Grid>
@@ -255,10 +238,7 @@ export default function ProductReviewPage() {
           right: 0,
           zIndex: 1000,
           bgcolor: theme.palette.background.paper,
-          boxShadow:
-            theme.palette.mode === "dark"
-              ? "0 -2px 8px rgba(0,0,0,0.6)"
-              : "0 -2px 8px rgba(0,0,0,0.05)",
+          boxShadow: theme.palette.mode === "dark" ? "0 -2px 8px rgba(0,0,0,0.6)" : "0 -2px 8px rgba(0,0,0,0.05)",
         }}
       >
         <NavBar />
