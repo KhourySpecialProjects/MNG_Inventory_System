@@ -17,6 +17,16 @@ export async function getItem(itemId?: string) {
   return j?.result?.data ?? null;
 }
 
+export async function getInventoryForm(teamId?: string, nsn?: string) {
+  if (!nsn) throw new Error("NSN is required");
+
+  const input = encodeURIComponent(JSON.stringify({ teamId, nsn }));
+  const r = await fetch(`${TRPC_URL}/s3.getInventoryForm?input=${input}`);
+  if (!r.ok) throw new Error(`getInventoryForm failed: ${r.status}`);
+  const j = await r.json();
+  return j?.result?.data ?? null;
+}
+
 export async function checkHealth() {
   const r = await fetch(HEALTH_URL);
   return r.ok;

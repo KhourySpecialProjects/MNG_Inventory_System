@@ -5,7 +5,7 @@ export async function loginUser(email: string, password: string) {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }), 
+    body: JSON.stringify({ email, password }),
   });
   if (!res.ok) throw new Error(`signIn failed: ${res.status}`);
   const json = await res.json();
@@ -38,7 +38,7 @@ export async function completeNewPassword(session: string, newPassword: string, 
       session,
       newPassword,
       email,
-    }), 
+    }),
   });
   if (!res.ok) throw new Error(`respondToChallenge failed: ${res.status}`);
   const json = await res.json();
@@ -50,7 +50,7 @@ export async function refresh() {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}), 
+    body: JSON.stringify({}),
   });
   if (!res.ok) throw new Error(`refresh failed: ${res.status}`);
   const json = await res.json();
@@ -62,7 +62,7 @@ export async function logout() {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}), 
+    body: JSON.stringify({}),
   });
   if (!res.ok) throw new Error(`logout failed: ${res.status}`);
   const json = await res.json();
@@ -70,27 +70,48 @@ export async function logout() {
 }
 
 export async function me() {
-  const res = await fetch(`${TRPC}/me?input=${encodeURIComponent(JSON.stringify(null))}`, {
-    method: "GET",
-    credentials: "include",
-  });
+  try {
+    const res = await fetch(
+      `${TRPC}/me?input=${encodeURIComponent(JSON.stringify(null))}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
 
-  if (!res.ok) throw new Error(`me failed: ${res.status}`);
+    if (!res.ok) {
+      if (window.location.pathname !== "/signin") {
+        window.location.href = "/signin";
+      }
+      throw new Error(`me failed: ${res.status}`);
+    }
 
-  const json = await res.json();
+    const json = await res.json();
+    const data = json?.result?.data;
 
-  const data = json?.result?.data;
-  if (!data) throw new Error("unexpected response from /me");
+    if (!data || data.authenticated === false) {
+      if (window.location.pathname !== "/signin") {
+        window.location.href = "/signin";
+      }
+      throw new Error("unauthenticated");
+    }
 
-  const userId = data.userId || data.sub || data.id || data.email;
-
-  return {
-    userId,
-    email: data.email,
-    name: data.name,
-    authenticated: data.authenticated ?? true,
-  };
+    return {
+      userId: data.userId,
+      name: data.name,
+      username: data.username,
+      role: data.role,
+      authenticated: true,
+    };
+  } catch (error) {
+    console.error("[me] failed, redirecting to /signin:", error);
+    if (window.location.pathname !== "/signin") {
+      window.location.href = "/signin";
+    }
+    throw error;
+  }
 }
+
 
 
 export async function submitOtp(
@@ -109,3 +130,4 @@ export async function submitOtp(
   const json = await res.json();
   return json?.result?.data;
 }
+

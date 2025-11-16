@@ -1,195 +1,248 @@
-import React, { useEffect, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   Box,
   Button,
-  Card,
-  CardContent,
-  CardMedia,
-  Container,
-  FormControl,
-  MenuItem,
-  Select,
-  TextField,
-  Typography,
   CircularProgress,
-  Alert
-} from '@mui/material';
-import PercentageBar from '../components/PercentageBar';
-import { getItem } from '../api/api';
+  Container,
+  Grid,
+  Snackbar,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { useNavigate, useParams } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import NavBar from "../components/NavBar";
+import ImagePanel from "../components/ImagePanel";
+import ItemDetailsForm from "../components/ItemDetailsForm";
+import DamageReportsSection from "../components/DamageReportsSection";
+import ActionPanel from "../components/ActionPanel";
+import { flattenTree } from "../components/Producthelpers";
+import { getItem, getItems } from "../api/items";
+import ChildrenTree from "../components/ChildrenTree";
+import TopBar from "../components/TopBar";
+import Profile from "../components/Profile";
 
-interface ItemViewModel {
-  productName: string;
-  actualName: string;
-  level: string;
-  description: string;
-  imageLink: string;
-  serialNumber: string;
-  AuthQuantity: number;
-}
+export default function ProductReviewPage() {
+  const { teamId, itemId } = useParams<{ teamId: string; itemId: string }>();
+  const navigate = useNavigate();
+  const theme = useTheme();
 
-interface ProductCardProps {
-  product: ItemViewModel;
-}
+  const isCreateMode = itemId === "new";
 
-const ProductCard = ({ product } : ProductCardProps) => {
-  const [status, setStatus] = React.useState('Found');
-  const [notes, setNotes] = React.useState(product.description);
-
-  return (
-    <Container maxWidth="md" sx={{
-      px: { xs: 0, sm: 2, md: 3 }
-    }}>
-      <Card>
-        <PercentageBar />
-
-        {/* Product Image */}
-        <CardMedia
-          component="img"
-          image={product.imageLink}
-          alt={product.productName}
-          sx={{
-            maxHeight: '40vh',
-            objectFit: 'contain'
-          }}
-        />
-
-        <CardContent>
-          {/* Product Title */}
-          <Typography variant="h6" fontWeight="bold" gutterBottom>
-            {product.productName}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {product.actualName}
-          </Typography>
-
-          {/* Notes Section */}
-          <Box sx={{ mt: 2, mb: 2 }}>
-            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-              Notes:
-            </Typography>
-            <TextField
-              multiline
-              fullWidth
-              rows={4}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes here..."
-              sx={{
-                borderRadius: 2,
-                '& .MuiInputBase-input': {
-                  fontSize: { xs: '0.75rem', sm: '0.9rem', md: '1rem' }
-                }
-              }}
-            />
-          </Box>
-
-          {/* Product Details */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Serial Number: {product.serialNumber || 'N/A'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Date Last Scanned: N/A
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Last Known Location: N/A
-            </Typography>
-          </Box>
-
-          {/* Status Dropdown */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-              Status:
-            </Typography>
-            <FormControl fullWidth size="small">
-              <Select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                sx={{ bgcolor: 'white' }}
-              >
-                <MenuItem value="Found">Found</MenuItem>
-                <MenuItem value="Damaged">Damaged</MenuItem>
-                <MenuItem value="Missing">Missing</MenuItem>
-                <MenuItem value="In Repair">In Repair</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Complete Button */}
-          <Button
-            variant="contained"
-            fullWidth
-            sx={{
-              mt: 2,
-              bgcolor: '#81c784',
-              '&:hover': { bgcolor: '#66bb6a' },
-              textTransform: 'none',
-              fontWeight: 'bold'
-            }}
-          >
-            Complete
-          </Button>
-        </CardContent>
-      </Card>
-    </Container>
-  );
-};
-
-const ProductDisplay = () => {
-  const [product, setProduct] = useState<ItemViewModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const [product, setProduct] = useState<any>(null);
+  const [editedProduct, setEditedProduct] = useState<any>(null);
+  const [itemsList, setItemsList] = useState<any[]>([]);
+  const [imagePreview, setImagePreview] = useState("");
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [damageReports, setDamageReports] = useState<string[]>([]);
 
-        // Fetch item data
-        const itemData = await getItem();
-        if (itemData) {
-          setProduct(itemData);
+  const [isEditMode, setIsEditMode] = useState(isCreateMode);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!teamId) throw new Error("Missing team ID");
+        const all = await getItems(teamId);
+        if (all.success && all.items) {
+          const flat = flattenTree(all.items);
+          setItemsList(flat.filter((x: any) => x.itemId !== itemId));
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
+
+        if (isCreateMode) {
+          const blank = {
+            productName: "",
+            actualName: "",
+            description: "",
+            serialNumber: "",
+            quantity: 1,
+            status: "Incomplete",
+          };
+          setProduct(blank);
+          setEditedProduct(blank);
+          setLoading(false);
+          return;
+        }
+
+        const res = await getItem(teamId, itemId!);
+        if (!res.success || !res.item) throw new Error(res.error);
+
+        const item = res.item;
+
+        // Map API fields to component fields
+        const mappedItem = {
+          ...item,
+          productName: item.name,  // Map 'name' to 'productName'
+          actualName: item.actualName,
+        };
+
+        // Manually find children from the full items list
+        const allItemsRes = await getItems(teamId);
+        if (allItemsRes.success && allItemsRes.items) {
+          const children = allItemsRes.items.filter((i: any) => i.parent === itemId);
+          mappedItem.children = children;
+        }
+
+        setProduct(mappedItem);
+        setEditedProduct(mappedItem);
+        setDamageReports(mappedItem.damageReports || []);
+
+        if (mappedItem.imageLink && mappedItem.imageLink.startsWith("http")) {
+          setImagePreview(mappedItem.imageLink);
+        } else {
+          setImagePreview("");
+        }
+      } catch (err: any) {
+        console.error("[ProductReviewPage] Error loading item:", err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
-    };
+    })();
+  }, [teamId, itemId, isCreateMode]);
 
-    fetchData();
-  }, []);
-
-  if (loading) {
+  if (loading)
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+        sx={{ bgcolor: theme.palette.background.default }}
+      >
         <CircularProgress />
       </Box>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Alert severity="error">{error}</Alert>
       </Container>
     );
-  }
-
-  if (!product) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="info">No product data available</Alert>
-      </Container>
-    );
-  }
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-      <ProductCard product={product} />
+    <Box sx={{ minHeight: "100vh", bgcolor: theme.palette.background.default, display: "flex", flexDirection: "column" }}>
+      <TopBar
+        isLoggedIn={true}
+        profileImage={profileImage}
+        onProfileClick={() => setProfileOpen(true)}
+      />
+
+      <Box
+        sx={{
+          flex: 1,
+          bgcolor: theme.palette.background.default,
+          pb: 10,
+        }}
+      >
+        <Container
+          maxWidth="lg"
+          sx={{
+            pt: 3,
+            pb: 8,
+            backgroundColor: theme.palette.background.paper,
+            borderRadius: 3,
+            boxShadow: theme.palette.mode === "dark" ? "0 4px 20px rgba(0,0,0,0.4)" : "0 4px 16px rgba(0,0,0,0.05)",
+            mt: 3,
+          }}
+        >
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate(-1)}
+            sx={{
+              textTransform: "none",
+              color: theme.palette.text.secondary,
+              mb: 2,
+              "&:hover": {
+                bgcolor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
+              },
+            }}
+          >
+            Back
+          </Button>
+
+          <Grid container spacing={3} justifyContent="center" alignItems="flex-start">
+            <Grid item xs={12} md={4}>
+              <ImagePanel
+                imagePreview={imagePreview}
+                setImagePreview={setImagePreview}
+                setSelectedImageFile={setSelectedImageFile}
+                isEditMode={isEditMode}
+                isCreateMode={isCreateMode}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={5}>
+              <ItemDetailsForm
+                editedProduct={editedProduct}
+                setEditedProduct={setEditedProduct}
+                itemsList={itemsList}
+                isEditMode={isEditMode}
+                alwaysEditableFields={["status", "description", "notes"]}
+              />
+
+              {editedProduct?.status === "Damaged" && (
+                <DamageReportsSection
+                  isEditMode={true}
+                  editedProduct={editedProduct}
+                  damageReports={damageReports}
+                  setDamageReports={setDamageReports}
+                />
+              )}
+
+              <ChildrenTree editedProduct={editedProduct} teamId={teamId!} />
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+              <ActionPanel
+                isCreateMode={isCreateMode}
+                isEditMode={isEditMode}
+                setIsEditMode={setIsEditMode}
+                product={product}
+                editedProduct={editedProduct}
+                teamId={teamId!}
+                itemId={itemId!}
+                selectedImageFile={selectedImageFile}
+                imagePreview={imagePreview}
+                setShowSuccess={setShowSuccess}
+                damageReports={damageReports}
+              />
+            </Grid>
+          </Grid>
+
+          <Snackbar
+            open={showSuccess}
+            autoHideDuration={3000}
+            onClose={() => setShowSuccess(false)}
+          >
+            <Alert severity="success">Item updated successfully!</Alert>
+          </Snackbar>
+        </Container>
+      </Box>
+
+      <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
+
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          bgcolor: theme.palette.background.paper,
+          boxShadow: theme.palette.mode === "dark" ? "0 -2px 8px rgba(0,0,0,0.6)" : "0 -2px 8px rgba(0,0,0,0.05)",
+        }}
+      >
+        <NavBar />
+      </Box>
     </Box>
   );
-};
-
-export default ProductDisplay;
+}

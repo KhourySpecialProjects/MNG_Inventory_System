@@ -1,99 +1,139 @@
-import { fromIni } from "@aws-sdk/credential-provider-ini";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  QueryCommand,
-  PutCommand,
-} from "@aws-sdk/lib-dynamodb";
-import crypto from "crypto";
+import { QueryCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { doc as dynamo } from '../aws';
+import { loadConfig } from '../process';
+import crypto from 'crypto';
 
-// ===== AWS CONFIG =====
-const AWS_REGION = "us-east-1";
-const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
-const credentials = isLambda ? undefined : fromIni({ profile: "mng" });
+const config = loadConfig();
+const TABLE_NAME = config.TABLE_NAME;
 
-// ===== DYNAMODB CLIENT (DocumentClient) =====
-const baseClient = new DynamoDBClient({
-  region: AWS_REGION,
-  credentials,
-});
-
-export const dynamoClient = DynamoDBDocumentClient.from(baseClient);
-
-const USERS_TABLE = process.env.USERS_TABLE || "mng-dev-data";
-
-// ===== HELPERS =====
-function newAccountId() {
-  return crypto.randomUUID();
+function randomUsername(): string {
+  return 'user-' + Math.random().toString(36).substring(2, 8);
 }
 
-/**
- * ensureUserRecord
- * - Checks for an existing user by Cognito sub via GSI_UsersByUid (UID#<sub>)
- * - If missing, creates a new minimal user entry
- * - Returns { sub, email, accountId }
- */
-export async function ensureUserRecord(user: { sub: string; email?: string }) {
-  const uid = user.sub;
-  const pk = `USER#${uid}`;
-  const sk = "METADATA";
+// Ensure uniqueness across GSI_UsersByUsername
+async function ensureUniqueUsername(base: string): Promise<string> {
+  let username = base;
+  let counter = 1;
 
-  // --- Check if user exists via GSI_UsersByUid ---
-  const queryResp = await dynamoClient.send(
+  while (true) {
+    const check = await dynamo.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        IndexName: 'GSI_UsersByUsername',
+        KeyConditionExpression: 'username = :u',
+        ExpressionAttributeValues: { ':u': username },
+        Limit: 1,
+      }),
+    );
+
+    if (!check.Items || check.Items.length === 0) return username;
+    username = `${base}${counter++}`;
+  }
+}
+
+export async function ensureUserRecord({ sub }: { sub: string }): Promise<{
+  userId: string;
+  username: string;
+  name: string;
+  role: string;
+  accountId: string;
+}> {
+  // Lookup by UID GSI
+  const lookup = await dynamo.send(
     new QueryCommand({
-      TableName: USERS_TABLE,
-      IndexName: "GSI_UsersByUid",
-      KeyConditionExpression: "GSI6PK = :pk",
-      ExpressionAttributeValues: {
-        ":pk": `UID#${uid}`,
-      },
+      TableName: TABLE_NAME,
+      IndexName: 'GSI_UsersByUid',
+      KeyConditionExpression: 'GSI6PK = :pk',
+      ExpressionAttributeValues: { ':pk': `UID#${sub}` },
       Limit: 1,
-    })
+    }),
   );
 
-  if (queryResp.Items && queryResp.Items.length > 0) {
-    const item = queryResp.Items[0];
+  const item = lookup.Items?.[0];
+
+  // ==================================================
+  // USER EXISTS
+  // ==================================================
+  if (item) {
+    let username = item.username;
+    let accountId = item.accountId;
+
+    // Fix missing username
+    if (!username || username.trim() === '') {
+      username = await ensureUniqueUsername(randomUsername());
+
+      await dynamo.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `USER#${sub}`, SK: 'METADATA' },
+          UpdateExpression: 'SET username = :u, updatedAt = :t',
+          ExpressionAttributeValues: {
+            ':u': username,
+            ':t': new Date().toISOString(),
+          },
+        }),
+      );
+    }
+
+    // Fix missing accountId
+    if (!accountId) {
+      accountId = crypto.randomUUID();
+
+      await dynamo.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `USER#${sub}`, SK: 'METADATA' },
+          UpdateExpression: 'SET accountId = :a, updatedAt = :t',
+          ExpressionAttributeValues: {
+            ':a': accountId,
+            ':t': new Date().toISOString(),
+          },
+        }),
+      );
+    }
+
     return {
-      sub: uid,
-      email: item.email ?? user.email ?? `${uid}@example.com`,
-      accountId: item.accountId ?? uid,
+      userId: sub,
+      username,
+      name: item.name,
+      role: item.role || 'User',
+      accountId,
     };
   }
 
-  // --- Ensure valid email format ---
-  let email = user.email;
-  if (!email || !email.includes("@")) {
-    // fallback if Cognito didn’t return a real email
-    email = `${uid}@example.com`;
-    console.warn(`⚠️ User ${uid} has no valid email — using ${email}`);
-  }
-
-  // --- Create new user record ---
+  // ==================================================
+  // USER DOES NOT EXIST → CREATE
+  // ==================================================
+  const now = new Date().toISOString();
+  const username = await ensureUniqueUsername(randomUsername());
   const accountId = crypto.randomUUID();
-  const nowIso = new Date().toISOString();
 
-  const newUser = {
-    PK: pk,
-    SK: sk,
-    Type: "User",
-    sub: uid,
-    email,
+  const newUserRecord = {
+    PK: `USER#${sub}`,
+    SK: 'METADATA',
+    sub,
+    username,
+    name: username,
+    role: 'User',
     accountId,
-    createdAt: nowIso,
-    updatedAt: nowIso,
-    GSI6PK: `UID#${uid}`,
-    GSI6SK: `USER#${uid}`,
+    createdAt: now,
+    updatedAt: now,
+    GSI6PK: `UID#${sub}`,
+    GSI6SK: `USER#${sub}`,
   };
 
-  await dynamoClient.send(
+  await dynamo.send(
     new PutCommand({
-      TableName: USERS_TABLE,
-      Item: newUser,
-    })
+      TableName: TABLE_NAME,
+      Item: newUserRecord,
+    }),
   );
 
-  console.log(`✅ Created new user record for ${email}`);
-
-  return { sub: uid, email, accountId };
+  return {
+    userId: sub,
+    username,
+    name: username,
+    role: 'User',
+    accountId,
+  };
 }
-

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import {
   Button,
@@ -9,19 +10,32 @@ import {
   DialogActions,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
+import { softReset } from "../api/home"; // <-- import the API function
 
 interface RestartProcessCardProps {
-  onRestart?: () => void; // optional callback for when the restart is confirmed
+  teamId: string; // pass the current teamId
+  onRestart?: () => void; // optional callback after restart
 }
 
-export default function RestartProcess({ onRestart }: RestartProcessCardProps) {
+export default function RestartProcess({ teamId, onRestart }: RestartProcessCardProps) {
   const theme = useTheme();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2>(1);
+  const [loading, setLoading] = useState(false);
 
-  const handleRestartProcess = () => {
-    console.log("Restart Process triggered — reset all inventory data.");
-    if (onRestart) onRestart();
+  const handleRestartProcess = async () => {
+    try {
+      setLoading(true);
+      await softReset(teamId); // <-- call the API
+      console.log("Soft reset completed");
+      if (onRestart) onRestart();
+    } catch (err: any) {
+      console.error("Failed to restart process:", err.message || err);
+      alert("Failed to restart process. See console for details.");
+    } finally {
+      setLoading(false);
+      setIsDialogOpen(false);
+    }
   };
 
   const openWizard = () => {
@@ -41,7 +55,7 @@ export default function RestartProcess({ onRestart }: RestartProcessCardProps) {
         sx={{
           p: 3,
           bgcolor: theme.palette.background.paper,
-          textAlign: "center",
+          textAlign: 'center',
           border: `1px solid ${theme.palette.divider}`,
         }}
       >
@@ -88,30 +102,26 @@ export default function RestartProcess({ onRestart }: RestartProcessCardProps) {
             </Typography>
           ) : (
             <Typography>
-              ⚠️ Final confirmation: This action will move all items to "To Review", reset "% Reviewed" to 0%, and clear all completed, shortages, damaged, and notes data. This cannot be undone.
+              ⚠️ Final confirmation: This action will move all items to "To Review", reset "%
+              Reviewed" to 0%, and clear all completed, shortages, damaged, and notes data. This
+              cannot be undone.
             </Typography>
           )}
         </DialogContent>
         <DialogActions sx={{ bgcolor: theme.palette.background.paper }}>
-          <Button onClick={closeWizard}>Cancel</Button>
+          <Button onClick={closeWizard} disabled={loading}>Cancel</Button>
           {wizardStep === 1 ? (
-            <Button
-              variant="contained"
-              color="warning"
-              onClick={() => setWizardStep(2)}
-            >
+            <Button variant="contained" color="warning" onClick={() => setWizardStep(2)}>
               Continue
             </Button>
           ) : (
             <Button
               variant="contained"
               color="error"
-              onClick={() => {
-                handleRestartProcess();
-                closeWizard();
-              }}
+              onClick={handleRestartProcess}
+              disabled={loading}
             >
-              Confirm Restart
+              {loading ? "Restarting..." : "Confirm Restart"}
             </Button>
           )}
         </DialogActions>
