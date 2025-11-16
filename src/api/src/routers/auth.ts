@@ -408,7 +408,7 @@ me: publicProcedure.query(async ({ ctx }) => {
     }
   }
 
-  // 4. RETURN PROFILE (NOW INCLUDES accountId)
+  // 4. RETURN PROFILE 
   return {
     authenticated: true,
     userId,
