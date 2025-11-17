@@ -7,12 +7,17 @@ import {
   Paper,
   useTheme,
   useMediaQuery,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import PrintIcon from "@mui/icons-material/Print";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
 import CircularProgressBar from "./CircularProgressBar";
 import ExportPreview from "./ExportPreview";
+import ItemListComponent, { ItemListItem } from "./ItemListComponent";
 import { getInventoryForm } from "../api/api";
 
 export default function ExportPageContent({
@@ -30,26 +35,90 @@ export default function ExportPageContent({
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const completion = percentReviewed;
   const cardBorder = `1px solid ${theme.palette.divider}`;
   const team = "MNG INVENTORY";
+
+  // Build hierarchy from items
+  const buildHierarchy = (flatItems: any[]): ItemListItem[] => {
+    const map: Record<string, ItemListItem> = {};
+    const roots: ItemListItem[] = [];
+
+    // First pass - create all items
+    flatItems.forEach((item: any) => {
+      map[item.itemId] = {
+        id: item.itemId,
+        productName: item.name,
+        actualName: item.actualName || item.name,
+        subtitle: item.description || 'No description',
+        image: item.imageLink && item.imageLink.startsWith('http')
+          ? item.imageLink
+          : 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400',
+        date: new Date(item.createdAt).toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit'
+        }),
+        parent: item.parent,
+        status: item.status,
+        children: []
+      };
+    });
+
+    // Second pass - build parent-child relationships
+    flatItems.forEach((item: any) => {
+      const mappedItem = map[item.itemId];
+      if (item.parent && map[item.parent]) {
+        map[item.parent].children!.push(mappedItem);
+      } else {
+        roots.push(mappedItem);
+      }
+    });
+
+    return roots;
+  };
 
   // Filter items based on activeCategory
   const filteredItems = items.filter((item) => {
     const status = (item.status ?? "to review").toLowerCase();
     
     if (activeCategory === "completed") {
-      return status === "completed";
+      return status === "completed" || status === "complete" || status === "found";
     } else {
-      // broken category includes damaged and shortages
-      return status === "damaged" || status === "shortages";
+      return status === "damaged" || status === "shortages" || status === "shortage" || status === "missing" || status === "in repair";
     }
   });
+
+  // Build hierarchy for filtered items
+  const hierarchyItems = buildHierarchy(filteredItems);
+
+  // Search filtering function - searches through hierarchy
+  const searchInHierarchy = (item: ItemListItem, query: string): boolean => {
+    const lowerQuery = query.toLowerCase();
+    const nameMatch = item.productName.toLowerCase().includes(lowerQuery) ||
+                      item.actualName.toLowerCase().includes(lowerQuery);
+    
+    if (nameMatch) return true;
+    
+    // Search in children
+    if (item.children && item.children.length > 0) {
+      return item.children.some(child => searchInHierarchy(child, query));
+    }
+    
+    return false;
+  };
+
+  // Filter hierarchy by search query
+  const searchedItems = searchQuery.trim() 
+    ? hierarchyItems.filter(item => searchInHierarchy(item, searchQuery))
+    : hierarchyItems;
 
   // Calculate statistics for current category
   const categoryStats = {
     total: filteredItems.length,
+    displayed: searchedItems.length,
     completed: activeCategory === "completed" ? filteredItems.length : 0,
     broken: activeCategory === "broken" ? filteredItems.length : 0,
   };
@@ -93,6 +162,10 @@ export default function ExportPageContent({
     }
   };
 
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
+
   return (
     <Box
       sx={{
@@ -112,10 +185,49 @@ export default function ExportPageContent({
           pb: { xs: 12, sm: 14 },
         }}
       >
+        {/* Search Bar */}
+        <Box sx={{ mb: 3, maxWidth: 600, mx: "auto" }}>
+          <TextField
+            fullWidth
+            placeholder={`Search ${activeCategory === "completed" ? "completed items" : "broken items"}...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: theme.palette.text.secondary }} />
+                </InputAdornment>
+              ),
+              endAdornment: searchQuery && (
+                <InputAdornment position="end">
+                  <Button
+                    size="small"
+                    onClick={handleClearSearch}
+                    sx={{ minWidth: "auto", p: 0.5 }}
+                  >
+                    <ClearIcon sx={{ color: theme.palette.text.secondary }} />
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                bgcolor: theme.palette.background.paper,
+              },
+            }}
+          />
+          {searchQuery && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: "center" }}>
+              Showing {categoryStats.displayed} of {categoryStats.total} items
+            </Typography>
+          )}
+        </Box>
+
         {isDesktop ? (
           // Desktop Layout
-          <Box sx={{ display: "flex", gap: 3, height: "calc(100vh - 140px)" }}>
-            {/* PDF Viewer */}
+          <Box sx={{ display: "flex", gap: 3, minHeight: "calc(100vh - 240px)" }}>
+            {/* Items List */}
             <Paper
               elevation={0}
               sx={{
@@ -136,30 +248,25 @@ export default function ExportPageContent({
               >
                 <Typography variant="h6" fontWeight={800}>
                   {activeCategory === "completed" 
-                    ? "Completed Inventory Form" 
-                    : "Broken Items Report"}
+                    ? "Completed Items" 
+                    : "Broken Items"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Team: {team} {teamId && `• ID: ${teamId}`} • Items: {categoryStats.total}
+                  Team: {team} {teamId && `• ID: ${teamId}`} • Items: {categoryStats.displayed}
                 </Typography>
               </Box>
 
-              {/* PDF Display Area */}
+              {/* Items Display Area */}
               <Box
                 sx={{
                   flex: 1,
-                  p: 0,
-                  bgcolor: theme.palette.mode === "dark" ? "#1a1a1a" : "#f5f5f5",
+                  p: 2,
+                  overflowY: "auto",
+                  bgcolor: theme.palette.background.default,
                 }}
               >
-                {pdfUrl ? (
-                  <iframe
-                    src={pdfUrl}
-                    width="100%"
-                    height="100%"
-                    style={{ border: "none" }}
-                    title={`${activeCategory === "completed" ? "Inventory Form" : "Broken Items"} PDF`}
-                  />
+                {searchedItems.length > 0 ? (
+                  <ItemListComponent items={searchedItems} />
                 ) : (
                   <Box
                     sx={{
@@ -172,7 +279,9 @@ export default function ExportPageContent({
                     }}
                   >
                     <Typography variant="body1">
-                      PDF not loaded — click "Download PDF" or "View {activeCategory === "completed" ? "Completed Form" : "Broken Items"}".
+                      {searchQuery 
+                        ? "No items found matching your search"
+                        : `No ${activeCategory === "completed" ? "completed" : "broken"} items`}
                     </Typography>
                   </Box>
                 )}
@@ -276,32 +385,23 @@ export default function ExportPageContent({
             sx={{
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
             }}
           >
             <Paper
               elevation={0}
               sx={{
-                p: 4,
+                p: 3,
                 border: cardBorder,
                 bgcolor: theme.palette.background.paper,
-                maxWidth: 600,
-                width: "100%",
+                mb: 3,
               }}
             >
               <Typography variant="h5" fontWeight={800} mb={1}>
-                {activeCategory === "completed" ? "Inventory Export" : "Broken Items Export"}
+                {activeCategory === "completed" ? "Completed Items" : "Broken Items"}
               </Typography>
 
               <Typography variant="body2" color="text.secondary" mb={3}>
                 Team: <strong>{team}</strong> {teamId && `• ID: ${teamId}`}
-              </Typography>
-
-              <Typography variant="body1" sx={{ mb: 3 }}>
-                {activeCategory === "completed" 
-                  ? "Review and export your completed inventory report."
-                  : "Review and export items requiring attention or repair."}
               </Typography>
 
               <Box
@@ -321,20 +421,49 @@ export default function ExportPageContent({
                   : `${categoryStats.broken} items require attention`}
               </Typography>
 
-              <Box sx={{ mt: 4 }}>
+              <Stack spacing={2}>
                 <Button
                   variant="contained"
                   color="primary"
                   fullWidth
-                  sx={{
-                    py: 1.5,
-                    fontWeight: 700,
-                  }}
+                  sx={{ py: 1.5, fontWeight: 700 }}
                   onClick={handlePreviewOpen}
                 >
-                  View {activeCategory === "completed" ? "Completed Form" : "Broken Items"}
+                  View PDF
                 </Button>
-              </Box>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<PictureAsPdfIcon />}
+                  onClick={handleDownloadPDF}
+                  sx={{ py: 1.5, fontWeight: 700 }}
+                >
+                  Download PDF
+                </Button>
+              </Stack>
+            </Paper>
+
+            {/* Mobile Items List */}
+            <Paper
+              elevation={0}
+              sx={{
+                border: cardBorder,
+                bgcolor: theme.palette.background.paper,
+                p: 2,
+              }}
+            >
+              <Typography variant="h6" fontWeight={800} mb={2}>
+                Items List
+              </Typography>
+              {searchedItems.length > 0 ? (
+                <ItemListComponent items={searchedItems} />
+              ) : (
+                <Typography sx={{ textAlign: "center", color: theme.palette.text.disabled, py: 4 }}>
+                  {searchQuery 
+                    ? "No items found matching your search"
+                    : `No ${activeCategory === "completed" ? "completed" : "broken"} items`}
+                </Typography>
+              )}
             </Paper>
           </Box>
         )}
