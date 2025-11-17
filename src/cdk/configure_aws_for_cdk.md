@@ -1,4 +1,3 @@
-
 ### Access keys (IAM user)
 
 ```bash
@@ -20,7 +19,3 @@ npm run cdk:synth
 npm run cdk:diff
 npm run cdk:deploy
 npm run cdk:destroy
-
-```
-
-```
