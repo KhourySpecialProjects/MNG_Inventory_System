@@ -15,28 +15,52 @@ import CircularProgressBar from "./CircularProgressBar";
 import ExportPreview from "./ExportPreview";
 import { getInventoryForm } from "../api/api";
 
-export default function ExportPageContent() {
+export default function ExportPageContent({
+  items,
+  percentReviewed,
+  activeCategory,
+}: {
+  items: any[];
+  percentReviewed: number;
+  activeCategory: "completed" | "broken";
+}) {
   const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"));
-  const [previewOpen, setPreviewOpen] = useState(false);
 
-  // Local state for fetched PDF
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
-  // Temporary static values
-  const completion = 80;
+  const completion = percentReviewed;
   const cardBorder = `1px solid ${theme.palette.divider}`;
   const team = "MNG INVENTORY";
 
+  // Filter items based on activeCategory
+  const filteredItems = items.filter((item) => {
+    const status = (item.status ?? "to review").toLowerCase();
+    
+    if (activeCategory === "completed") {
+      return status === "completed";
+    } else {
+      // broken category includes damaged and shortages
+      return status === "damaged" || status === "shortages";
+    }
+  });
+
+  // Calculate statistics for current category
+  const categoryStats = {
+    total: filteredItems.length,
+    completed: activeCategory === "completed" ? filteredItems.length : 0,
+    broken: activeCategory === "broken" ? filteredItems.length : 0,
+  };
 
   const handlePrint = () => window.print();
 
   const handleDownloadPDF = async () => {
     try {
-      const data = await getInventoryForm(teamId, "2404"); // or dynamic nsn
+      const data = await getInventoryForm(teamId, "2404");
       if (data?.url) {
-        window.open(data.url, "_blank"); // opens PDF in new tab
+        window.open(data.url, "_blank");
       } else {
         alert("PDF not found or could not be retrieved.");
       }
@@ -78,7 +102,6 @@ export default function ExportPageContent() {
         overflowX: "hidden",
       }}
     >
-
       {/* Main Content */}
       <Box
         sx={{
@@ -112,10 +135,12 @@ export default function ExportPageContent() {
                 }}
               >
                 <Typography variant="h6" fontWeight={800}>
-                  Completed Inventory Form
+                  {activeCategory === "completed" 
+                    ? "Completed Inventory Form" 
+                    : "Broken Items Report"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Team: {team} {teamId && `• ID: ${teamId}`}
+                  Team: {team} {teamId && `• ID: ${teamId}`} • Items: {categoryStats.total}
                 </Typography>
               </Box>
 
@@ -133,7 +158,7 @@ export default function ExportPageContent() {
                     width="100%"
                     height="100%"
                     style={{ border: "none" }}
-                    title="Inventory Form PDF"
+                    title={`${activeCategory === "completed" ? "Inventory Form" : "Broken Items"} PDF`}
                   />
                 ) : (
                   <Box
@@ -147,7 +172,7 @@ export default function ExportPageContent() {
                     }}
                   >
                     <Typography variant="body1">
-                      PDF not loaded — click “Download PDF” or “View Completed Form”.
+                      PDF not loaded — click "Download PDF" or "View {activeCategory === "completed" ? "Completed Form" : "Broken Items"}".
                     </Typography>
                   </Box>
                 )}
@@ -167,9 +192,14 @@ export default function ExportPageContent() {
                   }}
                 >
                   <Typography variant="h6" fontWeight={800} mb={2}>
-                    Export Status
+                    {activeCategory === "completed" ? "Export Status" : "Broken Items"}
                   </Typography>
                   <CircularProgressBar value={completion} />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    {activeCategory === "completed" 
+                      ? `${categoryStats.completed} completed items`
+                      : `${categoryStats.broken} items require attention`}
+                  </Typography>
                 </Paper>
 
                 <Paper
@@ -228,6 +258,9 @@ export default function ExportPageContent() {
                     Document Information
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Category: {activeCategory === "completed" ? "Completed Inventory" : "Broken Items"}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     Generated: {new Date().toLocaleDateString()}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -258,7 +291,7 @@ export default function ExportPageContent() {
               }}
             >
               <Typography variant="h5" fontWeight={800} mb={1}>
-                Inventory Export
+                {activeCategory === "completed" ? "Inventory Export" : "Broken Items Export"}
               </Typography>
 
               <Typography variant="body2" color="text.secondary" mb={3}>
@@ -266,7 +299,9 @@ export default function ExportPageContent() {
               </Typography>
 
               <Typography variant="body1" sx={{ mb: 3 }}>
-                Review and export your completed inventory report.
+                {activeCategory === "completed" 
+                  ? "Review and export your completed inventory report."
+                  : "Review and export items requiring attention or repair."}
               </Typography>
 
               <Box
@@ -280,6 +315,12 @@ export default function ExportPageContent() {
                 <CircularProgressBar value={completion} />
               </Box>
 
+              <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
+                {activeCategory === "completed" 
+                  ? `${categoryStats.completed} completed items`
+                  : `${categoryStats.broken} items require attention`}
+              </Typography>
+
               <Box sx={{ mt: 4 }}>
                 <Button
                   variant="contained"
@@ -291,7 +332,7 @@ export default function ExportPageContent() {
                   }}
                   onClick={handlePreviewOpen}
                 >
-                  View Completed Form
+                  View {activeCategory === "completed" ? "Completed Form" : "Broken Items"}
                 </Button>
               </Box>
             </Paper>
