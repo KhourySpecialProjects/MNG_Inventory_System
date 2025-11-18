@@ -71,18 +71,30 @@ Below are the current API methods and use cases. Methods are called using:
 
 #### Home
 
-| Router name   | Use case                                             | Params |
-|---------------|------------------------------------------------------|----------------------|
-| status       | Return system status and simple health indicators    | status() |
-| summary      | Return top-level counts (items, teams, users)        | summary({ userId }) |
+| Router name | Use case                                   | Params |
+|-------------|----------------------------------------------|-----------------------|
+| hardReset   | Delete all items and all S3 images for team  | hardReset({ teamId }) |
+| softReset   | Mark all items as "To Review" for the team   | softReset({ teamId }) |
+
 
 #### Process
 
-| Router name     | Use case                                            | Params |
-|-----------------|-----------------------------------------------------|----------------------|
-| startProcess   | Begin a long-running or multi-step operation        | startProcess({ processName, payload }) |
-| getProcess     | Check status of a running process                   | getProcess({ processId }) |
-| cancelProcess  | Cancel a process if permitted                       | cancelProcess({ processId }) |
+The Process router coordinates operations that take longer than a normal request. These workflows may run in multiple stages, write intermediate state, and need to be polled by the client. The router lets you start a job, check its progress, and cancel it if the user has permission.
+
+When the backend loads its configuration, the console prints a summary containing:
+
+| Field        | Meaning                              |
+| ------------ | ------------------------------------ |
+| Stage        | Deployment stage (DEV / BETA / PROD) |
+| Region       | AWS region being used                |
+| Table        | DynamoDB table name                  |
+| Bucket       | S3 uploads bucket                    |
+| Cognito Pool | User pool ID or "none"               |
+| SES From     | Email used for outgoing messages     |
+| Web URL      | Public-facing web client URL         |
+
+---
+
 
 ### Example Usage
 
