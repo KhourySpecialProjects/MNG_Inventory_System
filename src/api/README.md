@@ -9,6 +9,9 @@ These are the currently implemented router pathways in the /API pathway.
 - S3: Handles any S3 bucket fetching; we are using S3 for image storage
 - Roles: Handles roles and permissions, which are stored in DynamoDB
 - Teamspace: CRUD for making teamspaces (spaces for teams).
+- Items: CRUD for item profiles and inventory-related records.
+- Home: Returns top-level system summaries and simple status information.
+- Process: Handles long-running or multi-step backend processes.
 - TRPC: Helpers for intializing TPRC routers. Documentation for tPRC can be found [here](https://trpc.io/docs/server/routers).
 
 ### Usage of current pathways
@@ -55,6 +58,31 @@ Below are the current API methods and use cases. Methods are called using:
 | getRole     | Fetch a single role by `roleId` or by `name`         | getRole({ roleId: "abc123" })` or `getRole({ name: "Owner" })` |
 | updateRole  | Update role name, description, and/or permissions    | updateRole({ roleId: "abc123", name: "Lead", permissions: ["team.add_member"] })` |
 | deleteRole  | Delete a role by id (no-op if role does not exist)   | deleteRole({ roleId: "abc123" })` |
+
+#### Items
+
+| Router name   | Use case                                             | Params |
+|---------------|------------------------------------------------------|----------------------|
+| createItem  | Create a new item profile                             | createItem({ nsn, name, description, teamId }) |
+| getItem     | Retrieve a single item by ID                          | getItem({ itemId }) |
+| listItems   | List items for a team with optional filters           | listItems({ teamId, limit }) |
+| updateItem  | Update item profile fields                            | updateItem({ itemId, name, description }) |
+| deleteItem  | Soft-delete or hard-delete an item                    | deleteItem({ itemId }) |
+
+#### Home
+
+| Router name   | Use case                                             | Params |
+|---------------|------------------------------------------------------|----------------------|
+| status       | Return system status and simple health indicators    | status() |
+| summary      | Return top-level counts (items, teams, users)        | summary({ userId }) |
+
+#### Process
+
+| Router name     | Use case                                            | Params |
+|-----------------|-----------------------------------------------------|----------------------|
+| startProcess   | Begin a long-running or multi-step operation        | startProcess({ processName, payload }) |
+| getProcess     | Check status of a running process                   | getProcess({ processId }) |
+| cancelProcess  | Cancel a process if permitted                       | cancelProcess({ processId }) |
 
 ### Example Usage
 

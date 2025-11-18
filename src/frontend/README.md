@@ -13,6 +13,7 @@ These are the major functional areas in the frontend based on the repository str
 - Navigation and layout: Sidebar, top-level navigation, protected route handling, and layout wrappers.
 - Forms and data entry: Components handling creation and editing of items, workspaces, and supporting metadata fields.
 - State management and API client: TRPC React client initialization, session state storage, and query/mutation triggers.
+- MUI design system and theming: Centralized light/dark theme, typography, layout primitives, and iconography using Material UI components and theming.
 
 ### Usage of current components
 
@@ -65,6 +66,14 @@ Entry and routing
 - Defines the TRPC React client using the API’s base URL generated from WebStack outputs.
 - Provides caching, invalidation, optimistic updates, and data fetching behavior per API contract.
 - Stores session identity in memory and revalidates via Auth.me on initial load.
+
+### MUI design system and theming
+- Wraps the app with ThemeContextProvider, which uses MUI ThemeProvider and CssBaseline to apply a shared theme across all components.
+- Uses lightTheme and darkThemeOptions (theme.ts and themeDark.tsx) to define palettes, typography, border radius, and component-level overrides.
+- Exposes a useColorMode hook that returns the current mode ("light" or "dark") and a toggleTheme function; TopBar consumes this to render the theme toggle and adjust AppBar colors.
+- Relies on MUI layout and surface components such as AppBar, Toolbar, BottomNavigation, Paper, Card, Grid, Stack, Box, Typography, Button, TextField, Avatar, Chip, and Collapse across navigation, forms, and dashboards (e.g., TopBar, NavBar, HomePage, InventoryStatus, InventoryReviewed, ChildrenTree).
+- Uses icons from @mui/icons-material (for example Home, MilitaryTech, Security, Inventory, LocalShipping, Assessment, ArrowBack, and Key icons) to differentiate sections like navigation, security, inventory, and process actions.
+- Frontend tests assert visual state via MUI classes, such as contained vs outlined buttons, success/error/warning chips, and collapsed vs expanded sections (e.g., "MuiButton-contained", "MuiChip-colorSuccess", "MuiCollapse-hidden").
 
 ### Example usage
 The frontend typically interacts with the backend in patterns such as:
