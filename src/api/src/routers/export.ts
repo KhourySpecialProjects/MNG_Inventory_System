@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { router, publicProcedure } from "./trpc";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { loadConfig } from "../process";
-import { spawn } from "child_process";
-import * as fs from "fs";
-import * as path from "path";
+import { z } from 'zod';
+import { router, publicProcedure } from './trpc';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { loadConfig } from '../process';
+import { spawn } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const config = loadConfig();
 const BUCKET = config.BUCKET_NAME;
@@ -22,7 +22,7 @@ export async function downloadScript(key: string, outPath: string): Promise<void
     new GetObjectCommand({
       Bucket: BUCKET,
       Key: key,
-    })
+    }),
   );
 
   const bodyStream = res.Body as any;
@@ -30,23 +30,23 @@ export async function downloadScript(key: string, outPath: string): Promise<void
   return new Promise((resolve, reject) => {
     const file = fs.createWriteStream(outPath);
     bodyStream.pipe(file);
-    bodyStream.on("error", reject);
-    file.on("finish", resolve);
-    file.on("error", reject);
+    bodyStream.on('error', reject);
+    file.on('finish', resolve);
+    file.on('error', reject);
   });
 }
 
 export async function runPython(scriptPath: string, teamId: string): Promise<PythonResult> {
   return new Promise((resolve, reject) => {
-    const proc = spawn("python3", [scriptPath, teamId]);
+    const proc = spawn('python3', [scriptPath, teamId]);
 
-    let stdout = "";
-    let stderr = "";
+    let stdout = '';
+    let stderr = '';
 
-    proc.stdout.on("data", (d) => (stdout += d.toString()));
-    proc.stderr.on("data", (d) => (stderr += d.toString()));
+    proc.stdout.on('data', (d) => (stdout += d.toString()));
+    proc.stderr.on('data', (d) => (stderr += d.toString()));
 
-    proc.on("close", (code) => {
+    proc.on('close', (code) => {
       if (code === 0) resolve({ stdout });
       else reject(new Error(stderr || `Python exited with ${code}`));
     });
@@ -55,24 +55,20 @@ export async function runPython(scriptPath: string, teamId: string): Promise<Pyt
 
 // CSV converter
 function toCSV(label: string, output: string): string {
-  return [
-    "field,value",
-    `script,${label}`,
-    `output,${JSON.stringify(output)}`
-  ].join("\n");
+  return ['field,value', `script,${label}`, `output,${JSON.stringify(output)}`].join('\n');
 }
 
 // Main Export
 export async function runExport(teamId: string) {
-  const tmp = "/tmp";
+  const tmp = '/tmp';
 
   const paths = {
-    p2404: path.join(tmp, "2404-handler.py"),
-    pinv: path.join(tmp, "inventory-handler.py"),
+    p2404: path.join(tmp, '2404-handler.py'),
+    pinv: path.join(tmp, 'inventory-handler.py'),
   };
 
-  await downloadScript("scripts/2404-handler.py", paths.p2404);
-  await downloadScript("scripts/inventory-handler.py", paths.pinv);
+  await downloadScript('scripts/2404-handler.py', paths.p2404);
+  await downloadScript('scripts/inventory-handler.py', paths.pinv);
 
   fs.chmodSync(paths.p2404, 0o755);
   fs.chmodSync(paths.pinv, 0o755);
@@ -80,8 +76,8 @@ export async function runExport(teamId: string) {
   const r1 = await runPython(paths.p2404, teamId);
   const r2 = await runPython(paths.pinv, teamId);
 
-  const csv2404 = toCSV("2404", r1.stdout);
-  const csvInventory = toCSV("inventory", r2.stdout);
+  const csv2404 = toCSV('2404', r1.stdout);
+  const csvInventory = toCSV('inventory', r2.stdout);
 
   return {
     success: true,
@@ -100,7 +96,7 @@ export const exportRouter = router({
       } catch (err: any) {
         return {
           success: false,
-          error: err.message || "Failed to run export.",
+          error: err.message || 'Failed to run export.',
         };
       }
     }),

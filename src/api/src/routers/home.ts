@@ -90,7 +90,6 @@ async function softReset(teamId: string) {
 }
 
 export const homeRouter = router({
-
   /** HARD RESET — deletes all items + images */
   hardReset: publicProcedure
     .input(z.object({ teamId: z.string().min(1) }))
