@@ -179,17 +179,23 @@ export const teamspaceRouter = router({
           return { success: false, error: 'User not found by username.' };
         }
 
+        // IMPORTANT FIX:
+        // Use Cognito's real user identifier: user.sub
+        const targetId = user.sub;
+
         const now = new Date().toISOString();
 
         const member = {
           PK: `TEAM#${input.inviteWorkspaceId}`,
-          SK: `MEMBER#${user.accountId}`,
+          SK: `MEMBER#${targetId}`,
           Type: 'TeamMember',
           teamId: input.inviteWorkspaceId,
-          userId: user.accountId,
+          userId: targetId,
           role: 'Member',
           joinedAt: now,
-          GSI1PK: `USER#${user.accountId}`,
+
+          // Correct GSI so getTeamspace works
+          GSI1PK: `USER#${targetId}`,
           GSI1SK: `TEAM#${input.inviteWorkspaceId}`,
         };
 
@@ -204,7 +210,6 @@ export const teamspaceRouter = router({
         };
       }
     }),
-
   /** REMOVE USER FROM TEAMSPACE */
   removeUserTeamspace: publicProcedure
     .input(
