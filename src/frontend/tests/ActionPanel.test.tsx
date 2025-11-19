@@ -191,21 +191,28 @@ describe('ActionPanel', () => {
 
     it('uploads image if file selected', async () => {
       const mockFile = new File(['image'], 'test.jpg', { type: 'image/jpeg' });
-      const propsWithFile = { ...createModeProps, selectedImageFile: mockFile };
+     const propsWithFile = {
+        ...createModeProps,
+        selectedImageFile: mockFile,
+      };
 
       renderWithRouter(<ActionPanel {...propsWithFile} />);
 
       const createButton = screen.getByRole('button', { name: /Create Item/i });
       fireEvent.click(createButton);
 
-      await waitFor(() => {
-        expect(vi.mocked(itemsAPI.uploadImage)).toHaveBeenCalledWith(
-          'test-team-123',
-          expect.any(String),
-          expect.any(String),
-        );
-      });
-    });
+        await waitFor(() => {
+          expect(vi.mocked(itemsAPI.createItem)).toHaveBeenCalled();
+
+          const call = vi.mocked(itemsAPI.createItem).mock.calls[0];
+
+          // Argument 5 is: serialNumber
+          // Argument 6 is: imageBase64 (your code)
+          const imageArg = call[5];
+
+          expect(imageArg).toMatch(/^data:image\/jpeg;base64,/);
+        });
+        });
   });
 
   describe('Delete Functionality', () => {
@@ -413,27 +420,30 @@ describe('ActionPanel', () => {
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
 
-    it('uploads new image when file selected', async () => {
-      const mockFile = new File(['image-data'], 'test.jpg', { type: 'image/jpeg' });
-      const propsWithFile = {
-        ...baseProps,
-        isEditMode: true,
-        selectedImageFile: mockFile,
-      };
+it('embeds new base64 image when file selected', async () => {
+  const mockFile = new File(['image-data'], 'test.jpg', { type: 'image/jpeg' });
 
-      renderWithRouter(<ActionPanel {...propsWithFile} />);
+  const propsWithFile = {
+    ...baseProps,
+    isEditMode: true,
+    selectedImageFile: mockFile,
+  };
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
-      fireEvent.click(saveButton);
+  renderWithRouter(<ActionPanel {...propsWithFile} />);
 
-      await waitFor(() => {
-        expect(vi.mocked(itemsAPI.uploadImage)).toHaveBeenCalledWith(
-          'test-team-123',
-          'W123',
-          expect.stringContaining('data:'),
-        );
-      });
-    });
+  const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+  fireEvent.click(saveButton);
+
+  await waitFor(() => {
+    expect(vi.mocked(itemsAPI.updateItem)).toHaveBeenCalled();
+
+    const call = vi.mocked(itemsAPI.updateItem).mock.calls[0];
+
+    const body = call[2];
+
+    expect(body.imageBase64).toMatch(/^data:image\/jpeg;base64,/);
+  });
+});
   });
 
   describe('Error Handling', () => {
