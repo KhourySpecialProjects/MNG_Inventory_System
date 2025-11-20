@@ -364,6 +364,14 @@ interface RemoveMemberDialogProps extends DialogsProps {
   workspaceName: string;
 }
 
+interface ListedUser {
+  userId: string;
+  username: string;
+  name: string;
+  teams: { teamId: string; role: string }[];
+}
+
+
 export function RemoveMemberDialog({
   open,
   onClose,
@@ -374,6 +382,8 @@ export function RemoveMemberDialog({
 }: RemoveMemberDialogProps) {
   const [memberUsername, setMemberUsername] = useState('');
   const [loading, setLoading] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<any[]>([]);
 
   async function getUserId(): Promise<string> {
     const user = await me();
@@ -418,6 +428,30 @@ export function RemoveMemberDialog({
     }
   }
 
+  useEffect(() => {
+    if (!open) {
+      setMemberUsername('');
+      setTeamMembers([]);
+      setFilteredMembers([]);
+      return;
+    }
+
+    async function load() {
+      const data = await getAllUsers();
+      const all = (data.users || []) as ListedUser[];
+
+      const members = all.filter((u) =>
+        u.teams.some((t: any) => t.teamId === workspaceId)
+      );
+
+      setTeamMembers(members);
+      setFilteredMembers(members);
+    }
+
+    load();
+  }, [open, workspaceId]);
+
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>Remove Member</DialogTitle>
@@ -425,10 +459,57 @@ export function RemoveMemberDialog({
         <Typography sx={{ mb: 1.5, fontWeight: 600 }}>Workspace: {workspaceName}</Typography>
         <TextField
           fullWidth
-          label="Member Username"
+          label="Search Member"
           value={memberUsername}
-          onChange={(e) => setMemberUsername(e.target.value)}
+          onChange={(e) => {
+            const raw = e.target.value;
+            const v = raw.toLowerCase();
+
+            setMemberUsername(raw);
+
+            const f = teamMembers.filter(
+              (m) =>
+                m.username.toLowerCase().includes(v) ||
+                (m.name && m.name.toLowerCase().includes(v))
+            );
+            setFilteredMembers(f);
+          }}
+          sx={{ mb: 1 }}
         />
+
+        {memberUsername && filteredMembers.length > 0 && (
+          <Box
+            sx={{
+              maxHeight: 200,
+              overflowY: 'auto',
+              border: '1px solid #ddd',
+              borderRadius: 1,
+              mt: 1,
+            }}
+          >
+            {filteredMembers.map((m) => (
+              <Box
+                key={m.userId}
+                sx={{
+                  p: 1,
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: '#f5f5f5' },
+                }}
+                onClick={() => {
+                  setMemberUsername(m.username);
+                  setFilteredMembers([]);
+                }}
+              >
+                <Typography sx={{ fontWeight: 600 }}>{m.username}</Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+                  {m.name}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>
