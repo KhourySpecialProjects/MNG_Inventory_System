@@ -152,6 +152,42 @@ export const teamspaceRouter = router({
       }
     }),
 
+/** GET SINGLE TEAM BY ID */
+getTeamById: publicProcedure
+  .input(z.object({ teamId: z.string().min(1), userId: z.string().min(1) }))
+  .query(async ({ input }) => {
+    try {
+      // Check if user is a member of this team (any role/permission grants access to view)
+      const memberCheck = await doc.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `TEAM#${input.teamId}`, SK: `MEMBER#${input.userId}` },
+        }),
+      );
+
+      if (!memberCheck.Item) {
+        return { success: false, error: 'Not authorized to view this team.' };
+      }
+
+      // Get team metadata
+      const res = await doc.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `TEAM#${input.teamId}`, SK: 'METADATA' },
+        }),
+      );
+
+      if (!res.Item) {
+        return { success: false, error: 'Team not found.' };
+      }
+
+      return { success: true, team: res.Item };
+    } catch (err: any) {
+      console.error('❌ getTeamById error:', err);
+      return { success: false, error: err.message || 'Failed to fetch team.' };
+    }
+  }),
+
   /** ADD USER TO TEAMSPACE */
   addUserTeamspace: publicProcedure
     .input(
