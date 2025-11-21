@@ -17,15 +17,37 @@ import NavBar from "../components/NavBar";
 import ExportPageContent from "../components/ExportPageContent";
 import { getItems } from "../api/items";
 
-// Define the expected shape of a CSV row (flat object)
-interface CsvItem extends Record<string, any> {}
+// 1. Define the interface for the raw item object received from the API
+interface InventoryItem {
+    itemId?: string;
+    name?: string;
+    status?: string;
+    description?: string;
+    createdAt: number;
+    // Allows for other properties that are not explicitly typed, safely avoiding 'any'
+    [key: string]: unknown; 
+}
+
+// 2. Define the expected shape of a CSV row (flat object)
+// The interface now explicitly includes the keys created in itemsToCsvData
+interface CsvItem {
+    "Item ID": string;
+    "Product Name": string;
+    "Status": string;
+    "Description": string;
+    "Date Added": string;
+    "Team ID": string;
+    // Use Record<string, unknown> for flexible keys, safer than Record<string, any>
+    [key: string]: unknown; 
+}
 
 
 /**
  * Converts the raw nested item array into a flattened, report-ready CSV data format,
  * filtered by the active category.
  */
-const itemsToCsvData = (rawItems: any[], category: "completed" | "broken", currentTeamId: string): CsvItem[] => {
+// FIX: Replaced 'any[]' with 'InventoryItem[]' and 'CsvItem[]'
+const itemsToCsvData = (rawItems: InventoryItem[], category: "completed" | "broken", currentTeamId: string): CsvItem[] => {
     // Define which statuses map to the active category
     const validStatuses = category === "completed"
         ? ["completed", "complete", "found"]
@@ -48,7 +70,7 @@ const itemsToCsvData = (rawItems: any[], category: "completed" | "broken", curre
         }),
         "Team ID": currentTeamId,
         // You can add more fields here if they exist on the raw item object
-    }));
+    })) as CsvItem[]; // Assert the shape back to CsvItem[]
 };
 
 
@@ -56,7 +78,8 @@ export default function ExportPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
 
-  const [items, setItems] = useState<any[]>([]);
+  // FIX: Replaced 'any[]' with 'InventoryItem[]'
+  const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<"completed" | "broken">("completed");
 
@@ -67,7 +90,8 @@ export default function ExportPage() {
 
       try {
         const result = await getItems(teamId);
-        setItems(Array.isArray(result.items) ? result.items : []);
+        // Ensure result.items is treated as the correct type when setting state
+        setItems(Array.isArray(result.items) ? (result.items as InventoryItem[]) : []);
       } catch (err) {
         console.error("Failed to load items:", err);
       } finally {
@@ -82,6 +106,7 @@ export default function ExportPage() {
   const totals = { toReview: 0, completed: 0, shortages: 0, damaged: 0 };
 
   for (const item of items) {
+    // item is now InventoryItem, status is safely accessed
     const status = (item.status ?? "to review").toLowerCase();
 
     switch (status) {
