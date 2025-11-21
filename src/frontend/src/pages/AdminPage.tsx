@@ -13,6 +13,20 @@ export default function AdminPage() {
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
       <TopBar isLoggedIn={true} />
 
+      <Box mb={3}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/teams')}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            color: theme.palette.text.primary,
+            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
+          }}
+        >
+          Back
+        </Button>
+      </Box>
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Paper
           elevation={2}
