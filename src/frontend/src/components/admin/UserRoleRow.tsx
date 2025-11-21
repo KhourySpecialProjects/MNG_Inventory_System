@@ -66,10 +66,10 @@ export default function UserRoleRow({ user, roles, onRoleChange }: UserRoleRowPr
     >
       <Box sx={{ flex: 1 }}>
         <Typography variant="body1" sx={{ fontWeight: 500 }}>
-          {user.name}
+          @{user.username}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          @{user.username}
+          {user.name}
         </Typography>
       </Box>
 
