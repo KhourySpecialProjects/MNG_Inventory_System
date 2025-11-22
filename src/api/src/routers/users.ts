@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, permissionedProcedure } from './trpc';
 import { ScanCommand, UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { doc } from '../aws';
 import { loadConfig } from '../process';
@@ -8,7 +8,7 @@ const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
 
 export const usersRouter = router({
-  listUsersWithRoles: publicProcedure.query(async () => {
+  listUsersWithRoles: permissionedProcedure('user.assign_roles').query(async () => {
     const usersRes = await doc.send(
       new ScanCommand({
         TableName: TABLE_NAME,
@@ -30,7 +30,7 @@ export const usersRouter = router({
     return { users };
   }),
 
-  assignRole: publicProcedure
+  assignRole: permissionedProcedure('user.assign_roles')
     .input(
       z.object({
         userId: z.string(),
@@ -71,7 +71,8 @@ export const usersRouter = router({
       return { success: true, roleName: input.roleName };
     }),
 
-  getUserRole: publicProcedure.input(z.object({ userId: z.string() })).query(async ({ input }) => {
+  getUserRole: permissionedProcedure("user.assign_roles")
+  .input(z.object({ userId: z.string() })).query(async ({ input }) => {
     const userRes = await doc.send(
       new GetCommand({
         TableName: TABLE_NAME,

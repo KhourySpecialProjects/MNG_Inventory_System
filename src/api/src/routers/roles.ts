@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import {
   GetCommand,
   PutCommand,
@@ -23,6 +23,7 @@ export type Permission =
   // user management
   | 'user.invite'
   | 'user.delete'
+  | 'user.assign_roles'
   // Role management
   | 'role.add'
   | 'role.modify'
@@ -119,7 +120,8 @@ export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'per
 ];
 
 export const rolesRouter = router({
-  createRole: publicProcedure.input(roleInput).mutation(async ({ input }) => {
+  createRole: permissionedProcedure('role.add')
+  .input(roleInput).mutation(async ({ input }) => {
     const now = new Date().toISOString();
     const roleId = input.name.trim().toUpperCase();
 
@@ -144,7 +146,8 @@ export const rolesRouter = router({
     return { success: true, role };
   }),
 
-  getAllRoles: publicProcedure.query(async () => {
+  getAllRoles: permissionedProcedure('role.view')
+  .query(async () => {
     const res = await doc.send(
       new ScanCommand({
         TableName: TABLE_NAME,
@@ -160,7 +163,7 @@ export const rolesRouter = router({
     return { roles };
   }),
 
-  getRole: publicProcedure
+  getRole: protectedProcedure
     .input(z.object({ roleId: z.string().optional(), name: z.string().optional() }))
     .query(async ({ input }) => {
       if (!input.roleId && !input.name) throw new Error('Provide roleId or name');
@@ -170,7 +173,8 @@ export const rolesRouter = router({
       return { role };
     }),
 
-  updateRole: publicProcedure.input(updateRoleInput).mutation(async ({ input }) => {
+  updateRole: permissionedProcedure('role.modify')
+  .input(updateRoleInput).mutation(async ({ input }) => {
     const roleId = input.name.trim().toUpperCase();
     const existing = await getRole(roleId);
     if (!existing) throw new Error('Role not found');
@@ -209,7 +213,8 @@ export const rolesRouter = router({
     return { success: true, role: updated.Attributes as RoleEntity };
   }),
 
-  deleteRole: publicProcedure.input(z.object({ name: z.string() })).mutation(async ({ input }) => {
+  deleteRole: permissionedProcedure('role.remove')
+  .input(z.object({ name: z.string() })).mutation(async ({ input }) => {
     const roleId = input.name.trim().toUpperCase();
     const role = await getRole(roleId);
     if (!role) return { success: true, deleted: false };

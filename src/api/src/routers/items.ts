@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import {
   S3Client,
@@ -56,7 +56,7 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
 /* =========================== ROUTER =========================== */
 export const itemsRouter = router({
   /** CREATE ITEM **/
-  createItem: publicProcedure
+  createItem: permissionedProcedure('item.create')
     .input(
       z.object({
         teamId: z.string().min(1),
@@ -149,7 +149,7 @@ export const itemsRouter = router({
       }
     }),
 
-  getItems: publicProcedure
+  getItems: permissionedProcedure('item.view')
     .input(z.object({ teamId: z.string(), userId: z.string() }))
     .query(async ({ input }) => {
       try {
@@ -179,7 +179,7 @@ export const itemsRouter = router({
       }
     }),
 
-  getItem: publicProcedure
+  getItem: permissionedProcedure('item.view')
     .input(
       z.object({
         teamId: z.string(),
@@ -212,7 +212,7 @@ export const itemsRouter = router({
       }
     }),
 
-  updateItem: publicProcedure
+  updateItem: permissionedProcedure('item.update')
     .input(
       z.object({
         teamId: z.string(),
@@ -300,7 +300,7 @@ export const itemsRouter = router({
       }
     }),
 
-  deleteItem: publicProcedure
+  deleteItem: permissionedProcedure('item.delete')
     .input(
       z.object({
         teamId: z.string(),
@@ -345,7 +345,7 @@ export const itemsRouter = router({
         return { success: false, error: err.message };
       }
     }),
-  uploadImage: publicProcedure
+  uploadImage: protectedProcedure
     .input(
       z.object({
         teamId: z.string(),
