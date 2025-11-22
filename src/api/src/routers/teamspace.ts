@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import {
   GetCommand,
   PutCommand,
@@ -21,43 +21,9 @@ function newId(n = 10): string {
     .replace(/[+/=]/g, (c) => ({ '+': '-', '/': '_', '=': '' })[c] as string);
 }
 
-/** Check if a user has a permission inside a specific teamspace */
-async function hasPermission(userId: string, teamId: string, permission: string): Promise<boolean> {
-  try {
-    const res = await doc.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { PK: `TEAM#${teamId}`, SK: `MEMBER#${userId}` },
-      }),
-    );
-    const member = res.Item as { role?: string } | undefined;
-    if (!member) return false;
-
-    if (member.role?.toLowerCase() === 'owner') return true;
-
-    const roleRes = await doc.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: {
-          PK: `ROLENAME#${member.role?.toLowerCase()}`,
-          SK: `ROLE#${member.role?.toUpperCase()}`,
-        },
-      }),
-    );
-    const role = roleRes.Item as { permissions?: string } | undefined;
-    if (!role) return false;
-
-    const perms: string[] = JSON.parse(role.permissions ?? '[]');
-    return perms.includes(permission);
-  } catch (err) {
-    console.error('❌ hasPermission error:', err);
-    return false;
-  }
-}
-
 export const teamspaceRouter = router({
   /** CREATE TEAMSPACE */
-  createTeamspace: publicProcedure
+  createTeamspace: permissionedProcedure('team.create')
     .input(
       z.object({
         name: z.string().min(2).max(60),
@@ -123,7 +89,7 @@ export const teamspaceRouter = router({
     }),
 
   /** GET TEAMSPACES */
-  getTeamspace: publicProcedure
+  getTeamspace: permissionedProcedure("team.view")
     .input(z.object({ userId: z.string().min(1) }))
     .query(async ({ input }) => {
       try {
@@ -159,7 +125,7 @@ export const teamspaceRouter = router({
     }),
 
   /** ADD USER TO TEAMSPACE */
-  addUserTeamspace: publicProcedure
+  addUserTeamspace: permissionedProcedure('team.add_member')
     .input(
       z.object({
         userId: z.string().min(1),
@@ -217,7 +183,7 @@ export const teamspaceRouter = router({
       }
     }),
   /** REMOVE USER FROM TEAMSPACE */
-  removeUserTeamspace: publicProcedure
+  removeUserTeamspace: permissionedProcedure('team.remove_member')
     .input(
       z.object({
         userId: z.string().min(1),
@@ -227,15 +193,6 @@ export const teamspaceRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        const allowed = await hasPermission(
-          input.userId,
-          input.inviteWorkspaceId,
-          'team.remove_member',
-        );
-        if (!allowed) {
-          return { success: false, error: 'Not authorized to remove members.' };
-        }
-
         // 🔍 lookup user by username
         const q = await doc.send(
           new QueryCommand({
@@ -274,7 +231,7 @@ export const teamspaceRouter = router({
     }),
 
   /** DELETE TEAMSPACE */
-  deleteTeamspace: publicProcedure
+  deleteTeamspace: permissionedProcedure('team.delete')
     .input(
       z.object({
         inviteWorkspaceId: z.string().min(1),
@@ -283,15 +240,6 @@ export const teamspaceRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        const allowed = await hasPermission(
-          input.userId,
-          input.inviteWorkspaceId,
-          'workspace.delete',
-        );
-        if (!allowed) {
-          return { success: false, error: 'Not authorized to delete team.' };
-        }
-
         const q = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
@@ -318,81 +266,81 @@ export const teamspaceRouter = router({
         return { success: false, error: err.message || 'Failed to delete teamspace.' };
       }
     }),
-/** GET ALL USERS */
-getAllUsers: publicProcedure.query(async () => {
-  try {
-    const res = await doc.send(
-      new ScanCommand({
-        TableName: TABLE_NAME,
-        FilterExpression: 'begins_with(PK, :pk) AND SK = :sk',
-        ExpressionAttributeValues: {
-          ':pk': 'USER#',
-          ':sk': 'METADATA',
-        },
-      })
-    );
-
-    const rawUsers = res.Items ?? [];
-    const users = [];
-
-    for (const u of rawUsers) {
-      const userId = u.sub ?? u.userId;
-
-      // 1. Fetch teams the user belongs to
-      const teamsRes = await doc.send(
-        new QueryCommand({
+  /** GET ALL USERS */
+  getAllUsers: protectedProcedure
+  .query(async () => {
+    try {
+      const res = await doc.send(
+        new ScanCommand({
           TableName: TABLE_NAME,
-          IndexName: 'GSI_UserTeams',
-          KeyConditionExpression: 'GSI1PK = :pk',
+          FilterExpression: 'begins_with(PK, :pk) AND SK = :sk',
           ExpressionAttributeValues: {
-            ':pk': `USER#${userId}`,
+            ':pk': 'USER#',
+            ':sk': 'METADATA',
           },
-        })
+        }),
       );
 
-      const teamItems = teamsRes.Items ?? [];
-      const teams: any[] = [];
+      const rawUsers = res.Items ?? [];
+      const users = [];
 
-      // 2. For each membership, fetch TEAM metadata to get teamName
-      for (const t of teamItems) {
-        const teamId = t.teamId ?? t.GSI1SK?.replace('TEAM#', '');
+      for (const u of rawUsers) {
+        const userId = u.sub ?? u.userId;
 
-        // Get TEAM#<id> METADATA
-        const metaRes = await doc.send(
-          new GetCommand({
+        // 1. Fetch teams the user belongs to
+        const teamsRes = await doc.send(
+          new QueryCommand({
             TableName: TABLE_NAME,
-            Key: {
-              PK: `TEAM#${teamId}`,
-              SK: 'METADATA',
+            IndexName: 'GSI_UserTeams',
+            KeyConditionExpression: 'GSI1PK = :pk',
+            ExpressionAttributeValues: {
+              ':pk': `USER#${userId}`,
             },
-          })
+          }),
         );
 
-        const meta = metaRes.Item || {};
+        const teamItems = teamsRes.Items ?? [];
+        const teams: any[] = [];
 
-        teams.push({
-          teamId,
-          teamName: meta.GSI_NAME ?? meta.name ?? '', 
-          role: t.role,
+        // 2. For each membership, fetch TEAM metadata to get teamName
+        for (const t of teamItems) {
+          const teamId = t.teamId ?? t.GSI1SK?.replace('TEAM#', '');
+
+          // Get TEAM#<id> METADATA
+          const metaRes = await doc.send(
+            new GetCommand({
+              TableName: TABLE_NAME,
+              Key: {
+                PK: `TEAM#${teamId}`,
+                SK: 'METADATA',
+              },
+            }),
+          );
+
+          const meta = metaRes.Item || {};
+
+          teams.push({
+            teamId,
+            teamName: meta.GSI_NAME ?? meta.name ?? '',
+            role: t.role,
+          });
+        }
+
+        users.push({
+          userId,
+          username: u.username,
+          name: u.name ?? '',
+          teams,
         });
       }
 
-      users.push({
-        userId,
-        username: u.username,
-        name: u.name ?? '',
-        teams,
-      });
+      return { success: true, users };
+    } catch (err: any) {
+      console.error('❌ getAllUsers error:', err);
+      return {
+        success: false,
+        error: err.message || 'Failed to fetch all users.',
+      };
     }
-
-    return { success: true, users };
-  } catch (err: any) {
-    console.error('❌ getAllUsers error:', err);
-    return {
-      success: false,
-      error: err.message || 'Failed to fetch all users.',
-    };
-  }
-}),
-
+  }),
 });
