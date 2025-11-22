@@ -159,41 +159,41 @@ export const teamspaceRouter = router({
       }
     }),
 
-/** GET SINGLE TEAM BY ID */
-getTeamById: publicProcedure
-  .input(z.object({ teamId: z.string().min(1), userId: z.string().min(1) }))
-  .query(async ({ input }) => {
-    try {
-      // Check if user is a member of this team (any role/permission grants access to view)
-      const memberCheck = await doc.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: { PK: `TEAM#${input.teamId}`, SK: `MEMBER#${input.userId}` },
-        }),
-      );
+  /** GET SINGLE TEAM BY ID */
+  getTeamById: publicProcedure
+    .input(z.object({ teamId: z.string().min(1), userId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      try {
+        // Check if user is a member of this team (any role/permission grants access to view)
+        const memberCheck = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEAM#${input.teamId}`, SK: `MEMBER#${input.userId}` },
+          }),
+        );
 
-      if (!memberCheck.Item) {
-        return { success: false, error: 'Not authorized to view this team.' };
+        if (!memberCheck.Item) {
+          return { success: false, error: 'Not authorized to view this team.' };
+        }
+
+        // Get team metadata
+        const res = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEAM#${input.teamId}`, SK: 'METADATA' },
+          }),
+        );
+
+        if (!res.Item) {
+          return { success: false, error: 'Team not found.' };
+        }
+
+        return { success: true, team: res.Item };
+      } catch (err: any) {
+        console.error('❌ getTeamById error:', err);
+        return { success: false, error: err.message || 'Failed to fetch team.' };
       }
-
-      // Get team metadata
-      const res = await doc.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: { PK: `TEAM#${input.teamId}`, SK: 'METADATA' },
-        }),
-      );
-
-      if (!res.Item) {
-        return { success: false, error: 'Team not found.' };
-      }
-
-      return { success: true, team: res.Item };
-    } catch (err: any) {
-      console.error('❌ getTeamById error:', err);
-      return { success: false, error: err.message || 'Failed to fetch team.' };
-    }
-  }),
+    }),
 
   /** ADD USER TO TEAMSPACE */
   addUserTeamspace: publicProcedure
@@ -383,81 +383,80 @@ getTeamById: publicProcedure
         return { success: false, error: err.message || 'Failed to delete teamspace.' };
       }
     }),
-/** GET ALL USERS */
-getAllUsers: publicProcedure.query(async () => {
-  try {
-    const res = await doc.send(
-      new ScanCommand({
-        TableName: TABLE_NAME,
-        FilterExpression: 'begins_with(PK, :pk) AND SK = :sk',
-        ExpressionAttributeValues: {
-          ':pk': 'USER#',
-          ':sk': 'METADATA',
-        },
-      })
-    );
-
-    const rawUsers = res.Items ?? [];
-    const users = [];
-
-    for (const u of rawUsers) {
-      const userId = u.sub ?? u.userId;
-
-      // 1. Fetch teams the user belongs to
-      const teamsRes = await doc.send(
-        new QueryCommand({
+  /** GET ALL USERS */
+  getAllUsers: publicProcedure.query(async () => {
+    try {
+      const res = await doc.send(
+        new ScanCommand({
           TableName: TABLE_NAME,
-          IndexName: 'GSI_UserTeams',
-          KeyConditionExpression: 'GSI1PK = :pk',
+          FilterExpression: 'begins_with(PK, :pk) AND SK = :sk',
           ExpressionAttributeValues: {
-            ':pk': `USER#${userId}`,
+            ':pk': 'USER#',
+            ':sk': 'METADATA',
           },
-        })
+        }),
       );
 
-      const teamItems = teamsRes.Items ?? [];
-      const teams: any[] = [];
+      const rawUsers = res.Items ?? [];
+      const users = [];
 
-      // 2. For each membership, fetch TEAM metadata to get teamName
-      for (const t of teamItems) {
-        const teamId = t.teamId ?? t.GSI1SK?.replace('TEAM#', '');
+      for (const u of rawUsers) {
+        const userId = u.sub ?? u.userId;
 
-        // Get TEAM#<id> METADATA
-        const metaRes = await doc.send(
-          new GetCommand({
+        // 1. Fetch teams the user belongs to
+        const teamsRes = await doc.send(
+          new QueryCommand({
             TableName: TABLE_NAME,
-            Key: {
-              PK: `TEAM#${teamId}`,
-              SK: 'METADATA',
+            IndexName: 'GSI_UserTeams',
+            KeyConditionExpression: 'GSI1PK = :pk',
+            ExpressionAttributeValues: {
+              ':pk': `USER#${userId}`,
             },
-          })
+          }),
         );
 
-        const meta = metaRes.Item || {};
+        const teamItems = teamsRes.Items ?? [];
+        const teams: any[] = [];
 
-        teams.push({
-          teamId,
-          teamName: meta.GSI_NAME ?? meta.name ?? '', 
-          role: t.role,
+        // 2. For each membership, fetch TEAM metadata to get teamName
+        for (const t of teamItems) {
+          const teamId = t.teamId ?? t.GSI1SK?.replace('TEAM#', '');
+
+          // Get TEAM#<id> METADATA
+          const metaRes = await doc.send(
+            new GetCommand({
+              TableName: TABLE_NAME,
+              Key: {
+                PK: `TEAM#${teamId}`,
+                SK: 'METADATA',
+              },
+            }),
+          );
+
+          const meta = metaRes.Item || {};
+
+          teams.push({
+            teamId,
+            teamName: meta.GSI_NAME ?? meta.name ?? '',
+            role: t.role,
+          });
+        }
+
+        users.push({
+          userId,
+          username: u.username,
+          name: u.name ?? '',
+          teams,
         });
       }
 
-      users.push({
-        userId,
-        username: u.username,
-        name: u.name ?? '',
-        teams,
-      });
+      return { success: true, users };
+    } catch (err: any) {
+      console.error('❌ getAllUsers error:', err);
+      return {
+        success: false,
+        error: err.message || 'Failed to fetch all users.',
+      };
     }
-
-    return { success: true, users };
-  } catch (err: any) {
-    console.error('❌ getAllUsers error:', err);
-    return {
-      success: false,
-      error: err.message || 'Failed to fetch all users.',
-    };
-  }
-}),
-
+  }),
 });

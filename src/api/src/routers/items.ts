@@ -187,25 +187,24 @@ export const itemsRouter = router({
         const rawItems = result.Items ?? [];
 
         const items = await Promise.all(
-        rawItems.map(async (raw: any) => {
-          const signed = await getPresignedUrl(raw.imageKey);
+          rawItems.map(async (raw: any) => {
+            const signed = await getPresignedUrl(raw.imageKey);
 
-          let parentName: string | null = null;
+            let parentName: string | null = null;
 
-          if (raw.parent) {
-            const parentRes = await doc.send(
-              new GetCommand({
-                TableName: TABLE_NAME,
-                Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
-              }),
-            );
-            parentName = parentRes.Item?.name ?? null;
-          }
+            if (raw.parent) {
+              const parentRes = await doc.send(
+                new GetCommand({
+                  TableName: TABLE_NAME,
+                  Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
+                }),
+              );
+              parentName = parentRes.Item?.name ?? null;
+            }
 
-          return { ...raw, imageLink: signed, parentName };
-        }),
-      );
-
+            return { ...raw, imageLink: signed, parentName };
+          }),
+        );
 
         return { success: true, items };
       } catch (err: any) {
@@ -362,7 +361,6 @@ export const itemsRouter = router({
             parentName,
           },
         };
-
       } catch (err: any) {
         return { success: false, error: err.message };
       }

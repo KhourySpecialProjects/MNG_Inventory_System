@@ -114,6 +114,6 @@ export async function getAllUsers() {
   const json = await res.json();
   const data = json?.result?.data;
   if (!data) throw new Error('unexpected response from getAllUsers');
-  console.log(data)
+  console.log(data);
   return data;
 }
