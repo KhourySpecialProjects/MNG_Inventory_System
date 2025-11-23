@@ -134,7 +134,12 @@ export default function HomePage() {
         const overview = {
           totals,
           percentReviewed,
-          teamStats: Object.entries(users).map(([userId, data]) => ({ 
+          teamStats: Object.entries(users)
+          .filter(([, data]) => {
+            // Only include users who have reviewed at least one item
+            return data.completed > 0 || data.shortages > 0 || data.damaged > 0;
+          })
+          .map(([userId, data]) => ({ 
             userId,
             userName: data.userName, 
             completed: data.completed,
