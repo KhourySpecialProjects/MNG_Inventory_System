@@ -11,6 +11,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
 import { doc } from '../aws';
 import { loadConfig } from '../process';
+import { TRPCError } from '@trpc/server';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
@@ -37,6 +38,26 @@ function getImageExtension(base64: string): string {
 function stripBase64Header(base64: string): string {
   return base64.replace(/^data:image\/\w+;base64,/, '');
 }
+
+async function assertTeamMembership(userId: string, teamId: string) {
+  const res = await doc.send(
+    new GetCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        PK: `TEAM#${teamId}`,
+        SK: `MEMBER#${userId}`,  
+      },
+    }),
+  );
+
+  if (!res.Item) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'User is not a member of this teamspace',
+    });
+  }
+}
+
 
 async function getUserName(userId: string): Promise<string | undefined> {
   const res = await doc.send(
@@ -169,82 +190,81 @@ export const itemsRouter = router({
       }
     }),
 
-  getItems: permissionedProcedure('item.view')
-    .input(z.object({ teamId: z.string(), userId: z.string() }))
-    .query(async ({ input }) => {
-      try {
-        const result = await doc.send(
-          new QueryCommand({
-            TableName: TABLE_NAME,
-            KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-            ExpressionAttributeValues: {
-              ':pk': `TEAM#${input.teamId}`,
-              ':sk': 'ITEM#',
-            },
-          }),
-        );
+getItems: permissionedProcedure('item.view')
+  .input(z.object({ teamId: z.string(), userId: z.string() }))
+  .query(async ({ input, ctx }) => {
 
-        const rawItems = result.Items ?? [];
+    await assertTeamMembership(ctx.user!.userId, input.teamId);
 
-        const items = await Promise.all(
-        rawItems.map(async (raw: any) => {
-          const signed = await getPresignedUrl(raw.imageKey);
-
-          let parentName: string | null = null;
-
-          if (raw.parent) {
-            const parentRes = await doc.send(
-              new GetCommand({
-                TableName: TABLE_NAME,
-                Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
-              }),
-            );
-            parentName = parentRes.Item?.name ?? null;
-          }
-
-          return { ...raw, imageLink: signed, parentName };
-        }),
-      );
-
-
-        return { success: true, items };
-      } catch (err: any) {
-        return { success: false, error: err.message };
-      }
-    }),
-
-  getItem: permissionedProcedure('item.view')
-    .input(
-      z.object({
-        teamId: z.string(),
-        itemId: z.string(),
-        userId: z.string(),
+    const result = await doc.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': `TEAM#${input.teamId}`,
+          ':sk': 'ITEM#',
+        },
       }),
-    )
-    .query(async ({ input }) => {
-      try {
-        const result = await doc.send(
-          new GetCommand({
-            TableName: TABLE_NAME,
-            Key: {
-              PK: `TEAM#${input.teamId}`,
-              SK: `ITEM#${input.itemId}`,
-            },
-          }),
-        );
+    );
 
-        if (!result.Item) return { success: false, error: 'Item not found' };
+    const rawItems = result.Items ?? [];
 
-        const signed = await getPresignedUrl(result.Item.imageKey);
+    const items = await Promise.all(
+      rawItems.map(async (raw: any) => {
+        const signed = await getPresignedUrl(raw.imageKey);
 
-        return {
-          success: true,
-          item: { ...result.Item, imageLink: signed },
-        };
-      } catch (err: any) {
-        return { success: false, error: err.message };
-      }
+        let parentName: string | null = null;
+
+        if (raw.parent) {
+          const parentRes = await doc.send(
+            new GetCommand({
+              TableName: TABLE_NAME,
+              Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
+            }),
+          );
+          parentName = parentRes.Item?.name ?? null;
+        }
+
+        return { ...raw, imageLink: signed, parentName };
+      }),
+    );
+
+    return { success: true, items };
+  }),
+
+
+getItem: permissionedProcedure('item.view')
+  .input(
+    z.object({
+      teamId: z.string(),
+      itemId: z.string(),
+      userId: z.string(),
     }),
+  )
+  .query(async ({ input, ctx }) => {
+
+    await assertTeamMembership(ctx.user!.userId, input.teamId);
+
+    const result = await doc.send(
+      new GetCommand({
+        TableName: TABLE_NAME,
+        Key: {
+          PK: `TEAM#${input.teamId}`,
+          SK: `ITEM#${input.itemId}`,
+        },
+      }),
+    );
+
+    if (!result.Item) return { success: false, error: 'Item not found' };
+
+    const signed = await getPresignedUrl(result.Item.imageKey);
+
+    return {
+      success: true,
+      item: { ...result.Item, imageLink: signed },
+    };
+  }),
+
 
   updateItem: permissionedProcedure('item.update')
     .input(
