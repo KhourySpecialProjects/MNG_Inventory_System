@@ -5,7 +5,7 @@ const HEALTH_URL = '/health';
 
 export async function getHelloMessage() {
   // tRPC query: GET with ?input=null
-  const data: any = await trpcFetch(`${TRPC_URL}/hello?input=null`);
+  const data: { message?: string } = await trpcFetch(`${TRPC_URL}/hello?input=null`);
   return data?.message ?? 'no message';
 }
 

@@ -118,7 +118,11 @@ export async function deleteItem(teamId: string, itemId: string) {
 
 /** UPLOAD IMAGE */
 export async function uploadImage(teamId: string, nsn: string, imageBase64: string) {
-  const data: any = await trpcFetch(`${TRPC}/uploadImage`, {
+  interface UploadImageResponse {
+    imageKey?: string;
+  }
+
+  const data: UploadImageResponse = await trpcFetch(`${TRPC}/uploadImage`, {
     method: 'POST',
     body: JSON.stringify({
       teamId,
