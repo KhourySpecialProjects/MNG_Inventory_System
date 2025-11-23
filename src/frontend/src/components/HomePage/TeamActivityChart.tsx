@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContaine
 interface TeamActivityChartProps {
   teamStats: Array<{
     userId: string;
+    userName: string;
     completed: number;
     shortages: number;
     damaged: number;
@@ -24,7 +25,7 @@ export default function TeamActivityChart({ teamStats }: TeamActivityChartProps)
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={teamStats.map((t) => ({
-              name: t.userId,
+              name: t.userName,
               completed: t.completed,
               shortages: t.shortages,
               damaged: t.damaged,
@@ -61,10 +62,14 @@ export default function TeamActivityChart({ teamStats }: TeamActivityChartProps)
               dataKey="completed"
               stackId="a"
               fill={theme.palette.success.main}
-              radius={[4, 4, 0, 0]}
             />
             <Bar dataKey="shortages" stackId="a" fill={theme.palette.warning.main} />
-            <Bar dataKey="damaged" stackId="a" fill={theme.palette.error.main} />
+            <Bar 
+              dataKey="damaged" 
+              stackId="a" 
+              fill={theme.palette.error.main}
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Box>

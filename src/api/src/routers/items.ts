@@ -207,25 +207,35 @@ export const itemsRouter = router({
 
       const rawItems = result.Items ?? [];
 
-      const items = await Promise.all(
-        rawItems.map(async (raw: any) => {
-          const signed = await getPresignedUrl(raw.imageKey);
+        const items = await Promise.all(
+          rawItems.map(async (raw: any) => {
+            const signed = await getPresignedUrl(raw.imageKey);
 
-          let parentName: string | null = null;
+            let parentName: string | null = null;
 
-          if (raw.parent) {
-            const parentRes = await doc.send(
-              new GetCommand({
-                TableName: TABLE_NAME,
-                Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
-              }),
-            );
-            parentName = parentRes.Item?.name ?? null;
-          }
+            if (raw.parent) {
+              const parentRes = await doc.send(
+                new GetCommand({
+                  TableName: TABLE_NAME,
+                  Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
+                }),
+              );
+              parentName = parentRes.Item?.name ?? null;
+            }
 
-          return { ...raw, imageLink: signed, parentName };
-        }),
-      );
+            // Get the last reviewer from updateLog
+            let lastReviewedBy: string | null = null;
+            let lastReviewedByName: string | null = null;
+            
+            if (raw.updateLog && Array.isArray(raw.updateLog) && raw.updateLog.length > 0) {
+              const lastUpdate = raw.updateLog[raw.updateLog.length - 1];
+              lastReviewedBy = lastUpdate.userId ?? null;
+              lastReviewedByName = lastUpdate.userName ?? null;
+            }
+
+              return { ...raw, imageLink: signed, parentName, lastReviewedBy, lastReviewedByName };
+            }),
+          );
 
       return { success: true, items };
     }),

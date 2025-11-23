@@ -7,9 +7,9 @@ interface FollowUpsTableProps {
     itemId: string;
     name: string;
     status: string;
+    parentName: string;
     updatedAt: string;
-    notes: string;
-    parent: string;
+    lastReviewedByName: string;
   }>;
 }
 
@@ -58,6 +58,7 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
             <th>Item</th>
             <th>Kit</th>
             <th>Status</th>
+            <th>Last Reviewed By</th>
             <th>Reviewed On</th>
           </tr>
         </thead>
@@ -75,8 +76,9 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <td>{item.name}</td>
-                <td>{item.parent ?? 'N/A'}</td>
+                <td>{item.parentName ?? 'N/A'}</td>
                 <td>{item.status}</td>
+                <td>{item.lastReviewedByName ?? 'N/A'}</td>
                 <td>{item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : 'N/A'}</td>
               </tr>
             ))
