@@ -12,7 +12,7 @@ const renderWithRouter = (teamId: string) => {
       <BrowserRouter>
         <AddInventoryCard teamId={teamId} />
       </BrowserRouter>
-    </ThemeProvider>
+    </ThemeProvider>,
   );
 };
 
@@ -27,9 +27,7 @@ describe('AddInventoryCard', () => {
     it('renders the description text', () => {
       renderWithRouter('team-123');
 
-      expect(
-        screen.getByText('Register new inventory items to be reviewed')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Register new inventory items to be reviewed')).toBeInTheDocument();
     });
 
     it('renders the add inventory button', () => {
@@ -100,7 +98,6 @@ describe('AddInventoryCard', () => {
       // When teamId is empty, the path will have double slashes
       expect(button).toHaveAttribute('href', '/teams//items/new');
     });
-
 
     it('handles teamId with special characters', () => {
       renderWithRouter('team-123-abc_xyz');

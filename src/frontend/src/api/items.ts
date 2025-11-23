@@ -90,7 +90,7 @@ export async function getItem(teamId: string, itemId: string) {
  */
 async function getKitInfoFromParent(
   teamId: string,
-  parentId: string | null
+  parentId: string | null,
 ): Promise<{ liin?: string; endItemNiin?: string }> {
   if (!parentId) return {};
 

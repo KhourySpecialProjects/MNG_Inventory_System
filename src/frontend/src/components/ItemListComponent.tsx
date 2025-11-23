@@ -27,7 +27,7 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
   const theme = useTheme();
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
 
-  const rootItems = items.filter(item => !item.parent);
+  const rootItems = items.filter((item) => !item.parent);
 
   if (rootItems.length === 0) {
     return (
@@ -53,7 +53,7 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
 
   const toggleExpand = (itemId: string | number, event: React.MouseEvent) => {
     event.stopPropagation();
-    setExpandedItems(prev => {
+    setExpandedItems((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) newSet.delete(itemId);
       else newSet.add(itemId);
@@ -77,7 +77,10 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
             alignItems: 'center',
             p: 1,
             ml: level * 3,
-            backgroundColor: level > 0 ? alpha(theme.palette.background.paper, 0.6) : theme.palette.background.paper,
+            backgroundColor:
+              level > 0
+                ? alpha(theme.palette.background.paper, 0.6)
+                : theme.palette.background.paper,
             border: '1px solid',
             borderColor: 'transparent',
             borderRadius: 1.5,
@@ -94,7 +97,7 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
               cursor: 'pointer',
               '& .item-image': {
                 transform: 'scale(1.05)',
-              }
+              },
             },
           }}
         >
@@ -187,7 +190,15 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
           </Box>
 
           {/* Right side - Children count & Date */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5, flexShrink: 0 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: 0.5,
+              flexShrink: 0,
+            }}
+          >
             {hasChildren && (
               <Box
                 sx={{
@@ -234,7 +245,11 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
                 },
               }}
             >
-              {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+              {isExpanded ? (
+                <ExpandLessIcon fontSize="small" />
+              ) : (
+                <ExpandMoreIcon fontSize="small" />
+              )}
             </IconButton>
           )}
         </Card>
@@ -242,7 +257,7 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
         {hasChildren && (
           <Collapse in={isExpanded} timeout="auto">
             <Box sx={{ mt: 0.75 }}>
-              {item.children!.map(child => renderItem(child, level + 1))}
+              {item.children!.map((child) => renderItem(child, level + 1))}
             </Box>
           </Collapse>
         )}
@@ -250,9 +265,5 @@ export default function ItemListComponent({ items = [] }: ItemListComponentProps
     );
   };
 
-  return (
-    <Box>
-      {rootItems.map((item) => renderItem(item))}
-    </Box>
-  );
+  return <Box>{rootItems.map((item) => renderItem(item))}</Box>;
 }

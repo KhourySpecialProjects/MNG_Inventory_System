@@ -32,15 +32,15 @@ interface ItemDetailsFormProps {
 }
 
 export default function ItemDetailsForm({
-                                          editedProduct,
-                                          setEditedProduct,
-                                          itemsList,
-                                          isEditMode,
-                                          isCreateMode = false,
-                                          alwaysEditableFields = [],
-                                        }: ItemDetailsFormProps) {
+  editedProduct,
+  setEditedProduct,
+  itemsList,
+  isEditMode,
+  isCreateMode = false,
+  alwaysEditableFields = [],
+}: ItemDetailsFormProps) {
   const [itemType, setItemType] = React.useState<'item' | 'kit'>(
-    editedProduct?.isKit ? 'kit' : 'item'
+    editedProduct?.isKit ? 'kit' : 'item',
   );
   const [parentError, setParentError] = React.useState(false);
 
@@ -68,7 +68,7 @@ export default function ItemDetailsForm({
 
   const handleItemTypeChange = (
     _event: React.MouseEvent<HTMLElement>,
-    newType: 'item' | 'kit' | null
+    newType: 'item' | 'kit' | null,
   ) => {
     if (newType !== null) {
       setItemType(newType);
@@ -341,10 +341,7 @@ export default function ItemDetailsForm({
             )}
             {editedProduct.endItemNiin && (
               <Tooltip title="Copy">
-                <IconButton
-                  size="small"
-                  onClick={() => copyToClipboard(editedProduct.endItemNiin)}
-                >
+                <IconButton size="small" onClick={() => copyToClipboard(editedProduct.endItemNiin)}>
                   <ContentCopyIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -389,9 +386,7 @@ export default function ItemDetailsForm({
                   Part of Kit
                 </Typography>
                 <Typography>
-                  {editedProduct.parent.name ||
-                    editedProduct.parent.productName ||
-                    'Unknown Kit'}
+                  {editedProduct.parent.name || editedProduct.parent.productName || 'Unknown Kit'}
                 </Typography>
               </Box>
             )
