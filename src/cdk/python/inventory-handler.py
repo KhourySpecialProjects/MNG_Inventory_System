@@ -2,7 +2,7 @@ import os, io, json, base64, csv
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
 
-UPLOADS_BUCKET = "mng-dev-uploads-245120345540"
+UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "").strip()
 TABLE_NAME = os.environ.get("TABLE_NAME", "").strip()
 
 _s3 = None
@@ -231,6 +231,8 @@ def lambda_handler(event, context):
     key = f"Documents/{team_id}/inventory/{filename}"
 
     if save_to_s3:
+         if not UPLOADS_BUCKET:
+            return _resp(500, {"error": "UPLOADS_BUCKET env var is not set"})
         try:
             s3().put_object(
                 Bucket=UPLOADS_BUCKET,
