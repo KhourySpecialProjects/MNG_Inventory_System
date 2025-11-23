@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, permissionedProcedure } from './trpc';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { loadConfig } from '../process';
 import { spawn } from 'child_process';
@@ -88,7 +88,7 @@ export async function runExport(teamId: string) {
 
 // TRPC Router
 export const exportRouter = router({
-  getExport: publicProcedure
+  getExport: permissionedProcedure('reports.create')
     .input(z.object({ teamId: z.string().min(1) }))
     .mutation(async ({ input }) => {
       try {
