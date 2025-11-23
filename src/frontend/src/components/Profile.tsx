@@ -104,8 +104,8 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
       try {
         const res = await uploadProfileImage(authUser.userId, dataUrl);
         if (res.url) setProfileImage(res.url);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        /* ignore */
       } finally {
         setUploading(false);
       }
@@ -135,8 +135,8 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
       setEditedUsername(mapped.username);
 
       setEditing(false);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      /* ignore */
     }
   };
 
@@ -193,7 +193,6 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
         </Box>
       ) : (
         <>
-          {/* CONTENT */}
           <DialogContent sx={{ px: 4, py: 4 }}>
             {/* AVATAR */}
             <Box textAlign="center" mb={4} position="relative">
@@ -289,10 +288,9 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                     fontWeight: 700,
                     px: 3,
                     borderWidth: 2,
-                    color: '#000',
                     borderColor: '#FBC02D',
                     bgcolor: '#FFEB3B',
-
+                    color: '#000',
                     '&:hover': {
                       borderColor: '#F9A825',
                       bgcolor: '#FDD835',
@@ -300,6 +298,21 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                   }}
                 >
                   Cancel
+                </Button>
+
+                <Button
+                  variant="contained"
+                  onClick={handleSave}
+                  sx={{
+                    ml: 2,
+                    borderRadius: 2,
+                    fontWeight: 700,
+                    px: 3,
+                    bgcolor: '#4CAF50',
+                    '&:hover': { bgcolor: '#43A047' },
+                  }}
+                >
+                  Save
                 </Button>
               </>
             )}
