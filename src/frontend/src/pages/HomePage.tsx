@@ -148,8 +148,6 @@ export default function HomePage() {
           })),
           followUps,
         };
-
-        console.log(users);
         setDashboardData(overview);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
