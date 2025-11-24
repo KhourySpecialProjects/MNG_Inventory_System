@@ -76,19 +76,21 @@ export default function HomePage() {
 
         // define dashboard constants
         const totals = { toReview: 0, completed: 0, shortages: 0, damaged: 0 };
-        const users: Record<string, { completed: number; shortages: number; damaged: number }> = {};
+        const users: Record<string, { completed: number; shortages: number; damaged: number; name: string }> = {};
 
         const followUps: Array<{
           itemId: string;
           name: string;
           status: string;
+          parentName: string;
           updatedAt: string;
-          createdBy: string;
-          parent: string;
+          lastReviewedByName: string;
         }> = [];
+
         for (const item of fetchedItems) {
           const status = (item.status ?? 'To Review').toLowerCase();
-          const createdBy = item.createdBy ?? 'unknown';
+          const reviewedBy = item.lastReviewedBy ?? item.createdBy ?? 'unknown reviewer';
+          const reviewedByName = item.lastReviewedByName ?? 'unknown user';
 
           // Inventory Status statistics
           switch (status) {
@@ -107,20 +109,20 @@ export default function HomePage() {
             default:
               totals.toReview++;
           }
-          if (!users[createdBy]) users[createdBy] = { completed: 0, shortages: 0, damaged: 0 };
-          if (status === 'completed') users[createdBy].completed++;
-          if (status === 'shortages') users[createdBy].shortages++;
-          if (status === 'damaged') users[createdBy].damaged++;
+          if (!users[reviewedBy]) users[reviewedBy] = { completed: 0, shortages: 0, damaged: 0, name: reviewedByName };
+          if (status === 'completed') users[reviewedBy].completed++;
+          if (status === 'shortages') users[reviewedBy].shortages++;
+          if (status === 'damaged') users[reviewedBy].damaged++;
 
           // Follow-Ups statistics
           if (status === 'damaged' || status === 'shortages') {
             followUps.push({
               itemId: item.itemId,
               name: item.name,
-              status,
-              parent: item.parent ?? 'N/A',
+              status: item.status,
+              parentName: item.parentName ?? 'N/A',
               updatedAt: item.updatedAt ?? '',
-              createdBy,
+              lastReviewedByName: reviewedByName, 
             });
           }
         }
@@ -132,10 +134,20 @@ export default function HomePage() {
         const overview = {
           totals,
           percentReviewed,
-          teamStats: Object.entries(users).map(([userId, data]) => ({ userId, ...data })),
+          teamStats: Object.entries(users)
+          .filter(([, data]) => {
+            // Only include users who have reviewed at least one item
+            return data.completed > 0 || data.shortages > 0 || data.damaged > 0;
+          })
+          .map(([userId, data]) => ({ 
+            userId,
+            name: data.name, 
+            completed: data.completed,
+            shortages: data.shortages,
+            damaged: data.damaged
+          })),
           followUps,
         };
-
         setDashboardData(overview);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
@@ -155,7 +167,7 @@ export default function HomePage() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar isLoggedIn onProfileClick={() => setProfileOpen(true)} />
-      <Box sx={{ flex: 1, p: 4 }}>
+      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 } }}>
         <Box mb={3}>
           <Button
             startIcon={<ArrowBackIcon />}
@@ -185,14 +197,20 @@ export default function HomePage() {
                 <InventoryStatus teamName={teamName || teamId!} totals={totals} />
                 <InventoryReviewed
                   percentReviewed={percentReviewed}
-                  items={items}
+                  items={items.filter(item => {
+                    const status = (item.status ?? 'To Review').toLowerCase();
+                    return status === 'completed' || status === 'shortages' || status === 'damaged';
+                  })}
                   timeMode={timeMode}
                   selectedValue={selectedValue}
                   onChangeTimeMode={setTimeMode}
                   onChangeValue={setSelectedValue}
                 />
 
-                <FollowUpsTable followUps={dashboardData?.followUps ?? []} />
+                {/* Hide FollowUpsTable on mobile */}
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                  <FollowUpsTable followUps={dashboardData?.followUps ?? []} />
+                </Box>
               </Stack>
             </Grid>
 
@@ -200,7 +218,11 @@ export default function HomePage() {
               <Stack spacing={3}>
                 <AddInventoryCard teamId={teamId!} />
                 <RestartInventoryProcess teamId={teamId!} />
-                <TeamActivityChart teamStats={teamStats} />
+                
+                {/* Hide TeamActivityChart on mobile */}
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                  <TeamActivityChart teamStats={teamStats} />
+                </Box>
               </Stack>
             </Grid>
           </Grid>

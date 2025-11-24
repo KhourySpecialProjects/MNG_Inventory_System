@@ -227,9 +227,19 @@ export const itemsRouter = router({
               parentName = parentRes.Item?.name ?? null;
             }
 
-            return { ...raw, imageLink: signed, parentName };
-          }),
-        );
+            // Get the last reviewer from updateLog
+            let lastReviewedBy: string | null = null;
+            let lastReviewedByName: string | null = null;
+            
+            if (raw.updateLog && Array.isArray(raw.updateLog) && raw.updateLog.length > 0) {
+              const lastUpdate = raw.updateLog[raw.updateLog.length - 1];
+              lastReviewedBy = lastUpdate.userId ?? null;
+              lastReviewedByName = lastUpdate.userName ?? null;
+            }
+
+              return { ...raw, imageLink: signed, parentName, lastReviewedBy, lastReviewedByName };
+            }),
+          );
 
         return { success: true, items };
       } catch (err: any) {
