@@ -110,10 +110,10 @@ export const itemsRouter = router({
         );
 
         if (duplicate) {
-          return {
-            success: false,
-            error: `An item with NSN "${input.nsn}" already exists.`,
-          };
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `An item with NSN "${input.nsn}" already exists.`,
+          });
         }
 
         const itemId = newId(12);
@@ -190,7 +190,14 @@ export const itemsRouter = router({
         await doc.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
         return { success: true, itemId, item };
       } catch (err: any) {
-        return { success: false, error: err.message };
+        // If it's already a TRPCError, re-throw it
+        if (err.name === 'TRPCError') throw err;
+
+        // Otherwise wrap it
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: err.message || 'Failed to create item',
+        });
       }
     }),
 
@@ -230,16 +237,16 @@ export const itemsRouter = router({
             // Get the last reviewer from updateLog
             let lastReviewedBy: string | null = null;
             let lastReviewedByName: string | null = null;
-            
+
             if (raw.updateLog && Array.isArray(raw.updateLog) && raw.updateLog.length > 0) {
               const lastUpdate = raw.updateLog[raw.updateLog.length - 1];
               lastReviewedBy = lastUpdate.userId ?? null;
               lastReviewedByName = lastUpdate.userName ?? null;
             }
 
-              return { ...raw, imageLink: signed, parentName, lastReviewedBy, lastReviewedByName };
-            }),
-          );
+            return { ...raw, imageLink: signed, parentName, lastReviewedBy, lastReviewedByName };
+          }),
+        );
 
         return { success: true, items };
       } catch (err: any) {
