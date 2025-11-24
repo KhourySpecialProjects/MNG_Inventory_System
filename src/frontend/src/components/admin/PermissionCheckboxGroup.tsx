@@ -12,6 +12,7 @@ export type Permission =
   // User management
   | 'user.invite'
   | 'user.delete'
+  | 'user.assign_roles'
   // Role management
   | 'role.add'
   | 'role.modify'
@@ -22,6 +23,7 @@ export type Permission =
   | 'item.view'
   | 'item.update'
   | 'item.delete'
+  | 'item.reset'
   // Report handling
   | 'reports.create'
   | 'reports.view'
@@ -50,6 +52,7 @@ const PERMISSION_CATEGORIES: PermissionCategory[] = [
     icon: '👥',
     permissions: [
       { value: 'user.invite', label: 'Invite Users' },
+      { value: 'user.assign_roles', label: 'Assign Roles to Users' },
       { value: 'user.delete', label: 'Delete Users' },
     ],
   },
@@ -71,15 +74,16 @@ const PERMISSION_CATEGORIES: PermissionCategory[] = [
       { value: 'item.view', label: 'View Items' },
       { value: 'item.update', label: 'Update Items' },
       { value: 'item.delete', label: 'Delete Items' },
+      { value: 'item.reset', label: 'Reset Inventory' },
     ],
   },
   {
     label: 'Report Management',
     icon: '📋',
     permissions: [
-      { value: 'reports.create', label: 'Create Reports' },
-      { value: 'reports.view', label: 'View Reports' },
-      { value: 'reports.delete', label: 'Delete Reports' },
+      { value: 'reports.create', label: 'Create PDFs' },
+      { value: 'reports.view', label: 'View PDFs' },
+      { value: 'reports.delete', label: 'Delete PDFs' },
     ],
   },
 ];

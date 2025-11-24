@@ -5,13 +5,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import NavBar from '../components/NavBar';
-import ImagePanel from '../components/ImagePanel';
-import ItemDetailsForm from '../components/ItemDetailsForm';
+import ImagePanel from '../components/ProductPage/ImagePanel';
+import ItemDetailsForm from '../components/ProductPage/ItemDetailsForm';
 import DamageReportsSection from '../components/DamageReportsSection';
-import ActionPanel from '../components/ActionPanel';
+import ActionPanel from '../components/ProductPage/ActionPanel';
 import { flattenTree } from '../components/Producthelpers';
 import { getItem, getItems } from '../api/items';
-import ChildrenTree from '../components/ChildrenTree';
+import ChildrenTree from '../components/ProductPage/ChildrenTree';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
 
@@ -42,7 +42,9 @@ export default function ProductReviewPage() {
     (async () => {
       try {
         if (!teamId) throw new Error('Missing team ID');
+
         const all = await getItems(teamId);
+
         if (all.success && all.items) {
           const flat = flattenTree(all.items);
           setItemsList(flat.filter((x: any) => x.itemId !== itemId));
@@ -53,9 +55,16 @@ export default function ProductReviewPage() {
             productName: '',
             actualName: '',
             description: '',
+            nsn: '',
             serialNumber: '',
-            quantity: 1,
-            status: 'Incomplete',
+            authQuantity: 1,
+            ohQuantity: 1,
+            liin: '',
+            endItemNiin: '',
+            status: 'To Review',
+            isKit: false,
+            parent: null,
+            notes: '',
           };
           setProduct(blank);
           setEditedProduct(blank);
@@ -64,6 +73,7 @@ export default function ProductReviewPage() {
         }
 
         const res = await getItem(teamId, itemId!);
+
         if (!res.success || !res.item) throw new Error(res.error);
 
         const item = res.item;
@@ -71,7 +81,7 @@ export default function ProductReviewPage() {
         // Map API fields to component fields
         const mappedItem = {
           ...item,
-          productName: item.name, // Map 'name' to 'productName'
+          productName: item.name,
           actualName: item.actualName,
         };
 
@@ -115,9 +125,21 @@ export default function ProductReviewPage() {
 
   if (error)
     return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Box
+        sx={{
+          width: {
+            xs: '100%',
+            sm: '600px',
+            md: '900px',
+            lg: '1100px',
+          },
+          mx: 'auto',
+          mt: 4,
+          px: 2,
+        }}
+      >
         <Alert severity="error">{error}</Alert>
-      </Container>
+      </Box>
     );
 
   return (
@@ -142,11 +164,18 @@ export default function ProductReviewPage() {
           pb: 10,
         }}
       >
-        <Container
-          maxWidth="lg"
+        <Box
           sx={{
+            width: {
+              xs: '100%',
+              sm: '600px',
+              md: '900px',
+              lg: '1100px',
+            },
+            mx: 'auto',
             pt: 3,
             pb: 8,
+            px: 3,
             backgroundColor: theme.palette.background.paper,
             borderRadius: 3,
             boxShadow:
@@ -154,25 +183,42 @@ export default function ProductReviewPage() {
                 ? '0 4px 20px rgba(0,0,0,0.4)'
                 : '0 4px 16px rgba(0,0,0,0.05)',
             mt: 3,
+            minHeight: '900px',
           }}
         >
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
-            sx={{
-              textTransform: 'none',
-              color: theme.palette.text.secondary,
-              mb: 2,
-              '&:hover': {
-                bgcolor:
-                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-              },
-            }}
-          >
-            Back
-          </Button>
+          {/* Back button and Action Panel on same row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate(-1)}
+              sx={{
+                textTransform: 'none',
+                color: theme.palette.text.secondary,
+                '&:hover': {
+                  bgcolor:
+                    theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                },
+              }}
+            >
+              Back
+            </Button>
 
-          <Grid container spacing={3} justifyContent="center" alignItems="flex-start">
+            <ActionPanel
+              isCreateMode={isCreateMode}
+              isEditMode={isEditMode}
+              setIsEditMode={setIsEditMode}
+              product={product}
+              editedProduct={editedProduct}
+              teamId={teamId!}
+              itemId={itemId!}
+              selectedImageFile={selectedImageFile}
+              imagePreview={imagePreview}
+              setShowSuccess={setShowSuccess}
+              damageReports={damageReports}
+            />
+          </Box>
+
+          <Grid container spacing={3}>
             <Grid item xs={12} md={4}>
               <ImagePanel
                 imagePreview={imagePreview}
@@ -183,13 +229,14 @@ export default function ProductReviewPage() {
               />
             </Grid>
 
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} md={8} sx={{ minWidth: 0 }}>
               <ItemDetailsForm
                 editedProduct={editedProduct}
                 setEditedProduct={setEditedProduct}
                 itemsList={itemsList}
                 isEditMode={isEditMode}
-                alwaysEditableFields={['status', 'description', 'notes']}
+                isCreateMode={isCreateMode}
+                alwaysEditableFields={['status', 'description', 'notes', 'ohQuantity']}
               />
 
               {editedProduct?.status === 'Damaged' && (
@@ -201,23 +248,7 @@ export default function ProductReviewPage() {
                 />
               )}
 
-              <ChildrenTree editedProduct={editedProduct} teamId={teamId!} />
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <ActionPanel
-                isCreateMode={isCreateMode}
-                isEditMode={isEditMode}
-                setIsEditMode={setIsEditMode}
-                product={product}
-                editedProduct={editedProduct}
-                teamId={teamId!}
-                itemId={itemId!}
-                selectedImageFile={selectedImageFile}
-                imagePreview={imagePreview}
-                setShowSuccess={setShowSuccess}
-                damageReports={damageReports}
-              />
+              {editedProduct && <ChildrenTree editedProduct={editedProduct} teamId={teamId!} />}
             </Grid>
           </Grid>
 
@@ -228,7 +259,7 @@ export default function ProductReviewPage() {
           >
             <Alert severity="success">Item updated successfully!</Alert>
           </Snackbar>
-        </Container>
+        </Box>
       </Box>
 
       <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />

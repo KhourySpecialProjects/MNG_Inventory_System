@@ -1,10 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import ProductReviewPage from '../src/pages/ProductReviewPage';
-import * as itemsApi from '../src/api/items';
+import ProductReviewPage from '../../src/pages/ProductReviewPage';
+import * as itemsApi from '../../src/api/items';
 
-vi.mock('../src/api/items');
+vi.mock('../../src/api/items', () => ({
+  getItems: vi.fn(),
+  getItem: vi.fn(),
+  createItem: vi.fn(),
+  updateItem: vi.fn(),
+  deleteItem: vi.fn(),
+}));
 
 const renderWithParams = (itemId = '1', teamId = 'team-123') => {
   window.history.pushState({}, '', `/teams/${teamId}/items/${itemId}`);
@@ -16,6 +22,7 @@ const renderWithParams = (itemId = '1', teamId = 'team-123') => {
     </BrowserRouter>,
   );
 };
+
 
 describe('ProductReviewPage', () => {
   beforeEach(() => {
@@ -37,9 +44,11 @@ describe('ProductReviewPage', () => {
         actualName: 'M4 Carbine',
         description: 'Standard issue',
         serialNumber: 'R001',
-        quantity: 1,
+        authQuantity: 1,
+        ohQuantity: 1,
         status: 'Available',
         children: [],
+        isKit: false,
       },
     });
   });
@@ -61,7 +70,7 @@ describe('ProductReviewPage', () => {
     renderWithParams('new', 'team-123');
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Create Item/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Create$/i })).toBeInTheDocument();
     });
   });
 

@@ -1,19 +1,36 @@
 import React, { useState } from 'react';
-import { Box, Container, Tabs, Tab, Paper } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Box, Container, Tabs, Tab, Paper, Button } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TopBar from '../components/TopBar';
 import RoleManagementTab from '../components/admin/RoleManagementTab';
 import UserRoleAssignmentTab from '../components/admin/UserRoleAssignmentTab';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminPage() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
       <TopBar isLoggedIn={true} />
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ m: 4 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/teams')}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            color: theme.palette.text.primary,
+            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
+          }}
+        >
+          Back
+        </Button>
+      </Box>
+      <Container maxWidth="lg" sx={{ pb: 4 }}>
         <Paper
           elevation={2}
           sx={{

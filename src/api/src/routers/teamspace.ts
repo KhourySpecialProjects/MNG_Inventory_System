@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import {
   GetCommand,
   PutCommand,
@@ -22,47 +22,15 @@ function newId(n = 10): string {
     .replace(/[+/=]/g, (c) => ({ '+': '-', '/': '_', '=': '' })[c] as string);
 }
 
-/** Check if a user has a permission inside a specific teamspace */
-async function hasPermission(userId: string, teamId: string, permission: string): Promise<boolean> {
-  try {
-    const res = await doc.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { PK: `TEAM#${teamId}`, SK: `MEMBER#${userId}` },
-      }),
-    );
-    const member = res.Item as { role?: string } | undefined;
-    if (!member) return false;
-
-    if (member.role?.toLowerCase() === 'owner') return true;
-
-    const roleRes = await doc.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: {
-          PK: `ROLENAME#${member.role?.toLowerCase()}`,
-          SK: `ROLE#${member.role?.toUpperCase()}`,
-        },
-      }),
-    );
-    const role = roleRes.Item as { permissions?: string } | undefined;
-    if (!role) return false;
-
-    const perms: string[] = JSON.parse(role.permissions ?? '[]');
-    return perms.includes(permission);
-  } catch (err) {
-    console.error('❌ hasPermission error:', err);
-    return false;
-  }
-}
-
 export const teamspaceRouter = router({
   /** CREATE TEAMSPACE */
-  createTeamspace: publicProcedure
+  createTeamspace: permissionedProcedure('team.create')
     .input(
       z.object({
         name: z.string().min(2).max(60),
-        description: z.string().max(280).optional(),
+        description: z.string().min(1), // LOCATION
+        uic: z.string().min(1),
+        fe: z.string().min(1),
         userId: z.string().min(1),
       }),
     )
@@ -71,6 +39,7 @@ export const teamspaceRouter = router({
         const cleanName = input.name.trim().toLowerCase();
         const now = new Date().toISOString();
 
+        // Check duplicate name
         const dup = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
@@ -86,19 +55,28 @@ export const teamspaceRouter = router({
 
         const teamId = newId(12);
 
+        /** TEAM METADATA RECORD */
         const teamItem = {
           PK: `TEAM#${teamId}`,
           SK: 'METADATA',
           Type: 'Team',
           teamId,
           name: input.name,
-          description: input.description ?? '',
+
+          // LOCATION
+          description: input.description,
+
+          // NEW FIELDS
+          uic: input.uic,
+          fe: input.fe,
+
           ownerId: input.userId,
           createdAt: now,
           updatedAt: now,
           GSI_NAME: cleanName,
         };
 
+        /** MEMBERSHIP RECORD FOR OWNER */
         const memberItem = {
           PK: `TEAM#${teamId}`,
           SK: `MEMBER#${input.userId}`,
@@ -124,7 +102,7 @@ export const teamspaceRouter = router({
     }),
 
   /** GET TEAMSPACES */
-  getTeamspace: publicProcedure
+  getTeamspace: permissionedProcedure('team.view')
     .input(z.object({ userId: z.string().min(1) }))
     .query(async ({ input }) => {
       try {
@@ -196,7 +174,7 @@ export const teamspaceRouter = router({
     }),
 
   /** ADD USER TO TEAMSPACE */
-  addUserTeamspace: publicProcedure
+  addUserTeamspace: permissionedProcedure('team.add_member')
     .input(
       z.object({
         userId: z.string().min(1),
@@ -254,7 +232,7 @@ export const teamspaceRouter = router({
       }
     }),
   /** REMOVE USER FROM TEAMSPACE */
-  removeUserTeamspace: publicProcedure
+  removeUserTeamspace: permissionedProcedure('team.remove_member')
     .input(
       z.object({
         userId: z.string().min(1),
@@ -264,15 +242,6 @@ export const teamspaceRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        const allowed = await hasPermission(
-          input.userId,
-          input.inviteWorkspaceId,
-          'team.remove_member',
-        );
-        if (!allowed) {
-          return { success: false, error: 'Not authorized to remove members.' };
-        }
-
         // 🔍 lookup user by username
         const q = await doc.send(
           new QueryCommand({
@@ -311,7 +280,7 @@ export const teamspaceRouter = router({
     }),
 
   /** DELETE TEAMSPACE */
-  deleteTeamspace: publicProcedure
+  deleteTeamspace: permissionedProcedure('team.delete')
     .input(
       z.object({
         inviteWorkspaceId: z.string().min(1),
@@ -320,17 +289,6 @@ export const teamspaceRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        // ---- Permission check ----
-        const allowed = await hasPermission(
-          input.userId,
-          input.inviteWorkspaceId,
-          'workspace.delete',
-        );
-        if (!allowed) {
-          return { success: false, error: 'Not authorized to delete team.' };
-        }
-
-        // ---- 1. Delete DynamoDB records ----
         const q = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
@@ -384,7 +342,7 @@ export const teamspaceRouter = router({
       }
     }),
   /** GET ALL USERS */
-  getAllUsers: publicProcedure.query(async () => {
+  getAllUsers: protectedProcedure.query(async () => {
     try {
       const res = await doc.send(
         new ScanCommand({

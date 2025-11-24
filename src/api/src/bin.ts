@@ -127,3 +127,37 @@
 //       }
 //     }),
 // });
+
+/** Check if a user has a permission inside a specific teamspace */
+// async function hasPermission(userId: string, teamId: string, permission: string): Promise<boolean> {
+//   try {
+//     const res = await doc.send(
+//       new GetCommand({
+//         TableName: TABLE_NAME,
+//         Key: { PK: `TEAM#${teamId}`, SK: `MEMBER#${userId}` },
+//       }),
+//     );
+//     const member = res.Item as { role?: string } | undefined;
+//     if (!member) return false;
+
+//     if (member.role?.toLowerCase() === 'owner') return true;
+
+//     const roleRes = await doc.send(
+//       new GetCommand({
+//         TableName: TABLE_NAME,
+//         Key: {
+//           PK: `ROLENAME#${member.role?.toLowerCase()}`,
+//           SK: `ROLE#${member.role?.toUpperCase()}`,
+//         },
+//       }),
+//     );
+//     const role = roleRes.Item as { permissions?: string } | undefined;
+//     if (!role) return false;
+
+//     const perms: string[] = JSON.parse(role.permissions ?? '[]');
+//     return perms.includes(permission);
+//   } catch (err) {
+//     console.error('❌ hasPermission error:', err);
+//     return false;
+//   }
+// }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { router, publicProcedure, protectedProcedure, permissionedProcedure } from './trpc';
 import {
   S3Client,
   PutObjectCommand,
@@ -9,6 +9,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { loadConfig } from '../process';
+import { permission } from 'process';
 
 const config = loadConfig();
 const REGION = config.REGION;
@@ -29,7 +30,7 @@ function parseDataUrl(dataUrl: string) {
 }
 
 export const s3Router = router({
-  uploadProfileImage: publicProcedure
+  uploadProfileImage: protectedProcedure
     .input(
       z.object({
         userId: z.string().min(3),
@@ -66,7 +67,7 @@ export const s3Router = router({
       return { key, url };
     }),
 
-  getProfileImage: publicProcedure
+  getProfileImage: protectedProcedure
     .input(z.object({ userId: z.string().min(3) }))
     .query(async ({ input }) => {
       const prefix = `Profile/${input.userId}`;
@@ -93,7 +94,7 @@ export const s3Router = router({
       return foundUrl ? { url: foundUrl } : { url: null };
     }),
 
-  getInventoryForm: publicProcedure
+  getInventoryForm: permissionedProcedure('reports.create')
     .input(
       z.object({
         teamId: z.string().optional(),

@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { router, publicProcedure } from './trpc';
+import { TRPCError } from '@trpc/server';
+import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import {
   GetCommand,
   PutCommand,
@@ -23,6 +24,7 @@ export type Permission =
   // user management
   | 'user.invite'
   | 'user.delete'
+  | 'user.assign_roles'
   // Role management
   | 'role.add'
   | 'role.modify'
@@ -33,6 +35,7 @@ export type Permission =
   | 'item.view'
   | 'item.update'
   | 'item.delete'
+  | 'item.reset'
   // Report handling
   | 'reports.create'
   | 'reports.view'
@@ -79,6 +82,7 @@ export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'per
       'team.create',
       'team.add_member',
       'team.remove_member',
+      'team.view',
       'team.delete',
       'role.add',
       'role.modify',
@@ -86,10 +90,12 @@ export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'per
       'role.view',
       'user.invite',
       'user.delete',
+      'user.assign_roles',
       'item.create',
       'item.update',
       'item.delete',
       'item.view',
+      'item.reset',
       'reports.create',
       'reports.view',
       'reports.delete',
@@ -102,6 +108,7 @@ export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'per
       'team.create',
       'team.add_member',
       'team.remove_member',
+      'team.view',
       'item.create',
       'item.view',
       'item.update',
@@ -112,37 +119,42 @@ export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'per
   {
     name: 'Member',
     description: 'Limited access to view and report items.',
-    permissions: ['item.view', 'reports.create', 'reports.view'],
+    permissions: ['item.view', 'reports.create', 'reports.view', 'team.view'],
   },
 ];
 
 export const rolesRouter = router({
-  createRole: publicProcedure.input(roleInput).mutation(async ({ input }) => {
-    const now = new Date().toISOString();
-    const roleId = input.name.trim().toUpperCase();
+  createRole: permissionedProcedure('role.add')
+    .input(roleInput)
+    .mutation(async ({ input }) => {
+      const now = new Date().toISOString();
+      const roleId = input.name.trim().toUpperCase();
 
-    const existing = await getRole(roleId);
-    if (existing) {
-      throw new Error(`Role "${input.name}" already exists`);
-    }
+      const existing = await getRole(roleId);
+      if (existing) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `Role "${input.name}" already exists`,
+        });
+      }
 
-    const role: RoleEntity = {
-      PK: `ROLE#${roleId}`,
-      SK: 'METADATA',
-      roleId,
-      name: input.name.trim(),
-      description: input.description,
-      permissions: input.permissions as Permission[],
-      createdAt: now,
-      updatedAt: now,
-    };
+      const role: RoleEntity = {
+        PK: `ROLE#${roleId}`,
+        SK: 'METADATA',
+        roleId,
+        name: input.name.trim(),
+        description: input.description,
+        permissions: input.permissions as Permission[],
+        createdAt: now,
+        updatedAt: now,
+      };
 
-    await doc.send(new PutCommand({ TableName: TABLE_NAME, Item: role }));
+      await doc.send(new PutCommand({ TableName: TABLE_NAME, Item: role }));
 
-    return { success: true, role };
-  }),
+      return { success: true, role };
+    }),
 
-  getAllRoles: publicProcedure.query(async () => {
+  getAllRoles: permissionedProcedure('role.view').query(async () => {
     const res = await doc.send(
       new ScanCommand({
         TableName: TABLE_NAME,
@@ -158,67 +170,104 @@ export const rolesRouter = router({
     return { roles };
   }),
 
-  getRole: publicProcedure
+  getRole: protectedProcedure
     .input(z.object({ roleId: z.string().optional(), name: z.string().optional() }))
     .query(async ({ input }) => {
-      if (!input.roleId && !input.name) throw new Error('Provide roleId or name');
+      if (!input.roleId && !input.name) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Provide roleId or name',
+        });
+      }
       const roleId = input.roleId || input.name!.toUpperCase();
       const role = await getRole(roleId);
-      if (!role) throw new Error('Role not found');
+      if (!role) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Role not found',
+        });
+      }
       return { role };
     }),
 
-  updateRole: publicProcedure.input(updateRoleInput).mutation(async ({ input }) => {
-    const roleId = input.name.trim().toUpperCase();
-    const existing = await getRole(roleId);
-    if (!existing) throw new Error('Role not found');
+  updateRole: permissionedProcedure('role.modify')
+    .input(updateRoleInput)
+    .mutation(async ({ input }) => {
+      const roleId = input.name.trim().toUpperCase();
+      const existing = await getRole(roleId);
+      if (!existing) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Role not found',
+        });
+      }
 
-    const now = new Date().toISOString();
-    const values: Record<string, string | Permission[]> = { ':updatedAt': now };
-    const attrNames: Record<string, string> = {};
-    const sets: string[] = ['updatedAt = :updatedAt'];
+      // Prevent updating default roles
+      const defaultRoleNames = DEFAULT_ROLES.map((r) => r.name.toUpperCase());
+      if (defaultRoleNames.includes(roleId)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot modify default roles',
+        });
+      }
 
-    if (input.name && input.name !== existing.name) {
-      sets.push('#name = :name');
-      attrNames['#name'] = 'name';
-      values[':name'] = input.name.trim();
-    }
-    if (typeof input.description !== 'undefined') {
-      sets.push('description = :desc');
-      values[':desc'] = input.description ?? '';
-    }
-    if (input.permissions) {
-      sets.push('#permissions = :perms');
-      attrNames['#permissions'] = 'permissions';
-      values[':perms'] = input.permissions as Permission[];
-    }
+      const now = new Date().toISOString();
+      const values: Record<string, string | Permission[]> = { ':updatedAt': now };
+      const attrNames: Record<string, string> = {};
+      const sets: string[] = ['updatedAt = :updatedAt'];
 
-    const updated = await doc.send(
-      new UpdateCommand({
-        TableName: TABLE_NAME,
-        Key: { PK: `ROLE#${roleId}`, SK: 'METADATA' },
-        UpdateExpression: `SET ${sets.join(', ')}`,
-        ExpressionAttributeNames: Object.keys(attrNames).length > 0 ? attrNames : undefined,
-        ExpressionAttributeValues: values,
-        ReturnValues: 'ALL_NEW',
-      }),
-    );
+      if (input.name && input.name !== existing.name) {
+        sets.push('#name = :name');
+        attrNames['#name'] = 'name';
+        values[':name'] = input.name.trim();
+      }
+      if (typeof input.description !== 'undefined') {
+        sets.push('description = :desc');
+        values[':desc'] = input.description ?? '';
+      }
+      if (input.permissions) {
+        sets.push('#permissions = :perms');
+        attrNames['#permissions'] = 'permissions';
+        values[':perms'] = input.permissions as Permission[];
+      }
 
-    return { success: true, role: updated.Attributes as RoleEntity };
-  }),
+      const updated = await doc.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `ROLE#${roleId}`, SK: 'METADATA' },
+          UpdateExpression: `SET ${sets.join(', ')}`,
+          ExpressionAttributeNames: Object.keys(attrNames).length > 0 ? attrNames : undefined,
+          ExpressionAttributeValues: values,
+          ReturnValues: 'ALL_NEW',
+        }),
+      );
 
-  deleteRole: publicProcedure.input(z.object({ name: z.string() })).mutation(async ({ input }) => {
-    const roleId = input.name.trim().toUpperCase();
-    const role = await getRole(roleId);
-    if (!role) return { success: true, deleted: false };
+      return { success: true, role: updated.Attributes as RoleEntity };
+    }),
 
-    await doc.send(
-      new DeleteCommand({
-        TableName: TABLE_NAME,
-        Key: { PK: `ROLE#${roleId}`, SK: 'METADATA' },
-      }),
-    );
+  deleteRole: permissionedProcedure('role.remove')
+    .input(z.object({ name: z.string() }))
+    .mutation(async ({ input }) => {
+      const roleId = input.name.trim().toUpperCase();
+      const role = await getRole(roleId);
+      if (!role) return { success: true, deleted: false };
 
-    return { success: true, deleted: true };
-  }),
+      // Prevent deleting default roles
+      const defaultRoleNames = DEFAULT_ROLES.map((r) => r.name.toUpperCase());
+      if (defaultRoleNames.includes(roleId)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot delete default roles',
+        });
+      }
+
+      await doc.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `ROLE#${roleId}`, SK: 'METADATA' },
+        }),
+      );
+
+      return { success: true, deleted: true };
+    }),
 });

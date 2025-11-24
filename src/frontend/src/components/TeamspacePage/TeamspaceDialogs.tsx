@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Team } from '../components/TeamspacePage/TeamsGrid';
+import { Team } from './TeamsGrid';
 import {
   createTeamspace,
   addUserTeamspace,
@@ -42,6 +42,7 @@ interface CreateTeamDialogProps extends DialogsProps {
   onClose: () => void;
 }
 
+// CREATE TEAM DIALOG
 export function CreateTeamDialog({
   open,
   onClose,
@@ -49,36 +50,75 @@ export function CreateTeamDialog({
   showSnackbar,
 }: CreateTeamDialogProps) {
   const [workspaceName, setWorkspaceName] = useState('');
-  const [workspaceDesc, setWorkspaceDesc] = useState('');
+  const [uic, setUic] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+
+  const [errors, setErrors] = useState({
+    workspaceName: false,
+    uic: false,
+    contactName: false,
+    contactEmail: false,
+  });
+
   const [loading, setLoading] = useState(false);
+
+  const allFilled = workspaceName.trim() && uic.trim() && contactName.trim() && contactEmail.trim();
 
   async function getUserId(): Promise<string> {
     const user = await me();
-    if (!user?.userId) {
-      throw new Error('User not authenticated or ID missing');
-    }
+    if (!user?.userId) throw new Error('User not authenticated or ID missing');
     return user.userId;
   }
 
+  function validateFields() {
+    const newErrors = {
+      workspaceName: workspaceName.trim() === '',
+      uic: uic.trim() === '',
+      contactName: contactName.trim() === '',
+      contactEmail: contactEmail.trim() === '',
+    };
+    setErrors(newErrors);
+
+    return !Object.values(newErrors).includes(true);
+  }
+
   async function handleCreate() {
+    if (!validateFields()) return;
+
     try {
       setLoading(true);
       const userId = await getUserId();
-      const result = await createTeamspace(workspaceName, workspaceDesc, userId);
+
+      const result = await createTeamspace(
+        workspaceName,
+        contactEmail, // location/description
+        userId,
+        uic,
+        contactName,
+      );
 
       if (!result?.success) {
-        showSnackbar(result.error || 'Failed to create team.', 'error');
+        showSnackbar(result?.error || 'Failed to create teamspace.', 'error');
         return;
       }
 
       showSnackbar('Teamspace created successfully!', 'success');
+
       setWorkspaceName('');
-      setWorkspaceDesc('');
+      setUic('');
+      setContactName('');
+      setContactEmail('');
+
       onClose();
       await onRefresh();
     } catch (err) {
       console.error('❌ handleCreate error:', err);
-      showSnackbar('Error creating team.', 'error');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred while creating the teamspace.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -87,26 +127,59 @@ export function CreateTeamDialog({
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>Create New Teamspace</DialogTitle>
+
       <DialogContent sx={{ pt: 2 }}>
         <TextField
           fullWidth
           label="Teamspace Name"
           value={workspaceName}
           onChange={(e) => setWorkspaceName(e.target.value)}
+          error={errors.workspaceName}
+          helperText={errors.workspaceName ? 'Required' : ''}
           sx={{ mb: 2 }}
         />
+
         <TextField
           fullWidth
-          label="Description"
-          value={workspaceDesc}
-          onChange={(e) => setWorkspaceDesc(e.target.value)}
+          label="UIC"
+          value={uic}
+          onChange={(e) => setUic(e.target.value)}
+          error={errors.uic}
+          helperText={errors.uic ? 'Required' : ''}
+          sx={{ mb: 2 }}
+        />
+
+        <TextField
+          fullWidth
+          label="FE"
+          value={contactName}
+          onChange={(e) => setContactName(e.target.value)}
+          error={errors.contactName}
+          helperText={errors.contactName ? 'Required' : ''}
+          sx={{ mb: 2 }}
+        />
+
+        <TextField
+          fullWidth
+          label="Location"
+          value={contactEmail}
+          onChange={(e) => setContactEmail(e.target.value)}
+          error={errors.contactEmail}
+          helperText={errors.contactEmail ? 'Required' : ''}
+          sx={{ mb: 2 }}
         />
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button onClick={handleCreate} variant="contained" color="primary" disabled={loading}>
+        <Button
+          onClick={handleCreate}
+          variant="contained"
+          color="primary"
+          disabled={loading || !allFilled}
+        >
           Create
         </Button>
       </DialogActions>
@@ -184,7 +257,9 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
       await onRefresh();
     } catch (err) {
       console.error('❌ handleInvite error:', err);
-      showSnackbar('Unexpected error adding member.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while adding member.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -203,7 +278,9 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
       onClose();
     } catch (err) {
       console.error('❌ Invite failed:', err);
-      showSnackbar('Failed to send invite.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while sending invite.';
+      showSnackbar(errorMessage, 'error');
     }
   }
 
@@ -414,7 +491,9 @@ export function RemoveMemberDialog({
       await onRefresh();
     } catch (err) {
       console.error('❌ handleRemove error:', err);
-      showSnackbar('Error removing member.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while removing member.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -558,7 +637,9 @@ export function DeleteTeamDialog({
       await onRefresh();
     } catch (err) {
       console.error('❌ handleDelete error:', err);
-      showSnackbar('Error deleting team.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while deleting teamspace.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
