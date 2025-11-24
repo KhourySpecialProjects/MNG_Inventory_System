@@ -206,6 +206,12 @@ export const itemsRouter = router({
               ':pk': `TEAM#${input.teamId}`,
               ':sk': 'ITEM#',
             },
+            // Minimal projection - only fetch what's needed for the list view
+            ProjectionExpression: 'itemId, #name, actualName, #status, imageKey, parent, isKit, createdAt, updatedAt',
+            ExpressionAttributeNames: {
+              '#name': 'name',
+              '#status': 'status',
+            },
           }),
         );
 
@@ -222,6 +228,8 @@ export const itemsRouter = router({
                 new GetCommand({
                   TableName: TABLE_NAME,
                   Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
+                  ProjectionExpression: '#name',
+                  ExpressionAttributeNames: { '#name': 'name' },
                 }),
               );
               parentName = parentRes.Item?.name ?? null;
@@ -253,6 +261,12 @@ export const itemsRouter = router({
             Key: {
               PK: `TEAM#${input.teamId}`,
               SK: `ITEM#${input.itemId}`,
+            },
+            // Add projection here too to avoid fetching massive updateLog
+            ProjectionExpression: 'PK, SK, itemId, #name, actualName, #status, imageKey, parent, isKit, nsn, serialNumber, authQuantity, ohQuantity, liin, endItemNiin, description, notes, damageReports, createdAt, updatedAt, createdBy',
+            ExpressionAttributeNames: {
+              '#name': 'name',
+              '#status': 'status',
             },
           }),
         );

@@ -121,7 +121,7 @@ describe('ActionPanel', () => {
     it('renders Save Changes and Cancel buttons in edit mode', () => {
       renderWithRouter(<ActionPanel {...editModeProps} />);
 
-      expect(screen.getByRole('button', { name: /Save Changes/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Save$/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /^Edit$/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Delete/i })).not.toBeInTheDocument();
@@ -139,7 +139,7 @@ describe('ActionPanel', () => {
     it('saves changes when Save Changes clicked', async () => {
       renderWithRouter(<ActionPanel {...editModeProps} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -155,7 +155,7 @@ describe('ActionPanel', () => {
     it('renders Create Item button in create mode', () => {
       renderWithRouter(<ActionPanel {...createModeProps} />);
 
-      expect(screen.getByRole('button', { name: /Create Item/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Create$/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Cancel/i })).not.toBeInTheDocument();
     });
 
@@ -164,7 +164,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsNoImage} />);
 
-      const createButton = screen.getByRole('button', { name: /Create Item/i });
+      const createButton = screen.getByRole('button', { name: /^Create$/i });
       fireEvent.click(createButton);
 
       await waitFor(() => {
@@ -177,7 +177,7 @@ describe('ActionPanel', () => {
     it('creates item and navigates when Create clicked with image', async () => {
       renderWithRouter(<ActionPanel {...createModeProps} />);
 
-      const createButton = screen.getByRole('button', { name: /Create Item/i });
+      const createButton = screen.getByRole('button', { name: /^Create$/i });
       fireEvent.click(createButton);
 
       await waitFor(() => {
@@ -198,7 +198,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsWithFile} />);
 
-      const createButton = screen.getByRole('button', { name: /Create Item/i });
+      const createButton = screen.getByRole('button', { name: /^Create$/i });
       fireEvent.click(createButton);
 
       await waitFor(() => {
@@ -206,10 +206,10 @@ describe('ActionPanel', () => {
 
         const call = vi.mocked(itemsAPI.createItem).mock.calls[0];
 
-        // Argument 5 is: serialNumber
-        // Argument 6 is: imageBase64 (your code)
-        const imageArg = call[5];
+        // Argument 3 is imageBase64 in createItem signature
+        const imageArg = call[3];
 
+        expect(typeof imageArg).toBe('string');
         expect(imageArg).toMatch(/^data:image\/jpeg;base64,/);
       });
     });
@@ -292,7 +292,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsWithChildren} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -330,7 +330,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsWithGrandchildren} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -359,7 +359,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsUnchangedStatus} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -384,7 +384,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsWithDamage} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -410,7 +410,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...createProps} />);
 
-      const createButton = screen.getByRole('button', { name: /Create Item/i });
+      const createButton = screen.getByRole('button', { name: /^Create$/i });
       fireEvent.click(createButton);
 
       await waitFor(() => {
@@ -431,7 +431,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsWithFile} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -452,7 +452,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...baseProps} isEditMode={true} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -492,7 +492,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...createProps} />);
 
-      const createButton = screen.getByRole('button', { name: /Create Item/i });
+      const createButton = screen.getByRole('button', { name: /^Create$/i });
       fireEvent.click(createButton);
 
       await waitFor(() => {
@@ -505,7 +505,7 @@ describe('ActionPanel', () => {
     it('navigates to to-review after successful update', async () => {
       renderWithRouter(<ActionPanel {...baseProps} isEditMode={true} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -541,7 +541,8 @@ describe('ActionPanel', () => {
         productName: 'M4A1',
         actualName: 'Rifle #2',
         serialNumber: 'W999',
-        quantity: 3,
+        authQuantity: 3,
+        ohQuantity: 2,
         description: 'Updated desc',
         notes: 'New notes',
         status: 'Found',
@@ -557,7 +558,7 @@ describe('ActionPanel', () => {
 
       renderWithRouter(<ActionPanel {...propsFullProduct} />);
 
-      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+      const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
@@ -568,7 +569,8 @@ describe('ActionPanel', () => {
             name: 'M4A1',
             actualName: 'Rifle #2',
             serialNumber: 'W999',
-            quantity: 3,
+            authQuantity: 3,
+            ohQuantity: 2,
             description: 'Updated desc',
             notes: 'New notes',
             status: 'Found',

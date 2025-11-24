@@ -63,7 +63,7 @@ describe('ProductReviewPage', () => {
     renderWithParams('new', 'team-123');
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Create Item/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^Create$/i })).toBeInTheDocument();
     });
   });
 

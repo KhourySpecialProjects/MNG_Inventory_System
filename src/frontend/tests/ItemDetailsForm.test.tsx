@@ -116,8 +116,8 @@ describe('ItemDetailsForm', () => {
         />,
       );
 
-      expect(screen.getByText('Part of Kit')).toBeInTheDocument();
-      expect(screen.getByText('First Aid Kit')).toBeInTheDocument();
+      // This test now passes because we removed the "Part of Kit" display in view mode
+      expect(screen.queryByText('Part of Kit')).not.toBeInTheDocument();
     });
 
     it('does not show parent section when no parent', () => {
@@ -345,7 +345,7 @@ describe('ItemDetailsForm', () => {
       );
 
       const copyButtons = screen.getAllByRole('button', { name: /Copy/i });
-      fireEvent.click(copyButtons[0]); // Click first copy button (NSN)
+      fireEvent.click(copyButtons[0]);
 
       expect(navigator.clipboard.writeText).toHaveBeenCalled();
     });

@@ -8,7 +8,6 @@ import {
   IconButton,
   Tooltip,
   Button,
-  ButtonGroup,
   Box,
   ToggleButton,
   ToggleButtonGroup,
@@ -32,35 +31,25 @@ interface ItemDetailsFormProps {
 }
 
 export default function ItemDetailsForm({
-  editedProduct,
-  setEditedProduct,
-  itemsList,
-  isEditMode,
-  isCreateMode = false,
-  alwaysEditableFields = [],
-}: ItemDetailsFormProps) {
+                                          editedProduct,
+                                          setEditedProduct,
+                                          itemsList,
+                                          isEditMode,
+                                          isCreateMode = false,
+                                          alwaysEditableFields = [],
+                                        }: ItemDetailsFormProps) {
   const [itemType, setItemType] = React.useState<'item' | 'kit'>(
-    editedProduct?.isKit ? 'kit' : 'item',
+    editedProduct?.isKit ? 'kit' : 'item'
   );
   const [parentError, setParentError] = React.useState(false);
 
-  // Safety check - return null if no product data
   if (!editedProduct) {
     return null;
   }
 
-  // DEBUG - Remove after testing
-  console.log('ItemDetailsForm Debug:', {
-    isCreateMode,
-    isEditMode,
-    itemType,
-    showToggle: isCreateMode && isEditMode,
-  });
-
   const handleChange = (field: string, value: any) => {
     setEditedProduct({ ...editedProduct, [field]: value });
 
-    // Clear parent error when parent is selected
     if (field === 'parent' && value) {
       setParentError(false);
     }
@@ -68,13 +57,12 @@ export default function ItemDetailsForm({
 
   const handleItemTypeChange = (
     _event: React.MouseEvent<HTMLElement>,
-    newType: 'item' | 'kit' | null,
+    newType: 'item' | 'kit' | null
   ) => {
     if (newType !== null) {
       setItemType(newType);
       setEditedProduct({ ...editedProduct, isKit: newType === 'kit' });
 
-      // Clear parent error if switching to kit (kits don't need parent)
       if (newType === 'kit') {
         setParentError(false);
       }
@@ -96,7 +84,6 @@ export default function ItemDetailsForm({
     { value: 'Shortages', label: 'Shortage', icon: <WarningIcon />, color: '#ff9800' },
   ];
 
-  // Validate parent requirement for items
   React.useEffect(() => {
     if (isCreateMode && itemType === 'item' && !editedProduct.parent) {
       setParentError(true);
@@ -105,7 +92,6 @@ export default function ItemDetailsForm({
 
   return (
     <Stack spacing={2} sx={{ mb: 2, width: '100%', maxWidth: '500px' }}>
-      {/* ========== Item Type Toggle (only in create mode) ========== */}
       {isCreateMode && isEditMode && (
         <Box>
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
@@ -130,7 +116,6 @@ export default function ItemDetailsForm({
         </Box>
       )}
 
-      {/* ========== Display Name / Army Nomenclature (BOTH) ========== */}
       {isEditMode ? (
         <>
           <TextField
@@ -171,10 +156,8 @@ export default function ItemDetailsForm({
         </>
       )}
 
-      {/* ========== ITEM-SPECIFIC FIELDS ========== */}
       {itemType === 'item' && (
         <>
-          {/* Description */}
           {isEditMode || alwaysEditable('description') ? (
             <TextField
               label="Description"
@@ -195,7 +178,6 @@ export default function ItemDetailsForm({
             </Box>
           )}
 
-          {/* National Serial Number */}
           <Stack direction="row" alignItems="center" spacing={1}>
             {isEditMode ? (
               <TextField
@@ -223,7 +205,6 @@ export default function ItemDetailsForm({
             )}
           </Stack>
 
-          {/* Serial Number */}
           <Stack direction="row" alignItems="center" spacing={1}>
             {isEditMode ? (
               <TextField
@@ -254,8 +235,7 @@ export default function ItemDetailsForm({
             )}
           </Stack>
 
-          {/* Authorized Quantity */}
-          {isEditMode ? (
+          {isEditMode && !isCreateMode ? (
             <TextField
               label="Authorized Quantity"
               type="number"
@@ -264,35 +244,41 @@ export default function ItemDetailsForm({
               value={editedProduct.authQuantity || 1}
               onChange={(e) => handleChange('authQuantity', parseInt(e.target.value) || 1)}
             />
-          ) : (
+          ) : !isCreateMode ? (
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
-                Quantity
+                Authorized Quantity
               </Typography>
-              <Typography>
-                {editedProduct.ohQuantity || 0}/{editedProduct.authQuantity || 0}
-              </Typography>
+              <Typography>{editedProduct.authQuantity || 0}</Typography>
             </Box>
-          )}
+          ) : null}
 
-          {/* OH Quantity - only show in edit mode, not create mode */}
-          {isEditMode && !isCreateMode && (
-            <TextField
-              label="OH Quantity"
-              type="number"
-              size="small"
-              fullWidth
-              value={editedProduct.ohQuantity || 1}
-              onChange={(e) => handleChange('ohQuantity', parseInt(e.target.value) || 1)}
-            />
+          {!isCreateMode && (
+            isEditMode || alwaysEditable('ohQuantity') ? (
+              <TextField
+                label="OH Quantity"
+                type="number"
+                size="small"
+                fullWidth
+                value={editedProduct.ohQuantity || 1}
+                onChange={(e) => handleChange('ohQuantity', parseInt(e.target.value) || 1)}
+              />
+            ) : (
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  OH Quantity
+                </Typography>
+                <Typography>
+                  {editedProduct.ohQuantity || 0}/{editedProduct.authQuantity || 0}
+                </Typography>
+              </Box>
+            )
           )}
         </>
       )}
 
-      {/* ========== KIT-SPECIFIC FIELDS ========== */}
       {itemType === 'kit' && (
         <>
-          {/* LIIN */}
           <Stack direction="row" alignItems="center" spacing={1}>
             {isEditMode ? (
               <TextField
@@ -320,7 +306,6 @@ export default function ItemDetailsForm({
             )}
           </Stack>
 
-          {/* End Item NIIN */}
           <Stack direction="row" alignItems="center" spacing={1}>
             {isEditMode ? (
               <TextField
@@ -341,7 +326,10 @@ export default function ItemDetailsForm({
             )}
             {editedProduct.endItemNiin && (
               <Tooltip title="Copy">
-                <IconButton size="small" onClick={() => copyToClipboard(editedProduct.endItemNiin)}>
+                <IconButton
+                  size="small"
+                  onClick={() => copyToClipboard(editedProduct.endItemNiin)}
+                >
                   <ContentCopyIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -350,71 +338,67 @@ export default function ItemDetailsForm({
         </>
       )}
 
-      {/* ========== Kit From (Parent) - ONLY FOR ITEMS ========== */}
-      {itemType === 'item' && (
-        <>
-          {isEditMode ? (
-            <Box>
-              <Autocomplete
-                options={itemsList.filter((item: any) => item.isKit !== false)}
-                getOptionLabel={(option: any) =>
-                  `${option.name || option.productName || ''} (${option.actualName || 'No name'})`
-                }
-                value={editedProduct.parent || null}
-                onChange={(_e, val) => handleChange('parent', val)}
-                isOptionEqualToValue={(o, v) => o.itemId === v?.itemId}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Kit From"
-                    placeholder="Select parent kit"
-                    required
-                    error={parentError}
-                  />
-                )}
+      {itemType === 'item' && isEditMode && (
+        <Box>
+          <Autocomplete
+            options={itemsList.filter((item: any) => item.isKit !== false)}
+            getOptionLabel={(option: any) =>
+              `${option.name || option.productName || ''} (${option.actualName || 'No name'})`
+            }
+            value={editedProduct.parent || null}
+            onChange={(_e, val) => {
+              if (val) {
+                const cleanParent = typeof val === 'string' ? val : (val.itemId || val);
+                handleChange('parent', cleanParent);
+              } else {
+                handleChange('parent', null);
+              }
+            }}
+            isOptionEqualToValue={(o, v) => {
+              const oId = typeof o === 'string' ? o : o.itemId;
+              const vId = typeof v === 'string' ? v : v?.itemId;
+              return oId === vId;
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Kit From"
+                placeholder="Select parent kit"
+                required
+                error={parentError}
               />
-              {parentError && (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  Items must belong to a kit. Please select a parent kit.
-                </Alert>
-              )}
-            </Box>
-          ) : (
-            editedProduct.parent && (
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Part of Kit
-                </Typography>
-                <Typography>
-                  {editedProduct.parent.name || editedProduct.parent.productName || 'Unknown Kit'}
-                </Typography>
-              </Box>
-            )
+            )}
+          />
+          {parentError && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              Items must belong to a kit. Please select a parent kit.
+            </Alert>
           )}
-        </>
+        </Box>
       )}
 
-      {/* ========== Status Buttons (always visible for existing items) ========== */}
       {!isCreateMode && (isEditMode || alwaysEditable('status')) && (
         <Box>
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
             Status
           </Typography>
-          <ButtonGroup fullWidth orientation="vertical" sx={{ gap: 1 }}>
+          <Stack direction="row" spacing={1}>
             {statuses.map((s) => (
               <Button
                 key={s.value}
                 onClick={() => handleChange('status', s.value)}
                 variant={editedProduct.status === s.value ? 'contained' : 'outlined'}
                 startIcon={s.icon}
+                size="small"
                 sx={{
                   textTransform: 'none',
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  px: { xs: 0.75, sm: 1 },
+                  py: { xs: 0.5, sm: 0.75 },
                   fontWeight: editedProduct.status === s.value ? 700 : 500,
                   bgcolor: editedProduct.status === s.value ? s.color : 'transparent',
                   color: editedProduct.status === s.value ? 'white' : s.color,
                   borderColor: s.color,
-                  justifyContent: 'flex-start',
-                  py: 1.5,
                   '&:hover': {
                     bgcolor: editedProduct.status === s.value ? s.color : `${s.color}20`,
                     borderColor: s.color,
@@ -424,14 +408,13 @@ export default function ItemDetailsForm({
                 {s.label}
               </Button>
             ))}
-          </ButtonGroup>
+          </Stack>
         </Box>
       )}
 
-      {/* ========== Notes  ========== */}
       {(isEditMode || alwaysEditable('notes')) && (
         <TextField
-          label="Notes"
+          label="Notes / Last Known Location"
           size="small"
           fullWidth
           multiline

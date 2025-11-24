@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ItemListComponent, { ItemListItem } from '../src/components/ItemListComponent';
@@ -107,7 +107,6 @@ describe('ItemListComponent', () => {
   it('displays status badge with correct styling', () => {
     renderWithRouter(<ItemListComponent items={mockItems} />);
 
-    // Status badges are now Box elements - use getAllByText since there are multiple "Completed"
     const completedBadges = screen.getAllByText('Completed');
     expect(completedBadges.length).toBeGreaterThan(0);
     expect(completedBadges[0]).toBeInTheDocument();
@@ -119,16 +118,18 @@ describe('ItemListComponent', () => {
   it('shows child count indicator for items with children', () => {
     renderWithRouter(<ItemListComponent items={mockItems} />);
 
-    // Use a custom text matcher function to handle text split across elements
-    const childCountElement = screen.getByText((_content, element) => {
+    // Get all elements that match the pattern, then verify at least one exists
+    const childCountElements = screen.getAllByText((_content, element) => {
       const hasText = (node: Element | null) => {
         if (!node) return false;
         const text = node.textContent || '';
-        return text.includes('📦') && text.includes('1');
+        return text.includes('📦') && text.includes('1') && text.includes('item');
       };
       return hasText(element);
     });
-    expect(childCountElement).toBeInTheDocument();
+
+    // Should find at least one child count indicator
+    expect(childCountElements.length).toBeGreaterThan(0);
   });
 
   it('shows expand button only for items with children', () => {
@@ -311,8 +312,8 @@ describe('ItemListComponent', () => {
 
     renderWithRouter(<ItemListComponent items={oneChild} />);
 
-    // Use custom matcher for text split across elements
-    const singleItemCount = screen.getByText((_content, element) => {
+    // Get all matching elements and verify at least one shows singular
+    const singleItemCounts = screen.getAllByText((_content, element) => {
       const hasText = (node: Element | null) => {
         if (!node) return false;
         const text = node.textContent || '';
@@ -320,13 +321,13 @@ describe('ItemListComponent', () => {
       };
       return hasText(element);
     });
-    expect(singleItemCount).toBeInTheDocument();
+    expect(singleItemCounts.length).toBeGreaterThan(0);
 
     const multipleChildren: ItemListItem[] = [
       {
-        id: 'parent',
-        productName: 'Kit',
-        actualName: 'Kit 1',
+        id: 'parent2',
+        productName: 'MultiKit',
+        actualName: 'Kit 2',
         subtitle: 'desc',
         image: '',
         date: '11/14/25',
@@ -339,7 +340,7 @@ describe('ItemListComponent', () => {
             subtitle: '',
             image: '',
             date: '11/14/25',
-            parent: 'parent',
+            parent: 'parent2',
           },
           {
             id: 'c2',
@@ -348,7 +349,7 @@ describe('ItemListComponent', () => {
             subtitle: '',
             image: '',
             date: '11/14/25',
-            parent: 'parent',
+            parent: 'parent2',
           },
         ],
       },
@@ -360,8 +361,8 @@ describe('ItemListComponent', () => {
       </BrowserRouter>,
     );
 
-    // Use custom matcher for text split across elements
-    const multipleItemsCount = screen.getByText((_content, element) => {
+    // Find elements showing "2 items" (plural) - use getAllByText
+    const multipleItemsCounts = screen.getAllByText((_content, element) => {
       const hasText = (node: Element | null) => {
         if (!node) return false;
         const text = node.textContent || '';
@@ -369,6 +370,6 @@ describe('ItemListComponent', () => {
       };
       return hasText(element);
     });
-    expect(multipleItemsCount).toBeInTheDocument();
+    expect(multipleItemsCounts.length).toBeGreaterThan(0);
   });
 });

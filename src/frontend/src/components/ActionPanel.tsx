@@ -102,11 +102,16 @@ export default function ActionPanel({
           teamId,
           nameValue,
           editedProduct.actualName || nameValue,
-          editedProduct.nsn || editedProduct.serialNumber || '',
-          editedProduct.serialNumber || '',
           imageBase64,
           editedProduct.description || '',
-          editedProduct.parent?.itemId || null,
+          editedProduct.parent?.itemId || editedProduct.parent || null,
+          editedProduct.isKit || false,
+          editedProduct.nsn || '',
+          editedProduct.serialNumber || '',
+          editedProduct.authQuantity || 1,
+          editedProduct.ohQuantity || 1,
+          editedProduct.liin || '',
+          editedProduct.endItemNiin || '',
         );
 
         if (res.success) {
@@ -120,12 +125,13 @@ export default function ActionPanel({
           actualName: editedProduct.actualName || nameValue,
           nsn: editedProduct.nsn || editedProduct.serialNumber || '',
           serialNumber: editedProduct.serialNumber || '',
-          quantity: Number(editedProduct.quantity) || 1,
+          authQuantity: editedProduct.authQuantity || 1,
+          ohQuantity: editedProduct.ohQuantity || 1,
           description: editedProduct.description || '',
           imageBase64,
           status: editedProduct.status || 'To Review',
           notes: editedProduct.notes || '',
-          parent: editedProduct.parent?.itemId || null,
+          parent: editedProduct.parent?.itemId || editedProduct.parent || null,
           damageReports: damageReports || [],
         });
 
@@ -147,24 +153,36 @@ export default function ActionPanel({
 
   return (
     <>
-      <Box sx={{ display: 'flex', gap: 1 }}>
+      <Stack direction="row" spacing={1}>
         {(isEditMode || isCreateMode) && (
           <>
             <Button
               variant="contained"
+              color="success"
               startIcon={<SaveIcon />}
               onClick={() => handleSave()}
-              sx={{ flex: 1 }}
+              size="small"
+              sx={{
+                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                px: { xs: 1, sm: 1.5 },
+                py: { xs: 0.5, sm: 0.75 }
+              }}
             >
               {isCreateMode ? 'Create' : 'Save'}
             </Button>
 
             {!isCreateMode && (
               <Button
-                variant="outlined"
+                variant="contained"
+                color="error"
                 startIcon={<CancelIcon />}
                 onClick={() => setIsEditMode(false)}
-                sx={{ flex: 1 }}
+                size="small"
+                sx={{
+                  fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                  px: { xs: 1, sm: 1.5 },
+                  py: { xs: 0.5, sm: 0.75 }
+                }}
               >
                 Cancel
               </Button>
@@ -179,7 +197,12 @@ export default function ActionPanel({
               color="success"
               startIcon={<SaveIcon />}
               onClick={() => handleSave(true)}
-              sx={{ flex: 1 }}
+              size="small"
+              sx={{
+                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                px: { xs: 1, sm: 1.5 },
+                py: { xs: 0.5, sm: 0.75 }
+              }}
             >
               Save
             </Button>
@@ -189,7 +212,12 @@ export default function ActionPanel({
               color="primary"
               startIcon={<EditIcon />}
               onClick={() => setIsEditMode(true)}
-              sx={{ flex: 1 }}
+              size="small"
+              sx={{
+                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                px: { xs: 1, sm: 1.5 },
+                py: { xs: 0.5, sm: 0.75 }
+              }}
             >
               Edit
             </Button>
@@ -199,13 +227,18 @@ export default function ActionPanel({
               color="error"
               startIcon={<DeleteIcon />}
               onClick={() => setDeleteOpen(true)}
-              sx={{ flex: 1 }}
+              size="small"
+              sx={{
+                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                px: { xs: 1, sm: 1.5 },
+                py: { xs: 0.5, sm: 0.75 }
+              }}
             >
               Delete
             </Button>
           </>
         )}
-      </Box>
+      </Stack>
 
       {/* Delete Dialog */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
@@ -218,7 +251,7 @@ export default function ActionPanel({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained" disabled={deleting}>
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>

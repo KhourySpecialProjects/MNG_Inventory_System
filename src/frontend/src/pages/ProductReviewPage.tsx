@@ -216,7 +216,7 @@ export default function ProductReviewPage() {
                 itemsList={itemsList}
                 isEditMode={isEditMode}
                 isCreateMode={isCreateMode}
-                alwaysEditableFields={['status', 'description', 'notes']}
+                alwaysEditableFields={['status', 'description', 'notes', 'ohQuantity']}
               />
 
               {editedProduct?.status === 'Damaged' && (
