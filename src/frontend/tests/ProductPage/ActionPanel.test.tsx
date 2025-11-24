@@ -2,10 +2,32 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ActionPanel from '../../src/components/ProductPage/ActionPanel';
-
 import * as itemsAPI from '../../src/api/items';
 
+// Mock react-router-dom
 const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+// Mock items API - note the correct path
+vi.mock('../../src/api/items', () => ({
+  createItem: vi.fn(),
+  updateItem: vi.fn(),
+  deleteItem: vi.fn(),
+  getItems: vi.fn(),
+  getItem: vi.fn(),
+  uploadImage: vi.fn(),
+}));
+
+// Mock auth API
+vi.mock('../../src/api/auth', () => ({
+  me: vi.fn(() => Promise.reject(new Error('Auth disabled'))),
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
