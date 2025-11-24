@@ -5,13 +5,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import NavBar from '../components/NavBar';
-import ImagePanel from '../components/ImagePanel';
-import ItemDetailsForm from '../components/ItemDetailsForm';
+import ImagePanel from '../components/ProductPage/ImagePanel';
+import ItemDetailsForm from '../components/ProductPage/ItemDetailsForm';
 import DamageReportsSection from '../components/DamageReportsSection';
-import ActionPanel from '../components/ActionPanel';
+import ActionPanel from '../components/ProductPage/ActionPanel';
 import { flattenTree } from '../components/Producthelpers';
 import { getItem, getItems } from '../api/items';
-import ChildrenTree from '../components/ChildrenTree';
+import ChildrenTree from '../components/ProductPage/ChildrenTree';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
 
