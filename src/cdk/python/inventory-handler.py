@@ -61,7 +61,7 @@ def _resp(status, body=None, headers=None, is_b64=False):
 ITEM_ID_KEY = "itemId"
 PARENT_KEY = "parent"
 END_NIIN_KEY = "endItemNiin"
-END_LIN_KEY = "endItemLin"
+END_LIN_KEY = "liin"
 END_DESC_KEY = "endItemDesc"
 
 def fetch_inventory_from_dynamo(team_id, overrides):
@@ -174,9 +174,10 @@ def render_inventory_csv(data):
 
             name = node.get("name") or ""
             desc = node.get("description") or ""
-            qty = node.get("quantity") or 0
+            auth_qty = node.get("authQuantity") or 0
+            oh_qty = node.get("ohQuantity") if node.get("ohQuantity") is not None else auth_qty
 
-            writer.writerow([name, lv, desc, qty, qty])
+            writer.writerow([name, lv, desc, auth_qty, oh_qty])
 
             kids = sorted(children.get(nid, []), key=lambda x: (x.get("name") or ""))
             for c in kids:
@@ -231,7 +232,7 @@ def lambda_handler(event, context):
     key = f"Documents/{team_id}/inventory/{filename}"
 
     if save_to_s3:
-         if not UPLOADS_BUCKET:
+        if not UPLOADS_BUCKET:
             return _resp(500, {"error": "UPLOADS_BUCKET env var is not set"})
         try:
             s3().put_object(

@@ -39,7 +39,6 @@ def s3_client():
 FIELD_COORDS = {
     "ORGANIZATION":       (90, 720),
     "NOMENCLATURE":       (390, 720),
-    "MODEL":              (500, 720),
     "SERIAL_NUMBER":      (90, 690),
     "DATE":               (400, 690),
 }
@@ -58,7 +57,6 @@ REMARKS_TABLE = {
 PLACEHOLDERS = {
     "ORGANIZATION":       "<organization>",
     "NOMENCLATURE":       "<nomenclature>",
-    "MODEL":              "<model>",
     "SERIAL_NUMBER":      "<serial>",
     "DATE":               "<yyyy-mm-dd>",
     "REMARKS":            "<remarks row>",
@@ -67,7 +65,6 @@ PLACEHOLDERS = {
 LABELS = {
     "ORGANIZATION":       "ORGANIZATION",
     "NOMENCLATURE":       "NOMENCLATURE",
-    "MODEL":              "MODEL",
     "SERIAL NUMBER":      "SERIAL NUMBER",
     "SERIAL_NUMBER":      "SERIAL NUMBER",
     "DATE":               "DATE",
@@ -229,10 +226,21 @@ def to_pdf_values(payload):
         else:
             remarks_list = ["N/A"] 
 
+    org = payload.get("organization") or payload.get("description")
+    if isinstance(org, str):
+        org = org.strip()
+    if not org:
+        org = "N/A"
+
+    nom = payload.get("nomenclature") or payload.get("actualName")
+    if isinstance(nom, str):
+        nom = nom.strip()
+    if not nom:
+        nom = "N/A"
+
     return {
-        "ORGANIZATION":       pick("organization", "ORGANIZATION"),
-        "NOMENCLATURE":       pick("nomenclature", "NOMENCLATURE"),
-        "MODEL":              pick("model", "MODEL"),
+        "ORGANIZATION":       org,
+        "NOMENCLATURE":       nom,
         "SERIAL_NUMBER":      (payload.get("serial") or payload.get("serialNumber") or "N/A"),
         "DATE":               (payload.get("date") or datetime.now(timezone.utc).strftime("%Y-%m-%d")),
         "REMARKS_LIST":       remarks_list,
