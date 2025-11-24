@@ -63,11 +63,7 @@ export function CreateTeamDialog({
 
   const [loading, setLoading] = useState(false);
 
-  const allFilled =
-    workspaceName.trim() &&
-    uic.trim() &&
-    contactName.trim() &&
-    contactEmail.trim();
+  const allFilled = workspaceName.trim() && uic.trim() && contactName.trim() && contactEmail.trim();
 
   async function getUserId(): Promise<string> {
     const user = await me();
@@ -99,11 +95,11 @@ export function CreateTeamDialog({
         contactEmail, // location/description
         userId,
         uic,
-        contactName
+        contactName,
       );
 
       if (!result?.success) {
-        showSnackbar(result.error || 'Failed to create team.', 'error');
+        showSnackbar(result?.error || 'Failed to create teamspace.', 'error');
         return;
       }
 
@@ -118,7 +114,11 @@ export function CreateTeamDialog({
       await onRefresh();
     } catch (err) {
       console.error('❌ handleCreate error:', err);
-      showSnackbar('Error creating team.', 'error');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred while creating the teamspace.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -257,7 +257,9 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
       await onRefresh();
     } catch (err) {
       console.error('❌ handleInvite error:', err);
-      showSnackbar('Unexpected error adding member.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while adding member.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -276,7 +278,9 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
       onClose();
     } catch (err) {
       console.error('❌ Invite failed:', err);
-      showSnackbar('Failed to send invite.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while sending invite.';
+      showSnackbar(errorMessage, 'error');
     }
   }
 
@@ -487,7 +491,9 @@ export function RemoveMemberDialog({
       await onRefresh();
     } catch (err) {
       console.error('❌ handleRemove error:', err);
-      showSnackbar('Error removing member.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while removing member.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -631,7 +637,9 @@ export function DeleteTeamDialog({
       await onRefresh();
     } catch (err) {
       console.error('❌ handleDelete error:', err);
-      showSnackbar('Error deleting team.', 'error');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred while deleting teamspace.';
+      showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
