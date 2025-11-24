@@ -8,11 +8,18 @@ export async function createItem(
   teamId: string,
   name: string,
   actualName: string,
-  nsn: string,
-  serialNumber: string,
   imageBase64?: string,
   description?: string,
   parent?: string | null,
+  isKit?: boolean,
+  // Item-specific fields
+  nsn?: string,
+  serialNumber?: string,
+  authQuantity?: number,
+  ohQuantity?: number,
+  // Kit-specific fields
+  liin?: string,
+  endItemNiin?: string,
 ) {
   const currentUser = await me();
 
@@ -20,13 +27,20 @@ export async function createItem(
     teamId,
     name,
     actualName,
-    nsn,
-    serialNumber,
     userId: currentUser.userId,
     status: 'To Review',
     imageBase64,
     description,
     parent,
+    isKit: isKit || false,
+    // Item fields
+    nsn: nsn || '',
+    serialNumber: serialNumber || '',
+    authQuantity: authQuantity || 1,
+    ohQuantity: ohQuantity || 1,
+    // Kit fields
+    liin: liin || '',
+    endItemNiin: endItemNiin || '',
   };
 
   return (
@@ -65,6 +79,39 @@ export async function getItem(teamId: string, itemId: string) {
   );
 }
 
+/**
+ * Helper function to find the closest parent kit and get its liin/endItemNiin
+ * Recursively traverses up the parent chain until it finds a kit
+ */
+async function getKitInfoFromParent(
+  teamId: string,
+  parentId: string | null,
+): Promise<{ liin?: string; endItemNiin?: string }> {
+  if (!parentId) return {};
+
+  try {
+    const parentItem = await getItem(teamId, parentId);
+
+    // If parent is a kit with liin and endItemNiin, return them
+    if (parentItem.item?.isKit && parentItem.item?.liin && parentItem.item?.endItemNiin) {
+      return {
+        liin: parentItem.item.liin,
+        endItemNiin: parentItem.item.endItemNiin,
+      };
+    }
+
+    // If parent is an item (not a kit), recursively check its parent
+    if (parentItem.item?.parent) {
+      return getKitInfoFromParent(teamId, parentItem.item.parent);
+    }
+
+    return {};
+  } catch (error) {
+    console.error('Error fetching parent kit info:', error);
+    return {};
+  }
+}
+
 /** UPDATE ITEM */
 export async function updateItem(
   teamId: string,
@@ -72,24 +119,43 @@ export async function updateItem(
   updates: {
     name?: string;
     actualName?: string;
-    nsn?: string;
-    serialNumber?: string;
-    quantity?: number;
     description?: string;
     imageBase64?: string;
     status?: string;
     damageReports?: string[];
     parent?: string | null;
     notes?: string;
+    isKit?: boolean;
+    // Item-specific fields
+    nsn?: string;
+    serialNumber?: string;
+    authQuantity?: number;
+    ohQuantity?: number;
+    // Kit-specific fields
+    liin?: string;
+    endItemNiin?: string;
   },
 ) {
   const currentUser = await me();
+
+  // If this is an item (not a kit) and doesn't have liin/endItemNiin,
+  // get them from the closest parent kit
+  let finalUpdates = { ...updates };
+
+  if (!updates.isKit && updates.parent && (!updates.liin || !updates.endItemNiin)) {
+    const kitInfo = await getKitInfoFromParent(teamId, updates.parent);
+    finalUpdates = {
+      ...finalUpdates,
+      liin: updates.liin || kitInfo.liin || '',
+      endItemNiin: updates.endItemNiin || kitInfo.endItemNiin || '',
+    };
+  }
 
   const payload = {
     teamId,
     itemId,
     userId: currentUser.userId,
-    ...updates,
+    ...finalUpdates,
   };
 
   return (

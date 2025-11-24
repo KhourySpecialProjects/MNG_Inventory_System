@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress, Container, Tab, Tabs, Typography } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import ItemListComponent, { ItemListItem } from '../components/ItemListComponent';
+import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
