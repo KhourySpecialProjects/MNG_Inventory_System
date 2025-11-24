@@ -3,46 +3,48 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Box, Button, CircularProgress, Container, Grid, Snackbar } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 import NavBar from '../components/NavBar';
-import ImagePanel from '../components/ImagePanel';
-import ItemDetailsForm from '../components/ItemDetailsForm';
+import ImagePanel from '../components/ProductPage/ImagePanel';
+import ItemDetailsForm from '../components/ProductPage/ItemDetailsForm';
 import DamageReportsSection from '../components/DamageReportsSection';
-import ActionPanel from '../components/ActionPanel';
+import ActionPanel from '../components/ProductPage/ActionPanel';
 import { flattenTree } from '../components/Producthelpers';
 import { getItem, getItems } from '../api/items';
-import ChildrenTree from '../components/ChildrenTree';
+import ChildrenTree from '../components/ProductPage/ChildrenTree';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
 
 export default function ProductReviewPage() {
   const { teamId, itemId } = useParams<{ teamId: string; itemId: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
+
   const isCreateMode = itemId === 'new';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // shared item state
   const [product, setProduct] = useState<any>(null);
   const [editedProduct, setEditedProduct] = useState<any>(null);
   const [itemsList, setItemsList] = useState<any[]>([]);
   const [imagePreview, setImagePreview] = useState('');
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [damageReports, setDamageReports] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
 
   const [isEditMode, setIsEditMode] = useState(isCreateMode);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Profile state
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         if (!teamId) throw new Error('Missing team ID');
+
         const all = await getItems(teamId);
+
         if (all.success && all.items) {
           const flat = flattenTree(all.items);
           setItemsList(flat.filter((x: any) => x.itemId !== itemId));
@@ -53,9 +55,16 @@ export default function ProductReviewPage() {
             productName: '',
             actualName: '',
             description: '',
+            nsn: '',
             serialNumber: '',
-            quantity: 1,
+            authQuantity: 1,
+            ohQuantity: 1,
+            liin: '',
+            endItemNiin: '',
             status: 'To Review',
+            isKit: false,
+            parent: null,
+            notes: '',
           };
           setProduct(blank);
           setEditedProduct(blank);
@@ -64,23 +73,31 @@ export default function ProductReviewPage() {
         }
 
         const res = await getItem(teamId, itemId!);
+
         if (!res.success || !res.item) throw new Error(res.error);
 
         const item = res.item;
+
+        // Map API fields to component fields
+        const mappedItem = {
+          ...item,
+          productName: item.name,
+          actualName: item.actualName,
+        };
 
         // Manually find children from the full items list
         const allItemsRes = await getItems(teamId);
         if (allItemsRes.success && allItemsRes.items) {
           const children = allItemsRes.items.filter((i: any) => i.parent === itemId);
-          item.children = children;  // Add children to item
+          mappedItem.children = children;
         }
 
-        setProduct(item);
-        setEditedProduct(item);
-        setDamageReports(item.damageReports || []);
+        setProduct(mappedItem);
+        setEditedProduct(mappedItem);
+        setDamageReports(mappedItem.damageReports || []);
 
-        if (item.imageLink && item.imageLink.startsWith('http')) {
-          setImagePreview(item.imageLink);
+        if (mappedItem.imageLink && mappedItem.imageLink.startsWith('http')) {
+          setImagePreview(mappedItem.imageLink);
         } else {
           setImagePreview('');
         }
@@ -91,17 +108,7 @@ export default function ProductReviewPage() {
         setLoading(false);
       }
     })();
-  }, [teamId, itemId]);
-
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === 'string') {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
+  }, [teamId, itemId, isCreateMode]);
 
   if (loading)
     return (
@@ -110,6 +117,7 @@ export default function ProductReviewPage() {
         justifyContent="center"
         alignItems="center"
         minHeight="60vh"
+        sx={{ bgcolor: theme.palette.background.default }}
       >
         <CircularProgress />
       </Box>
@@ -117,13 +125,32 @@ export default function ProductReviewPage() {
 
   if (error)
     return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Box
+        sx={{
+          width: {
+            xs: '100%',
+            sm: '600px',
+            md: '900px',
+            lg: '1100px',
+          },
+          mx: 'auto',
+          mt: 4,
+          px: 2,
+        }}
+      >
         <Alert severity="error">{error}</Alert>
-      </Container>
+      </Box>
     );
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: theme.palette.background.default,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       <TopBar
         isLoggedIn={true}
         profileImage={profileImage}
@@ -133,42 +160,65 @@ export default function ProductReviewPage() {
       <Box
         sx={{
           flex: 1,
-          bgcolor: 'linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%)',
-          pb: 10
+          bgcolor: theme.palette.background.default,
+          pb: 10,
         }}
       >
-        <Container
-          maxWidth="lg"
+        <Box
           sx={{
+            width: {
+              xs: '100%',
+              sm: '600px',
+              md: '900px',
+              lg: '1100px',
+            },
+            mx: 'auto',
             pt: 3,
             pb: 8,
-            backgroundColor: 'white',
+            px: 3,
+            backgroundColor: theme.palette.background.paper,
             borderRadius: 3,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
-            mt: 3
+            boxShadow:
+              theme.palette.mode === 'dark'
+                ? '0 4px 20px rgba(0,0,0,0.4)'
+                : '0 4px 16px rgba(0,0,0,0.05)',
+            mt: 3,
+            minHeight: '900px',
           }}
         >
-          <Button
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate(-1)}
-            sx={{
-              textTransform: 'none',
-              color: 'text.secondary',
-              mb: 2,
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' }
-            }}
-          >
-            Back
-          </Button>
+          {/* Back button and Action Panel on same row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate(-1)}
+              sx={{
+                textTransform: 'none',
+                color: theme.palette.text.secondary,
+                '&:hover': {
+                  bgcolor:
+                    theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+                },
+              }}
+            >
+              Back
+            </Button>
 
-          {/* === Main Content === */}
-          <Grid
-            container
-            spacing={3}
-            justifyContent="center"
-            alignItems="flex-start"
-          >
-            {/* === LEFT: IMAGE === */}
+            <ActionPanel
+              isCreateMode={isCreateMode}
+              isEditMode={isEditMode}
+              setIsEditMode={setIsEditMode}
+              product={product}
+              editedProduct={editedProduct}
+              teamId={teamId!}
+              itemId={itemId!}
+              selectedImageFile={selectedImageFile}
+              imagePreview={imagePreview}
+              setShowSuccess={setShowSuccess}
+              damageReports={damageReports}
+            />
+          </Box>
+
+          <Grid container spacing={3}>
             <Grid item xs={12} md={4}>
               <ImagePanel
                 imagePreview={imagePreview}
@@ -179,14 +229,14 @@ export default function ProductReviewPage() {
               />
             </Grid>
 
-            {/* === CENTER: ITEM DETAILS === */}
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} md={8} sx={{ minWidth: 0 }}>
               <ItemDetailsForm
                 editedProduct={editedProduct}
                 setEditedProduct={setEditedProduct}
                 itemsList={itemsList}
                 isEditMode={isEditMode}
-                alwaysEditableFields={['status', 'description', 'notes']}
+                isCreateMode={isCreateMode}
+                alwaysEditableFields={['status', 'description', 'notes', 'ohQuantity']}
               />
 
               {editedProduct?.status === 'Damaged' && (
@@ -198,24 +248,7 @@ export default function ProductReviewPage() {
                 />
               )}
 
-              <ChildrenTree editedProduct={editedProduct} teamId={teamId!} />
-            </Grid>
-
-
-            {/* === RIGHT: ACTIONS === */}
-            <Grid item xs={12} md={3}>
-              <ActionPanel
-                isCreateMode={isCreateMode}
-                isEditMode={isEditMode}
-                setIsEditMode={setIsEditMode}
-                product={product}
-                editedProduct={editedProduct}
-                teamId={teamId!}
-                itemId={itemId!}
-                selectedImageFile={selectedImageFile}
-                imagePreview={imagePreview}
-                setShowSuccess={setShowSuccess}
-              />
+              {editedProduct && <ChildrenTree editedProduct={editedProduct} teamId={teamId!} />}
             </Grid>
           </Grid>
 
@@ -226,15 +259,25 @@ export default function ProductReviewPage() {
           >
             <Alert severity="success">Item updated successfully!</Alert>
           </Snackbar>
-        </Container>
+        </Box>
       </Box>
 
-      <Profile
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-      />
+      <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
 
-      <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          bgcolor: theme.palette.background.paper,
+          boxShadow:
+            theme.palette.mode === 'dark'
+              ? '0 -2px 8px rgba(0,0,0,0.6)'
+              : '0 -2px 8px rgba(0,0,0,0.05)',
+        }}
+      >
         <NavBar />
       </Box>
     </Box>

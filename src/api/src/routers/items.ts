@@ -1,21 +1,16 @@
-import { z } from "zod";
-import { router, publicProcedure } from "./trpc";
-import {
-  GetCommand,
-  PutCommand,
-  QueryCommand,
-  UpdateCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { z } from 'zod';
+import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
+import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import crypto from "crypto";
-import { doc } from "../aws";
-import { loadConfig } from "../process";
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import crypto from 'crypto';
+import { doc } from '../aws';
+import { loadConfig } from '../process';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
@@ -23,93 +18,97 @@ const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
-if (!BUCKET_NAME) throw new Error("❌ Missing S3 bucket name");
+if (!BUCKET_NAME) throw new Error('❌ Missing S3 bucket name');
 const s3 = new S3Client({ region: REGION });
 
 /* =========================== HELPERS =========================== */
 function newId(n = 10): string {
   return crypto
     .randomBytes(n)
-    .toString("base64")
-    .replace(/[+/=]/g, (c) => ({ "+": "-", "/": "_", "=": "" }[c] as string));
+    .toString('base64')
+    .replace(/[+/=]/g, (c) => ({ '+': '-', '/': '_', '=': '' })[c] as string);
 }
 
 function getImageExtension(base64: string): string {
   const m = base64.match(/^data:image\/(\w+);base64,/);
-  return m ? m[1].toLowerCase() : "png";
+  return m ? m[1].toLowerCase() : 'png';
 }
 
 function stripBase64Header(base64: string): string {
-  return base64.replace(/^data:image\/\w+;base64,/, "");
+  return base64.replace(/^data:image\/\w+;base64,/, '');
 }
 
-/**
- * ✅ Takes an S3 URL and returns a presigned URL that works even with KMS encryption.
- * If it's not an S3 URL, returns it unchanged.
- */
-async function getPresignedUrlIfNeeded(imageLink?: string): Promise<string | undefined> {
-  if (!imageLink || !imageLink.startsWith("https://")) return imageLink;
+async function getUserName(userId: string): Promise<string | undefined> {
+  const res = await doc.send(
+    new GetCommand({
+      TableName: TABLE_NAME,
+      Key: { PK: `USER#${userId}`, SK: 'METADATA' },
+    }),
+  );
 
-  const match = imageLink.match(/amazonaws\.com\/(.+)/);
-  if (!match) return imageLink;
+  return res.Item?.name;
+}
 
-  const key = match[1];
-  try {
-    // Check object exists first
-    await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
-    const signedUrl = await getSignedUrl(
-      s3,
-      new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
-      { expiresIn: 3600 }
-    );
-    return signedUrl;
-  } catch (err: any) {
-    console.warn("[getPresignedUrlIfNeeded] Could not presign:", err.message);
-    return imageLink;
-  }
+async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
+  if (!imageKey) return undefined;
+
+  const url = await getSignedUrl(
+    s3,
+    new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: imageKey,
+    }),
+    { expiresIn: 3600 },
+  );
+
+  return url;
 }
 
 /* =========================== ROUTER =========================== */
 export const itemsRouter = router({
   /** CREATE ITEM **/
-  createItem: publicProcedure
+  createItem: permissionedProcedure('item.create')
     .input(
       z.object({
-        teamId: z.string().min(1),
-        name: z.string().min(1),
-        userId: z.string().min(1),
-
-        description: z.string().optional().nullable(),
+        teamId: z.string(),
+        name: z.string(),
         actualName: z.string().optional().nullable(),
-        nsn: z.string().min(1),
-        serialNumber: z.string().optional().nullable(),
-        quantity: z.number().optional().nullable(),
+        userId: z.string(),
+        status: z.string().optional(),
         imageBase64: z.string().optional().nullable(),
-        imageLink: z.string().optional().nullable(),
-        damageReports: z.array(z.string()).optional().nullable(),
-        status: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
         parent: z.string().optional().nullable(),
-      })
+        isKit: z.boolean().optional(),
+
+        // item fields
+        nsn: z.string(),
+        serialNumber: z.string().optional().nullable(),
+        authQuantity: z.number().optional().nullable(),
+        ohQuantity: z.number().optional().nullable(),
+
+        // kit fields
+        liin: z.string().optional().nullable(),
+        endItemNiin: z.string().optional().nullable(),
+        damageReports: z.array(z.string()).optional().nullable(),
+      }),
     )
     .mutation(async ({ input }) => {
-      console.log(`[createItem] Received:`, JSON.stringify(input, null, 2));
       try {
-        // ✅ Prevent duplicate NSNs
         const existing = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
-            KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+            KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
             ExpressionAttributeValues: {
-              ":pk": `TEAM#${input.teamId}`,
-              ":sk": "ITEM#",
+              ':pk': `TEAM#${input.teamId}`,
+              ':sk': 'ITEM#',
             },
-          })
+          }),
         );
+
         const duplicate = (existing.Items ?? []).find(
-          (it: any) =>
-            it.nsn &&
-            it.nsn.trim().toLowerCase() === input.nsn.trim().toLowerCase()
+          (it: any) => it.nsn?.trim().toLowerCase() === input.nsn.trim().toLowerCase(),
         );
+
         if (duplicate) {
           return {
             success: false,
@@ -120,358 +119,372 @@ export const itemsRouter = router({
         const itemId = newId(12);
         const now = new Date().toISOString();
 
-        // ✅ Upload new image if provided
-        let finalImageLink = input.imageLink ?? undefined;
-        if (!finalImageLink && input.imageBase64 && input.nsn) {
+        let imageKey: string | undefined;
+
+        if (input.imageBase64) {
           const ext = getImageExtension(input.imageBase64);
-          const key = `items/${input.teamId}/${input.nsn}.${ext}`;
-          const body = Buffer.from(stripBase64Header(input.imageBase64), "base64");
+          imageKey = `items/${input.teamId}/${input.nsn}.${ext}`;
+
+          const body = Buffer.from(stripBase64Header(input.imageBase64), 'base64');
 
           await s3.send(
             new PutObjectCommand({
               Bucket: BUCKET_NAME,
-              Key: key,
+              Key: imageKey,
               Body: body,
-              ContentEncoding: "base64",
+              ContentEncoding: 'base64',
               ContentType: `image/${ext}`,
-              ...(KMS_KEY_ARN
-                ? { ServerSideEncryption: "aws:kms", SSEKMSKeyId: KMS_KEY_ARN }
-                : {}),
-            })
+              ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
+            }),
           );
-
-          // Store the static S3 URL
-          finalImageLink = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
         }
+
+        const userName = await getUserName(input.userId);
 
         const item = {
           PK: `TEAM#${input.teamId}`,
           SK: `ITEM#${itemId}`,
-          Type: "Item",
+          Type: 'Item',
+
+          // identifiers
           teamId: input.teamId,
           itemId,
+
+          // base fields
           name: input.name,
           actualName: input.actualName ?? undefined,
+          description: input.description ?? undefined,
+          status: input.status ?? 'To Review',
+          parent: input.parent ?? null,
+          isKit: input.isKit ?? false,
+
+          // item fields
           nsn: input.nsn,
           serialNumber: input.serialNumber ?? undefined,
-          quantity: input.quantity ?? 1,
-          description: input.description ?? undefined,
-          imageLink: finalImageLink,
+          authQuantity: input.authQuantity ?? 1,
+          ohQuantity: input.ohQuantity ?? 1,
+
+          // kit fields
+          liin: input.liin ?? '',
+          endItemNiin: input.endItemNiin ?? '',
+
+          // image + reports
+          imageKey,
           damageReports: input.damageReports ?? [],
-          status: input.status ?? "To Review",
-          parent: input.parent ?? null,
+
+          // metadata
           createdAt: now,
           updatedAt: now,
           createdBy: input.userId,
-          updateLog: [{ userId: input.userId, action: "create", timestamp: now }],
+
+          updateLog: [
+            {
+              userId: input.userId,
+              userName: userName ?? 'Unknown',
+              action: 'create',
+              timestamp: now,
+            },
+          ],
         };
 
         await doc.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
         return { success: true, itemId, item };
       } catch (err: any) {
-        console.error("❌ createItem error:", err);
         return { success: false, error: err.message };
       }
     }),
 
-  /** GET ITEMS **/
-  getItems: publicProcedure
+  getItems: permissionedProcedure('item.view')
     .input(z.object({ teamId: z.string(), userId: z.string() }))
     .query(async ({ input }) => {
       try {
-        // Fetch the team metadata for teamName
-        const teamRes = await doc.send(
-          new GetCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: `TEAM#${input.teamId}`, SK: "METADATA" },
-          })
-        );
-
-        const teamName =
-          teamRes.Item?.name ||
-          teamRes.Item?.GSI_NAME ||
-          teamRes.Item?.teamName ||
-          "Unknown Team";
-
-        // Query all items under this team
         const result = await doc.send(
           new QueryCommand({
             TableName: TABLE_NAME,
-            KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+            KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
             ExpressionAttributeValues: {
-              ":pk": `TEAM#${input.teamId}`,
-              ":sk": "ITEM#",
+              ':pk': `TEAM#${input.teamId}`,
+              ':sk': 'ITEM#',
             },
-          })
+          }),
         );
 
         const rawItems = result.Items ?? [];
 
-        // Build a map of itemId -> name for parent lookup
-        const itemNameMap: Record<string, string> = {};
-        for (const i of rawItems) {
-          if (i.itemId && i.name) itemNameMap[i.itemId] = i.name;
-        }
-
-        // Attach presigned URL, teamName, and parent info
         const items = await Promise.all(
           rawItems.map(async (raw: any) => {
-            const imageLink = await getPresignedUrlIfNeeded(raw.imageLink);
-            const parentId = raw.parent || null;
-            const parentName = parentId ? itemNameMap[parentId] || "Unknown Parent" : null;
-            return { ...raw, imageLink, teamName, parent: parentId, parentName };
-          })
-        );
+            const signed = await getPresignedUrl(raw.imageKey);
+
+            let parentName: string | null = null;
+
+            if (raw.parent) {
+              const parentRes = await doc.send(
+                new GetCommand({
+                  TableName: TABLE_NAME,
+                  Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${raw.parent}` },
+                }),
+              );
+              parentName = parentRes.Item?.name ?? null;
+            }
+
+            // Get the last reviewer from updateLog
+            let lastReviewedBy: string | null = null;
+            let lastReviewedByName: string | null = null;
+            
+            if (raw.updateLog && Array.isArray(raw.updateLog) && raw.updateLog.length > 0) {
+              const lastUpdate = raw.updateLog[raw.updateLog.length - 1];
+              lastReviewedBy = lastUpdate.userId ?? null;
+              lastReviewedByName = lastUpdate.userName ?? null;
+            }
+
+              return { ...raw, imageLink: signed, parentName, lastReviewedBy, lastReviewedByName };
+            }),
+          );
 
         return { success: true, items };
       } catch (err: any) {
-        console.error("❌ getItems error:", err);
         return { success: false, error: err.message };
       }
     }),
 
-  /** GET SINGLE ITEM **/
-  getItem: publicProcedure
-    .input(z.object({ teamId: z.string(), itemId: z.string(), userId: z.string() }))
-    .query(async ({ input }) => {
-      try {
-        const result = await doc.send(
-          new GetCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${input.itemId}` },
-          })
-        );
-        if (!result.Item)
-          return { success: false, error: "Item not found" };
-
-        const presigned = await getPresignedUrlIfNeeded(result.Item.imageLink);
-
-        return { success: true, item: { ...result.Item, imageLink: presigned } };
-      } catch (err: any) {
-        console.error("❌ getItem error:", err);
-        return { success: false, error: err.message };
-      }
-    }),
-
-  /** UPDATE ITEM **/
-  updateItem: publicProcedure
+  getItem: permissionedProcedure('item.view')
     .input(
       z.object({
         teamId: z.string(),
         itemId: z.string(),
         userId: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      try {
+        const result = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: {
+              PK: `TEAM#${input.teamId}`,
+              SK: `ITEM#${input.itemId}`,
+            },
+          }),
+        );
+
+        if (!result.Item) return { success: false, error: 'Item not found' };
+
+        const signed = await getPresignedUrl(result.Item.imageKey);
+
+        return {
+          success: true,
+          item: { ...result.Item, imageLink: signed },
+        };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }),
+
+  updateItem: permissionedProcedure('item.update')
+    .input(
+      z.object({
+        teamId: z.string(),
+        itemId: z.string(),
+        userId: z.string(),
+
         name: z.string().optional().nullable(),
         actualName: z.string().optional().nullable(),
         nsn: z.string().optional().nullable(),
         serialNumber: z.string().optional().nullable(),
-        quantity: z.number().optional().nullable(),
+        authQuantity: z.number().optional().nullable(),
+        ohQuantity: z.number().optional().nullable(),
+
         description: z.string().optional().nullable(),
-        imageLink: z.string().optional().nullable(),
+        imageBase64: z.string().optional().nullable(),
         status: z.string().optional().nullable(),
         damageReports: z.array(z.string()).optional().nullable(),
         parent: z.string().optional().nullable(),
         notes: z.string().optional().nullable(),
-      })
+
+        // kit fields
+        liin: z.string().optional().nullable(),
+        endItemNiin: z.string().optional().nullable(),
+        isKit: z.boolean().optional(),
+      }),
     )
     .mutation(async ({ input }) => {
-      const log = (m: string, ...args: any[]) =>
-        console.log(`[updateItem][${input.itemId}] ${m}`, ...args);
-
       try {
         const now = new Date().toISOString();
-        const updates: string[] = ["updatedAt = :updatedAt"];
-        const values: Record<string, any> = { ":updatedAt": now };
+
+        const updates: string[] = ['updatedAt = :updatedAt'];
+        const values: Record<string, any> = { ':updatedAt': now };
         const names: Record<string, string> = {};
 
-        //  Fetch user name 
-        let userName = "Unknown User";
-        try {
-          const userRes = await doc.send(
-            new QueryCommand({
-              TableName: TABLE_NAME,
-              IndexName: "GSI_UsersByUid",
-              KeyConditionExpression: "GSI6PK = :uid",
-              ExpressionAttributeValues: { ":uid": `UID#${input.userId}` },
-              Limit: 1,
-            })
-          );
-          const user = userRes.Items?.[0];
-          if (user) userName = user.name || user.email || user.accountId || userName;
-        } catch (e) {
-          console.warn(`[updateItem] ⚠️ Could not fetch user name for ${input.userId}`);
-        }
-
-        //  Handle NSN duplicates
-        if (input.nsn) {
-          const existing = await doc.send(
-            new QueryCommand({
-              TableName: TABLE_NAME,
-              KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-              ExpressionAttributeValues: {
-                ":pk": `TEAM#${input.teamId}`,
-                ":sk": "ITEM#",
-              },
-            })
-          );
-          const duplicate = (existing.Items ?? []).find(
-            (i: any) =>
-              i.nsn &&
-              i.itemId !== input.itemId &&
-              i.nsn?.trim?.().toLowerCase() === input.nsn?.trim?.().toLowerCase()
-          );
-          if (duplicate)
-            return {
-              success: false,
-              error: `Another item with NSN "${input.nsn}" already exists.`,
-            };
-          updates.push("nsn = :nsn");
-          values[":nsn"] = input.nsn;
-        }
-
-        //  Apply updates
         const push = (key: string, val: any, fieldName?: string) => {
           if (val !== undefined && val !== null) {
             updates.push(`${fieldName || key} = :${key}`);
             values[`:${key}`] = val;
-            if (key === "name" || key === "status") names[`#${key}`] = key;
+            if (key === 'name' || key === 'status') names[`#${key}`] = key;
           }
         };
 
-        push("name", input.name, "#name");
-        push("actualName", input.actualName);
-        push("serialNumber", input.serialNumber);
-        push("quantity", input.quantity);
-        push("description", input.description);
-        push("imageLink", input.imageLink);
-        push("status", input.status, "#status");
-        push("damageReports", input.damageReports);
-        push("parent", input.parent);
-        push("notes", input.notes);
+        // new image upload
+        if (input.imageBase64) {
+          const ext = getImageExtension(input.imageBase64);
+          const newKey = `items/${input.teamId}/${input.nsn ?? input.itemId}.${ext}`;
 
-        // Append full user activity log
-        updates.push("updateLog = list_append(if_not_exists(updateLog, :empty), :log)");
-        values[":log"] = [
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: BUCKET_NAME,
+              Key: newKey,
+              Body: Buffer.from(stripBase64Header(input.imageBase64), 'base64'),
+              ContentEncoding: 'base64',
+              ContentType: `image/${ext}`,
+              ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
+            }),
+          );
+
+          updates.push('imageKey = :imageKey');
+          values[':imageKey'] = newKey;
+        }
+
+        // base fields
+        push('name', input.name, '#name');
+        push('actualName', input.actualName);
+        push('description', input.description);
+        push('status', input.status, '#status');
+        push('parent', input.parent);
+        push('notes', input.notes);
+        push('isKit', input.isKit);
+
+        // item fields
+        push('nsn', input.nsn);
+        push('serialNumber', input.serialNumber);
+        push('authQuantity', input.authQuantity);
+        push('ohQuantity', input.ohQuantity);
+
+        // kit fields
+        push('liin', input.liin);
+        push('endItemNiin', input.endItemNiin);
+
+        // arrays
+        push('damageReports', input.damageReports);
+
+        // update log
+        updates.push('updateLog = list_append(if_not_exists(updateLog, :empty), :log)');
+        const userName = await getUserName(input.userId);
+        values[':log'] = [
           {
             userId: input.userId,
-            userName,
-            action: "update",
+            userName: userName ?? 'Unknown',
+            action: 'update',
             timestamp: now,
           },
         ];
-        values[":empty"] = [];
+        values[':empty'] = [];
 
-        // Execute update
-        log("UpdateExpression:", updates.join(", "));
         const result = await doc.send(
           new UpdateCommand({
             TableName: TABLE_NAME,
             Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${input.itemId}` },
-            UpdateExpression: `SET ${updates.join(", ")}`,
+            UpdateExpression: `SET ${updates.join(', ')}`,
             ExpressionAttributeValues: values,
             ExpressionAttributeNames: Object.keys(names).length ? names : undefined,
-            ReturnValues: "ALL_NEW",
-          })
+            ReturnValues: 'ALL_NEW',
+          }),
         );
 
-        log("✅ Update succeeded");
-        return { success: true, item: result.Attributes };
+        const attrs = result.Attributes;
+        const signed = await getPresignedUrl(attrs?.imageKey);
+
+        let parentName = null;
+        if (attrs?.parent) {
+          const parentRes = await doc.send(
+            new GetCommand({
+              TableName: TABLE_NAME,
+              Key: { PK: `TEAM#${input.teamId}`, SK: `ITEM#${attrs.parent}` },
+            }),
+          );
+          parentName = parentRes.Item?.name ?? null;
+        }
+
+        return {
+          success: true,
+          item: { ...attrs, imageLink: signed, parentName },
+        };
       } catch (err: any) {
-        console.error(`[updateItem][${input.itemId}] ❌`, err);
         return { success: false, error: err.message };
       }
     }),
-    /** DELETE ITEM **/
-    deleteItem: publicProcedure
-      .input(
-        z.object({
-          teamId: z.string(),
-          itemId: z.string(),
-          userId: z.string(),
-        })
-      )
-      .mutation(async ({ input }) => {
-        console.log(`[deleteItem] Deleting ITEM#${input.itemId} from TEAM#${input.teamId}`);
 
-        try {
-          const key = { PK: `TEAM#${input.teamId}`, SK: `ITEM#${input.itemId}` };
-
-          // Fetch existing item (to remove image if exists)
-          const getRes = await doc.send(
-            new GetCommand({ TableName: TABLE_NAME, Key: key })
-          );
-
-          if (!getRes.Item) {
-            return { success: false, error: "Item not found" };
-          }
-
-          // Delete image from S3 if exists
-          if (getRes.Item.imageLink?.includes(`${BUCKET_NAME}.s3.`)) {
-            const match = getRes.Item.imageLink.match(/amazonaws\.com\/(.+)/);
-            if (match) {
-              const s3Key = match[1];
-              await s3.send(
-                new (await import("@aws-sdk/client-s3")).DeleteObjectCommand({
-                  Bucket: BUCKET_NAME,
-                  Key: s3Key,
-                })
-              );
-            }
-          }
-
-          // Delete item from DynamoDB
-          await doc.send(
-            new (await import("@aws-sdk/lib-dynamodb")).DeleteCommand({
-              TableName: TABLE_NAME,
-              Key: key,
-            })
-          );
-
-          console.log(`[deleteItem] ✅ Successfully deleted ${input.itemId}`);
-          return { success: true, message: "Item deleted successfully" };
-        } catch (err: any) {
-          console.error("❌ deleteItem error:", err);
-          return { success: false, error: err.message };
-        }
+  deleteItem: permissionedProcedure('item.delete')
+    .input(
+      z.object({
+        teamId: z.string(),
+        itemId: z.string(),
+        userId: z.string(),
       }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const key = {
+          PK: `TEAM#${input.teamId}`,
+          SK: `ITEM#${input.itemId}`,
+        };
 
+        const getRes = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: key,
+          }),
+        );
 
-    uploadImage: publicProcedure
+        if (!getRes.Item) return { success: false, error: 'Item not found' };
+
+        if (getRes.Item.imageKey) {
+          await s3.send(
+            new (await import('@aws-sdk/client-s3')).DeleteObjectCommand({
+              Bucket: BUCKET_NAME,
+              Key: getRes.Item.imageKey,
+            }),
+          );
+        }
+
+        await doc.send(
+          new (await import('@aws-sdk/lib-dynamodb')).DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: key,
+          }),
+        );
+
+        return { success: true, message: 'Item deleted successfully' };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }),
+  uploadImage: protectedProcedure
     .input(
       z.object({
         teamId: z.string(),
         nsn: z.string(),
         imageBase64: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       try {
-        console.log("[uploadImage] start", input.nsn);
-        const extMatch = input.imageBase64.match(/^data:image\/(\w+);base64,/);
-        const ext = extMatch ? extMatch[1].toLowerCase() : "png";
-        const body = Buffer.from(
-          input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
-          "base64"
-        );
+        const ext = getImageExtension(input.imageBase64);
         const key = `items/${input.teamId}/${input.nsn}.${ext}`;
+
+        const body = Buffer.from(stripBase64Header(input.imageBase64), 'base64');
 
         await s3.send(
           new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: key,
             Body: body,
-            ContentEncoding: "base64",
+            ContentEncoding: 'base64',
             ContentType: `image/${ext}`,
-            ...(KMS_KEY_ARN
-              ? { ServerSideEncryption: "aws:kms", SSEKMSKeyId: KMS_KEY_ARN }
-              : {}),
-          })
+            ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
+          }),
         );
 
-        const imageLink = `https://${BUCKET_NAME}.s3.${REGION}.amazonaws.com/${key}`;
-        console.log("[uploadImage] uploaded:", imageLink);
-        return { success: true, imageLink };
+        return { success: true, imageKey: key };
       } catch (err: any) {
-        console.error("[uploadImage] ❌", err);
         return { success: false, error: err.message };
       }
     }),

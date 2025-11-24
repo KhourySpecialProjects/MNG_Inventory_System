@@ -5,10 +5,9 @@
 
 // const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'mng-dev-data';
 
-
 // /**
 //  * Get all the child items that belong to parent item
-//  * 
+//  *
 //  * @param parentItemId - The ID of the parent item
 //  * @returns Array of child items
 //  */
@@ -40,10 +39,9 @@
 
 // // getReportsByUser
 
-
 // /**
 //  * Look up a user by their Cognito ID
-//  * 
+//  *
 //  * @param uid - Cognito user ID from JWT Token
 //  * @returns User object or null if not found
 //  */
@@ -72,11 +70,6 @@
 //         throw new Error('Failed to fetch user')
 //     }
 // };
-
-
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
@@ -134,3 +127,37 @@
 //       }
 //     }),
 // });
+
+/** Check if a user has a permission inside a specific teamspace */
+// async function hasPermission(userId: string, teamId: string, permission: string): Promise<boolean> {
+//   try {
+//     const res = await doc.send(
+//       new GetCommand({
+//         TableName: TABLE_NAME,
+//         Key: { PK: `TEAM#${teamId}`, SK: `MEMBER#${userId}` },
+//       }),
+//     );
+//     const member = res.Item as { role?: string } | undefined;
+//     if (!member) return false;
+
+//     if (member.role?.toLowerCase() === 'owner') return true;
+
+//     const roleRes = await doc.send(
+//       new GetCommand({
+//         TableName: TABLE_NAME,
+//         Key: {
+//           PK: `ROLENAME#${member.role?.toLowerCase()}`,
+//           SK: `ROLE#${member.role?.toUpperCase()}`,
+//         },
+//       }),
+//     );
+//     const role = roleRes.Item as { permissions?: string } | undefined;
+//     if (!role) return false;
+
+//     const perms: string[] = JSON.parse(role.permissions ?? '[]');
+//     return perms.includes(permission);
+//   } catch (err) {
+//     console.error('❌ hasPermission error:', err);
+//     return false;
+//   }
+// }

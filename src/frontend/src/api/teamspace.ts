@@ -1,94 +1,95 @@
-const TRPC = "/trpc";
+import { trpcFetch } from './utils';
 
+const TRPC = '/trpc';
+
+/* CREATE TEAMSPACE */
 export async function createTeamspace(
   name: string,
   description: string,
-  userId: string
+  userId: string,
+  uic: string,
+  fe: string,
 ) {
-  const res = await fetch(`${TRPC}/createTeamspace`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, description, userId }),
+  return await trpcFetch('/trpc/createTeamspace', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      description,
+      userId,
+      uic,
+      fe,
+    }),
   });
-
-  if (!res.ok) throw new Error(`createTeamspace failed: ${res.status}`);
-
-  const json = await res.json();
-  const data = json?.result?.data;
-  if (!data) throw new Error("unexpected response from createTeamspace");
-  return data;
 }
 
+/* GET TEAMSPACE */
 export async function getTeamspace(userId: string) {
-  const res = await fetch(
+  const data = await trpcFetch(
     `${TRPC}/getTeamspace?input=${encodeURIComponent(JSON.stringify({ userId }))}`,
     {
-      method: "GET",
-      credentials: "include",
-    }
+      method: 'GET',
+    },
   );
 
-  if (!res.ok) throw new Error(`getTeamspace failed: ${res.status}`);
-
-  const json = await res.json();
-  const data = json?.result?.data;
-  if (!data) throw new Error("unexpected response from getTeamspace");
+  if (!data) throw new Error('unexpected response from getTeamspace');
   return data;
 }
 
+/* ADD USER (BY USERNAME, NOT EMAIL) */
 export async function addUserTeamspace(
   userId: string,
-  userEmail: string,
-  teamspaceId: string
+  memberUsername: string,
+  teamspaceId: string,
 ) {
-  const res = await fetch(`${TRPC}/addUserTeamspace`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, memberEmail: userEmail, inviteWorkspaceId: teamspaceId }),
+  const data = await trpcFetch(`${TRPC}/addUserTeamspace`, {
+    method: 'POST',
+    body: JSON.stringify({
+      userId,
+      memberUsername,
+      inviteWorkspaceId: teamspaceId,
+    }),
   });
 
-  if (!res.ok) throw new Error(`addUserTeamspace failed: ${res.status}`);
-
-  const json = await res.json();
-  const data = json?.result?.data;
-  if (!data) throw new Error("unexpected response from addUserTeamspace");
+  if (!data) throw new Error('unexpected response from addUserTeamspace');
   return data;
 }
 
+/* REMOVE USER */
 export async function removeUserTeamspace(
   userId: string,
-  userEmail: string,
-  teamspaceId: string
+  memberUsername: string,
+  teamspaceId: string,
 ) {
-  const res = await fetch(`${TRPC}/removeUserTeamspace`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, userEmail, teamspaceId }),
+  const data = await trpcFetch(`${TRPC}/removeUserTeamspace`, {
+    method: 'POST',
+    body: JSON.stringify({
+      userId,
+      memberUsername,
+      inviteWorkspaceId: teamspaceId,
+    }),
   });
 
-  if (!res.ok) throw new Error(`removeUserTeamspace failed: ${res.status}`);
-
-  const json = await res.json();
-  const data = json?.result?.data;
-  if (!data) throw new Error("unexpected response from removeUserTeamspace");
+  if (!data) throw new Error('unexpected response from removeUserTeamspace');
   return data;
 }
 
+/* DELETE TEAMSPACE */
 export async function deleteTeamspace(teamspaceId: string, userId: string) {
-  const res = await fetch(`${TRPC}/deleteTeamspace`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+  const data = await trpcFetch(`${TRPC}/deleteTeamspace`, {
+    method: 'POST',
     body: JSON.stringify({ inviteWorkspaceId: teamspaceId, userId }),
   });
 
-  if (!res.ok) throw new Error(`deleteTeamspace failed: ${res.status}`);
+  if (!data) throw new Error('unexpected response from deleteTeamspace');
+  return data;
+}
 
-  const json = await res.json();
-  const data = json?.result?.data;
-  if (!data) throw new Error("unexpected response from deleteTeamspace");
+/* GET ALL USERS */
+export async function getAllUsers() {
+  const data = await trpcFetch(`${TRPC}/getAllUsers`, {
+    method: 'GET',
+  });
+
+  if (!data) throw new Error('unexpected response from getAllUsers');
   return data;
 }

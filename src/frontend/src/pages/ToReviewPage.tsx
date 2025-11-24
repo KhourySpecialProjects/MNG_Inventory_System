@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress, Container, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { useParams } from 'react-router-dom';
-import ItemListComponent, { ItemListItem } from '../components/ItemListComponent';
+import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
@@ -10,12 +11,14 @@ import { getItems } from '../api/items';
 
 export default function ToReviewPage() {
   const { teamId } = useParams<{ teamId: string }>();
+  const theme = useTheme();
+
   const [items, setItems] = useState<ItemListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchIncompleteItems = async () => {
@@ -44,17 +47,18 @@ export default function ToReviewPage() {
                 productName: item.name,
                 actualName: item.actualName || item.name,
                 subtitle: item.description || 'No description',
-                image: item.imageLink && item.imageLink.startsWith('http')
-                  ? item.imageLink
-                  : 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400',
+                image:
+                  item.imageLink && item.imageLink.startsWith('http')
+                    ? item.imageLink
+                    : 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400',
                 date: new Date(item.createdAt).toLocaleDateString('en-US', {
                   month: '2-digit',
                   day: '2-digit',
-                  year: '2-digit'
+                  year: '2-digit',
                 }),
                 parent: item.parent,
                 status: item.status,
-                children: []
+                children: [],
               };
             });
 
@@ -75,7 +79,7 @@ export default function ToReviewPage() {
           const hasStatusInTree = (item: ItemListItem, targetStatus: string): boolean => {
             if (item.status === targetStatus) return true;
             if (item.children) {
-              return item.children.some(child => hasStatusInTree(child, targetStatus));
+              return item.children.some((child) => hasStatusInTree(child, targetStatus));
             }
             return false;
           };
@@ -84,7 +88,9 @@ export default function ToReviewPage() {
           const fullHierarchy = buildHierarchy(itemsArray);
 
           // Filter to only roots that have "To Review" somewhere in their tree
-          const incompleteItems = fullHierarchy.filter(item => hasStatusInTree(item, 'To Review'));
+          const incompleteItems = fullHierarchy.filter((item) =>
+            hasStatusInTree(item, 'To Review'),
+          );
 
           setItems(incompleteItems);
         } else {
@@ -99,41 +105,53 @@ export default function ToReviewPage() {
     fetchIncompleteItems();
   }, [teamId]);
 
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === "string") {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: theme.palette.background.default,
+      }}
+    >
       <TopBar
         isLoggedIn={true}
         profileImage={profileImage}
         onProfileClick={() => setProfileOpen(true)}
       />
 
-      <Box sx={{ flex: 1, width: '100%', bgcolor: '#e8e8e8' }}>
-        <Box sx={{ bgcolor: 'white', borderBottom: 1, borderColor: 'divider', py: 1.5 }}>
+      <Box
+        sx={{
+          flex: 1,
+          width: '100%',
+          bgcolor: theme.palette.background.default,
+        }}
+      >
+        <Box
+          sx={{
+            bgcolor: theme.palette.background.paper,
+            borderBottom: 1,
+            borderColor: theme.palette.divider,
+            py: 1.5,
+          }}
+        >
           <Container maxWidth="md">
             <Typography
               variant="h5"
               sx={{
                 fontWeight: 550,
-                color: '#333',
-                fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                color: theme.palette.text.primary,
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
               }}
             >
               Inventory To Review ({items.length})
@@ -144,7 +162,9 @@ export default function ToReviewPage() {
         <Container maxWidth="md" disableGutters>
           <Box sx={{ p: 2, pb: 10 }}>
             {error ? (
-              <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
             ) : items.length === 0 ? (
               <Alert severity="info">No items to review. All items are complete!</Alert>
             ) : (
@@ -154,12 +174,9 @@ export default function ToReviewPage() {
         </Container>
       </Box>
 
-      <Profile
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-      />
+      <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
 
-      <Box sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
+      <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
         <NavBar />
       </Box>
     </Box>

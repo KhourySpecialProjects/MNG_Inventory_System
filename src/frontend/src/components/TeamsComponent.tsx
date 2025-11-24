@@ -10,11 +10,11 @@ import {
   MenuItem,
   Divider,
   Tooltip,
-} from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { MouseEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+} from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { MouseEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export interface TeamIconProps {
   id: string;
@@ -53,23 +53,23 @@ export default function TeamIcon({
     <>
       <Card
         sx={{
-          position: "relative",
+          position: 'relative',
           borderRadius: 3,
           bgcolor: theme.palette.background.paper,
           border: `1px solid ${borderColor}`,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-          transition: "all 0.25s ease",
-          cursor: "pointer",
-          "&:hover": {
-            transform: "translateY(-5px)",
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          transition: 'all 0.25s ease',
+          cursor: 'pointer',
+          '&:hover': {
+            transform: 'translateY(-5px)',
             borderColor: theme.palette.primary.main,
             boxShadow: `0 8px 24px ${hoverShadow}`,
           },
           //height: 220,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
           p: 2,
         }}
       >
@@ -77,10 +77,10 @@ export default function TeamIcon({
           onClick={handleOpenTeam}
           sx={{
             borderRadius: 3,
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <CardContent>
@@ -105,7 +105,7 @@ export default function TeamIcon({
                   sx={{
                     fontWeight: 800,
                     color: theme.palette.text.primary,
-                    textAlign: "center",
+                    textAlign: 'center',
                     maxWidth: 180,
                   }}
                   noWrap
@@ -114,18 +114,18 @@ export default function TeamIcon({
                 </Typography>
               </Tooltip>
 
-              <Tooltip title={description || "No description"}>
+              <Tooltip title={description || 'No description'}>
                 <Typography
                   variant="body2"
                   sx={{
                     color: theme.palette.text.secondary,
                     fontSize: 13,
-                    textAlign: "center",
+                    textAlign: 'center',
                     maxWidth: 200,
                   }}
                   noWrap
                 >
-                  {description || "No description"}
+                  {description || 'No description'}
                 </Typography>
               </Tooltip>
             </Stack>
@@ -136,11 +136,11 @@ export default function TeamIcon({
           size="small"
           onClick={handleMenu}
           sx={{
-            position: "absolute",
+            position: 'absolute',
             top: 10,
             right: 10,
             color: theme.palette.text.secondary,
-            "&:hover": { color: theme.palette.primary.main },
+            '&:hover': { color: theme.palette.primary.main },
           }}
         >
           <MoreVertIcon fontSize="small" />
@@ -151,8 +151,8 @@ export default function TeamIcon({
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <MenuItem
           onClick={() => {
@@ -176,7 +176,7 @@ export default function TeamIcon({
             handleClose();
             onRemove?.(name);
           }}
-          sx={{ color: "error.main" }}
+          sx={{ color: 'error.main' }}
         >
           Remove Member
         </MenuItem>
@@ -185,7 +185,7 @@ export default function TeamIcon({
             handleClose();
             onDelete?.(name);
           }}
-          sx={{ color: "error.main" }}
+          sx={{ color: 'error.main' }}
         >
           Delete Teamspace
         </MenuItem>

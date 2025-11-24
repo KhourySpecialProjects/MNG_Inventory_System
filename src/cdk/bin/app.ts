@@ -1,15 +1,14 @@
-import "source-map-support/register";
-import * as cdk from "aws-cdk-lib";
-import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
-import * as iam from "aws-cdk-lib/aws-iam";
-import { resolveStage } from "../stage";
-import { AuthStack } from "../lib/auth-stack";
-import { DynamoStack } from "../lib/dynamo-stack";
-import { ApiStack } from "../lib/api-stack";
-import { WebStack } from "../lib/web-stack";
-import { SesStack } from "../lib/ses-stack";
-import { S3UploadsStack } from "../lib/s3-stack";
-
+import 'source-map-support/register';
+import * as cdk from 'aws-cdk-lib';
+import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import { resolveStage } from '../stage';
+import { AuthStack } from '../lib/auth-stack';
+import { DynamoStack } from '../lib/dynamo-stack';
+import { ApiStack } from '../lib/api-stack';
+import { WebStack } from '../lib/web-stack';
+import { SesStack } from '../lib/ses-stack';
+import { S3UploadsStack } from '../lib/s3-stack';
 
 const app = new cdk.App();
 
@@ -22,17 +21,11 @@ const cfg = resolveStage(app) as {
   tags?: Record<string, string>;
 };
 
-const account =
-  process.env.CDK_DEFAULT_ACCOUNT ??
-  process.env.AWS_ACCOUNT_ID ??
-  "245120345540";
+const account = process.env.CDK_DEFAULT_ACCOUNT ?? process.env.AWS_ACCOUNT_ID ?? '245120345540';
 
-const region =
-  process.env.CDK_DEFAULT_REGION ?? process.env.AWS_REGION ?? "us-east-1";
+const region = process.env.CDK_DEFAULT_REGION ?? process.env.AWS_REGION ?? 'us-east-1';
 
-console.log(
-  `[App] synthesizing for stage=${cfg.name} account=${account} region=${region}`
-);
+console.log(`[App] synthesizing for stage=${cfg.name} account=${account} region=${region}`);
 
 /**
  * We are going to **force** a concrete list of allowed frontend origins.
@@ -43,9 +36,9 @@ console.log(
  *  - local dev URLs
  */
 const canonicalAllowedOrigins = [
-  "https://d2cktegyq4qcfk.cloudfront.net",
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
+  'https://d2cktegyq4qcfk.cloudfront.net',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
 ];
 
 // NOTE: we are NOT letting this fall back to ["*"] anymore.
@@ -59,22 +52,22 @@ const finalAuthWebOrigins = canonicalAllowedOrigins;
 // Optionally, we still support callback/logout URL override via env
 const sanitizeAuthUrl = (u: string) => {
   const trimmed = u.trim();
-  if (!trimmed || trimmed === "*") return null;
+  if (!trimmed || trimmed === '*') return null;
   // normalize /trpc/auth/* → /auth/*
-  return trimmed.replace(/\/trpc\/auth\//, "/auth/");
+  return trimmed.replace(/\/trpc\/auth\//, '/auth/');
 };
 
 const fromEnvList = (raw: string) =>
   raw
-    .split(",")
-    .map((s) => sanitizeAuthUrl(s ?? ""))
+    .split(',')
+    .map((s) => sanitizeAuthUrl(s ?? ''))
     .filter((x): x is string => !!x);
 
-const envCallbackUrls = fromEnvList(process.env.COGNITO_CALLBACK_URLS ?? "");
-const envLogoutUrls = fromEnvList(process.env.COGNITO_LOGOUT_URLS ?? "");
+const envCallbackUrls = fromEnvList(process.env.COGNITO_CALLBACK_URLS ?? '');
+const envLogoutUrls = fromEnvList(process.env.COGNITO_LOGOUT_URLS ?? '');
 
 // ---------------- SES config ----------------
-const sesFromAddress = "cicotoste.d@northeastern.edu";
+const sesFromAddress = 'cicotoste.d@northeastern.edu';
 const sesIdentityArn = `arn:aws:ses:${region}:${account}:identity/${sesFromAddress}`;
 
 // ---------------- Stacks ----------------
@@ -83,7 +76,7 @@ const sesIdentityArn = `arn:aws:ses:${region}:${account}:identity/${sesFromAddre
 const auth = new AuthStack(app, `MngAuth-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
-  serviceName: "mng",
+  serviceName: 'mng',
   webOrigins: finalAuthWebOrigins,
   callbackUrls: envCallbackUrls.length ? envCallbackUrls : undefined,
   logoutUrls: envLogoutUrls.length ? envLogoutUrls : undefined,
@@ -92,14 +85,14 @@ const auth = new AuthStack(app, `MngAuth-${cfg.name}`, {
   sesIdentityArn,
 
   // MFA mode ("ON" means enforce MFA for all users)
-  mfaMode: "ON",
+  mfaMode: 'ON',
 });
 
 // Dynamo stack
 const dynamo = new DynamoStack(app, `MngDynamo-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
-  serviceName: "mng",
+  serviceName: 'mng',
 });
 
 // API stack
@@ -107,7 +100,7 @@ const api = new ApiStack(app, `MngApi-${cfg.name}`, {
   env: { account, region },
   stage: {
     name: cfg.name,
-    nodeEnv: cfg.nodeEnv ?? (cfg.name === "prod" ? "production" : "development"),
+    nodeEnv: cfg.nodeEnv ?? (cfg.name === 'prod' ? 'production' : 'development'),
     lambda: {
       memorySize: cfg.lambda?.memorySize ?? 512,
       timeout: cdk.Duration.seconds(cfg.lambda?.timeoutSeconds ?? 30),
@@ -120,7 +113,7 @@ const api = new ApiStack(app, `MngApi-${cfg.name}`, {
      */
     cors: {
       allowCredentials: corsAllowCredentials,
-      allowHeaders: ["content-type", "authorization"],
+      allowHeaders: ['content-type', 'authorization'],
       allowMethods: [
         apigwv2.CorsHttpMethod.GET,
         apigwv2.CorsHttpMethod.POST,
@@ -134,111 +127,102 @@ const api = new ApiStack(app, `MngApi-${cfg.name}`, {
     },
   },
   ddbTable: dynamo.table,
-  serviceName: "mng-api",
+  serviceName: 'mng-api',
 });
 
 // Default sign-in URL fallback for emails, etc.
-const defaultSigninUrl = `${canonicalAllowedOrigins[0].replace(/\/$/, "")}/signin`;
+const defaultSigninUrl = `${canonicalAllowedOrigins[0].replace(/\/$/, '')}/signin`;
 
 // Inject environment variables into the API Lambda function so it
 // can talk to Cognito, send emails, and build correct CORS headers.
-api.apiFn.addEnvironment("COGNITO_USER_POOL_ID", auth.userPool.userPoolId);
-api.apiFn.addEnvironment("COGNITO_CLIENT_ID", auth.webClient.userPoolClientId);
-api.apiFn.addEnvironment(
-  "APP_SIGNIN_URL",
-  process.env.APP_SIGNIN_URL ?? defaultSigninUrl
-);
+api.apiFn.addEnvironment('COGNITO_USER_POOL_ID', auth.userPool.userPoolId);
+api.apiFn.addEnvironment('COGNITO_CLIENT_ID', auth.webClient.userPoolClientId);
+api.apiFn.addEnvironment('APP_SIGNIN_URL', process.env.APP_SIGNIN_URL ?? defaultSigninUrl);
 
 // let Lambda know which origins are legal so it can do per-request CORS
-api.apiFn.addEnvironment(
-  "ALLOWED_ORIGINS",
-  canonicalAllowedOrigins.join(",")
-);
+api.apiFn.addEnvironment('ALLOWED_ORIGINS', canonicalAllowedOrigins.join(','));
 
 // Least-privilege IAM for Cognito admin + MFA setup
 api.apiFn.addToRolePolicy(
   new iam.PolicyStatement({
     actions: [
-      "cognito-idp:AdminCreateUser",
-      "cognito-idp:AdminSetUserPassword",
-      "cognito-idp:AdminUpdateUserAttributes",
-      "cognito-idp:AdminConfirmSignUp",
-      "cognito-idp:AdminAddUserToGroup",
-      "cognito-idp:AdminGetUser",
-      "cognito-idp:ListUsers",
-      "cognito-idp:AdminInitiateAuth",
-      "cognito-idp:AdminRespondToAuthChallenge",
-      "cognito-idp:DescribeUserPool",
-      "cognito-idp:AssociateSoftwareToken",
-      "cognito-idp:VerifySoftwareToken",
-      "cognito-idp:AdminSetUserMFAPreference",
+      'cognito-idp:AdminCreateUser',
+      'cognito-idp:AdminSetUserPassword',
+      'cognito-idp:AdminUpdateUserAttributes',
+      'cognito-idp:AdminConfirmSignUp',
+      'cognito-idp:AdminAddUserToGroup',
+      'cognito-idp:AdminGetUser',
+      'cognito-idp:ListUsers',
+      'cognito-idp:AdminInitiateAuth',
+      'cognito-idp:AdminRespondToAuthChallenge',
+      'cognito-idp:DescribeUserPool',
+      'cognito-idp:AssociateSoftwareToken',
+      'cognito-idp:VerifySoftwareToken',
+      'cognito-idp:AdminSetUserMFAPreference',
     ],
     resources: [auth.userPool.userPoolArn],
-  })
+  }),
 );
 
 // SES stack for custom invite / transactional email
 const isDevLike =
-  cfg.name.toLowerCase().includes("dev") ||
-  cfg.name.toLowerCase().includes("local") ||
-  cfg.name.toLowerCase().includes("beta");
+  cfg.name.toLowerCase().includes('dev') ||
+  cfg.name.toLowerCase().includes('local') ||
+  cfg.name.toLowerCase().includes('beta');
 
 const ses = new SesStack(app, `MngSes-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
   // Prevent Route53 lookup entirely for dev/beta/local stages
-  rootDomain: isDevLike ? "" : "example.com",
-  fromLocalPart: "noreply",
+  rootDomain: isDevLike ? '' : 'example.com',
+  fromLocalPart: 'noreply',
   createFeedbackTopic: true,
   emailFrom: sesFromAddress,
 });
 
-
 // Give Lambda permission to send via SES + pass SES config
-api.apiFn.role?.addManagedPolicy(
-  ses.node.tryFindChild("SesSendPolicy") as iam.ManagedPolicy
-);
+api.apiFn.role?.addManagedPolicy(ses.node.tryFindChild('SesSendPolicy') as iam.ManagedPolicy);
 
-api.apiFn.addEnvironment("SES_FROM_ADDRESS", ses.fromAddress);
+api.apiFn.addEnvironment('SES_FROM_ADDRESS', ses.fromAddress);
 if (ses.configurationSetName) {
-  api.apiFn.addEnvironment("SES_CONFIG_SET", ses.configurationSetName);
+  api.apiFn.addEnvironment('SES_CONFIG_SET', ses.configurationSetName);
 }
 
 // Tighten SES usage so the Lambda can only send "from" our verified address
 api.apiFn.addToRolePolicy(
   new iam.PolicyStatement({
-    sid: "AllowSesSendFromVerifiedFromAddress",
-    actions: ["ses:SendEmail", "ses:SendRawEmail"],
-    resources: ["*"], // SESv2 send actions are resource-agnostic
-    conditions: { StringEquals: { "ses:FromAddress": ses.fromAddress } },
-  })
+    sid: 'AllowSesSendFromVerifiedFromAddress',
+    actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+    resources: ['*'], // SESv2 send actions are resource-agnostic
+    conditions: { StringEquals: { 'ses:FromAddress': ses.fromAddress } },
+  }),
 );
 
 // Wire API → Web
 // We give WebStack the execute-api domain + paths so CloudFront can proxy /trpc/*.
 const apiEndpoint = api.httpApi.apiEndpoint;
 // apiEndpoint looks like https://q2pt62gzbh.execute-api.us-east-1.amazonaws.com
-const apiDomainName = cdk.Fn.select(2, cdk.Fn.split("/", apiEndpoint));
+const apiDomainName = cdk.Fn.select(2, cdk.Fn.split('/', apiEndpoint));
 // apiDomainName -> q2pt62gzbh.execute-api.us-east-1.amazonaws.com
 
 const web = new WebStack(app, `MngWeb-${cfg.name}`, {
   env: { account, region },
   stage: { name: cfg.name },
-  serviceName: "mng-web",
-  frontendBuildPath: "../../frontend/dist",
+  serviceName: 'mng-web',
+  frontendBuildPath: '../../frontend/dist',
   apiDomainName,
-  apiPaths: ["/trpc/*", "/health", "/hello"],
+  apiPaths: ['/trpc/*', '/health', '/hello'],
 });
 
 // pass web URL to API for email links, etc.
-const webUrl = process.env.WEB_URL ?? "https://d2cktegyq4qcfk.cloudfront.net";
-api.apiFn.addEnvironment("WEB_URL", webUrl);
+const webUrl = "https://d305dnjd1krpyr.cloudfront.net";
+api.apiFn.addEnvironment('WEB_URL', webUrl);
 
 // Create uploads bucket
 const uploads = new S3UploadsStack(app, `MngS3-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
-  serviceName: "mng-s3",
+  serviceName: 'mng-s3',
 });
 
 // Grant API Lambda full access to uploads bucket + KMS key
@@ -248,27 +232,24 @@ uploads.grantApiAccess(api.apiFn.role!);
 api.apiFn.addToRolePolicy(
   new iam.PolicyStatement({
     actions: [
-      "dynamodb:GetItem",
-      "dynamodb:PutItem",
-      "dynamodb:UpdateItem",
-      "dynamodb:DeleteItem",
-      "dynamodb:Query",
-      "dynamodb:Scan",
-      "dynamodb:BatchGetItem",
-      "dynamodb:BatchWriteItem",
-      "dynamodb:DescribeTable",
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+      'dynamodb:DeleteItem',
+      'dynamodb:Query',
+      'dynamodb:Scan',
+      'dynamodb:BatchGetItem',
+      'dynamodb:BatchWriteItem',
+      'dynamodb:DescribeTable',
     ],
-    resources: [
-      dynamo.table.tableArn,
-      `${dynamo.table.tableArn}/index/*`, 
-    ],
-  })
+    resources: [dynamo.table.tableArn, `${dynamo.table.tableArn}/index/*`],
+  }),
 );
-api.apiFn.addEnvironment("DDB_TABLE_NAME", dynamo.table.tableName);
+api.apiFn.addEnvironment('DDB_TABLE_NAME', dynamo.table.tableName);
 
 // Pass bucket info to Lambda environment
-api.apiFn.addEnvironment("S3_BUCKET_NAME", uploads.bucket.bucketName);
-api.apiFn.addEnvironment("S3_KMS_KEY_ARN", uploads.key.keyArn);
+api.apiFn.addEnvironment('S3_BUCKET_NAME', uploads.bucket.bucketName);
+api.apiFn.addEnvironment('S3_KMS_KEY_ARN', uploads.key.keyArn);
 
 // Tag stacks if you have tagging config
 if (cfg.tags) {

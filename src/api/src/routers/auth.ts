@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure } from './trpc';
+import { TRPCError } from '@trpc/server';
+import { router, publicProcedure, protectedProcedure, permissionedProcedure } from './trpc';
 import {
   AdminCreateUserCommand,
   AdminInitiateAuthCommand,
@@ -122,13 +123,22 @@ export const authRouter = router({
         console.error('Error inviting user:', error);
 
         if (error.name === 'UsernameExistsException') {
-          throw new Error('User already exists');
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'User already exists',
+          });
         }
         if (error.name === 'InvalidParameterException') {
-          throw new Error('Invalid email format');
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid email format',
+          });
         }
 
-        throw new Error(`Failed to invite user: ${error.message}`);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to invite user: ${error.message}`,
+        });
       }
     }),
 
@@ -202,24 +212,42 @@ export const authRouter = router({
           };
         }
 
-        throw new Error('Unexpected authentication result');
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Unexpected authentication result',
+        });
       } catch (error: any) {
         console.error('Error signing in user:', error);
 
         if (error.name === 'NotAuthorizedException') {
-          throw new Error('Invalid email or password');
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid email or password',
+          });
         }
         if (error.name === 'UserNotConfirmedException') {
-          throw new Error('User account not confirmed');
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'User account not confirmed',
+          });
         }
         if (error.name === 'PasswordResetRequiredException') {
-          throw new Error('Password reset required');
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Password reset required',
+          });
         }
         if (error.name === 'UserNotFoundException') {
-          throw new Error('User not found');
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'User not found',
+          });
         }
 
-        throw new Error(`Sign in failed: ${error.message}`);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Sign in failed: ${error.message}`,
+        });
       }
     }),
 
@@ -316,85 +344,124 @@ export const authRouter = router({
           };
         }
 
-        throw new Error('Failed to respond to challenge');
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to respond to challenge',
+        });
       } catch (error: any) {
         console.error('Error responding to challenge:', error);
 
         if (error.name === 'CodeMismatchException') {
-          throw new Error('Invalid code');
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid code',
+          });
         }
         if (error.name === 'ExpiredCodeException') {
-          throw new Error('Code expired');
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Code expired',
+          });
         }
 
-        throw new Error(`Challenge response failed: ${error.message}`);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Challenge response failed: ${error.message}`,
+        });
       }
     }),
+  // ------------------------------
+  // me()
+  // ------------------------------
   me: publicProcedure.query(async ({ ctx }) => {
-  const cookies = parseCookiesFromCtx(ctx);
-  const accessToken = cookies[COOKIE_ACCESS];
+    const cookies = parseCookiesFromCtx(ctx);
+    const accessToken = cookies[COOKIE_ACCESS];
 
-  if (!accessToken) {
-    return { authenticated: false, message: 'No session' };
-  }
+    if (!accessToken) {
+      return { authenticated: false, message: 'No session' };
+    }
 
-  let decoded;
-  try {
-    decoded = await verifier.verify(accessToken);
-  } catch (err: any) {
-    console.error('me() token verification error:', err);
-    return { authenticated: false, message: `Invalid session token: ${err.message}` };
-  }
+    // 1. VERIFY TOKEN
+    let decoded;
+    try {
+      decoded = await verifier.verify(accessToken);
+    } catch (err: any) {
+      console.error('me() token verification error:', err);
+      return { authenticated: false, message: 'Invalid session' };
+    }
 
-  const userId = decoded.sub;
+    const userId = decoded.sub;
 
-  // --- Get user record from DynamoDB ---
-  const { doc } = await import("../aws");
-  const { GetCommand } = await import("@aws-sdk/lib-dynamodb");
-  const TABLE_NAME = config.TABLE_NAME;
+    // 2. LOOK UP USER IN DYNAMODB
+    const { doc } = await import('../aws');
+    const { GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb');
+    const TABLE = config.TABLE_NAME;
 
-  let record;
-  try {
-    const res = await doc.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: { PK: `USER#${userId}`, SK: "METADATA" },
-      })
-    );
-    record = res.Item;
-  } catch (err) {
-    console.error("me() DynamoDB fetch error:", err);
-  }
+    let user: any = null;
 
-  // --- fallback name/role ---
-  const emailStr = typeof decoded.email === "string" ? decoded.email : "";
-  const name =
-    record?.name ||
-    decoded["cognito:username"] ||
-    (emailStr ? emailStr.split("@")[0] : "User");
+    try {
+      const res = await doc.send(
+        new GetCommand({
+          TableName: TABLE,
+          Key: { PK: `USER#${userId}`, SK: 'METADATA' },
+        }),
+      );
+      user = res.Item || null;
+    } catch (err) {
+      console.error('me() DynamoDB Get error:', err);
+    }
 
-  const role = record?.role || "User";
+    // 3. CREATE USER IF MISSING
+    if (!user) {
+      const now = new Date().toISOString();
+      const username = 'user-' + Math.random().toString(36).substring(2, 8);
+      const accountId = crypto.randomUUID();
 
+      user = {
+        PK: `USER#${userId}`,
+        SK: 'METADATA',
+        sub: userId,
+        username,
+        name: username,
+        role: 'Owner',
+        accountId,
+        createdAt: now,
+        updatedAt: now,
+        GSI6PK: `UID#${userId}`,
+        GSI6SK: `USER#${userId}`,
+      };
 
-  const email =
-    record?.email ||
-    decoded.email ||
-    decoded["email"] ||
-    decoded["cognito:username"] ||
-    (record?.GSI_NAME && record.GSI_NAME.includes("@") ? record.GSI_NAME : `${userId}@example.com`);
+      try {
+        await doc.send(
+          new PutCommand({
+            TableName: TABLE,
+            Item: user,
+          }),
+        );
+        console.log('Created new DynamoDB user record:', user);
+      } catch (err) {
+        console.error('FAILED TO CREATE USER RECORD:', err);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not create user record',
+        });
+      }
+    }
 
+    // 4. RETURN PROFILE (NOW INCLUDES accountId)
+    return {
+      authenticated: true,
+      userId,
+      name: user.name,
+      username: user.username,
+      role: user.role,
+      accountId: user.accountId,
+    };
+  }),
 
-  return {
-    authenticated: true,
-    userId,
-    email,
-    name,
-    role,
-    message: "User session verified",
-  };
-}),
-
-
+  // ------------------------------
+  // refresh()
+  // ------------------------------
   refresh: publicProcedure.mutation(async ({ ctx }) => {
     try {
       const cookies = parseCookiesFromCtx(ctx);
@@ -404,7 +471,7 @@ export const authRouter = router({
         return { refreshed: false, message: 'No refresh token' };
       }
 
-      // call Cognito REFRESH_TOKEN_AUTH
+      // 1. REQUEST NEW TOKENS FROM COGNITO
       const cmd = new InitiateAuthCommand({
         ClientId: USER_POOL_CLIENT_ID,
         AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
@@ -419,6 +486,7 @@ export const authRouter = router({
         return { refreshed: false, message: 'Token refresh failed' };
       }
 
+      // 2. SET NEW COOKIES
       const headers = setAuthCookies(ctx.res, {
         AccessToken: result.AuthenticationResult.AccessToken ?? null,
         IdToken: result.AuthenticationResult.IdToken ?? null,
@@ -426,32 +494,31 @@ export const authRouter = router({
       });
       emitCookiesToLambda(ctx, headers);
 
-      const newAccess = result.AuthenticationResult.AccessToken ?? null;
-      const newId = result.AuthenticationResult.IdToken ?? null;
+      // 3. DECODE NEW TOKENS
+      const newAccess = result.AuthenticationResult.AccessToken;
+      const newId = result.AuthenticationResult.IdToken;
 
-      // decode new token so we know who's calling
       const decoded = decodeJwtNoVerify(newId) || decodeJwtNoVerify(newAccess);
 
       if (!decoded || !decoded.sub) {
         return {
           refreshed: false,
-          message: 'Token refresh succeeded but could not decode user identity',
+          message: 'Token refresh succeeded but missing userId (sub)',
         };
       }
 
-      // upsert/get user in Dynamo
-      const userRecord = await ensureUserRecord({
-        sub: decoded.sub,
-        email: decoded.email ?? 'unknown@example.com',
-      });
+      const userId = decoded.sub;
 
-      // respond
+      // 4. CREATE OR FIX USER RECORD (ensureUserRecord always returns username + accountId)
+      const record = await ensureUserRecord({ sub: userId });
+
       return {
         refreshed: true,
+        userId,
+        username: record.username,
+        accountId: record.accountId,
+        authenticated: true,
         expiresIn: result.AuthenticationResult.ExpiresIn,
-        sub: userRecord.sub,
-        email: userRecord.email,
-        accountId: userRecord.accountId,
       };
     } catch (err) {
       console.error('refresh error:', err);
@@ -459,7 +526,7 @@ export const authRouter = router({
     }
   }),
 
-  logout: publicProcedure.mutation(async ({ ctx }) => {
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
     const headers = clearAuthCookies(ctx.res);
     emitCookiesToLambda(ctx, headers);
     return { success: true, message: 'Signed out' };

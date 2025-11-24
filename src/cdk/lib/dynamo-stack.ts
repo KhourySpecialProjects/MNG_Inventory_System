@@ -1,14 +1,8 @@
-import {
-  Stack,
-  StackProps,
-  CfnOutput,
-  RemovalPolicy,
-} from "aws-cdk-lib";
-import { Construct } from "constructs";
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as kms from "aws-cdk-lib/aws-kms";
-import * as cr from "aws-cdk-lib/custom-resources";
-import * as iam from "aws-cdk-lib/aws-iam";
+import { Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib';
+import { Construct } from 'constructs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as kms from 'aws-cdk-lib/aws-kms';
+import * as cr from 'aws-cdk-lib/custom-resources';
 
 export interface DynamoStackProps extends StackProps {
   stage: string;
@@ -21,199 +15,287 @@ export class DynamoStack extends Stack {
   constructor(scope: Construct, id: string, props: DynamoStackProps) {
     super(scope, id, props);
 
-    const service = (props.serviceName ?? "mng").toLowerCase();
+    const service = (props.serviceName ?? 'mng').toLowerCase();
     const stage = props.stage.toLowerCase();
-    const isProd = stage === "prod";
+    const isProd = stage === 'prod';
 
-
-    const key = new kms.Key(this, "TableKey", {
+    const key = new kms.Key(this, 'TableKey', {
       alias: `${service}-${stage}-dynamodb-key`,
       enableKeyRotation: true,
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
-
-    this.table = new dynamodb.Table(this, "Table", {
+    // MAIN TABLE
+    this.table = new dynamodb.Table(this, 'Table', {
       tableName: `${service}-${stage}-data`,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       encryption: dynamodb.TableEncryption.CUSTOMER_MANAGED,
       encryptionKey: key,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       contributorInsightsSpecification: { enabled: true },
       deletionProtection: isProd,
-      timeToLiveAttribute: "ttl",
+      timeToLiveAttribute: 'ttl',
       removalPolicy: isProd ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
-    /* =========================================================================
-       Global Secondary Indexes
-    ========================================================================= */
+    /* ============================================================
+       GLOBAL SECONDARY INDEXES
+    ============================================================ */
 
-    // Team / Workspace uniqueness by name
     this.table.addGlobalSecondaryIndex({
-      indexName: "GSI_WorkspaceByName",
-      partitionKey: { name: "GSI_NAME", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      indexName: 'GSI_WorkspaceByName',
+      partitionKey: { name: 'GSI_NAME', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // Users by Cognito UID (used by ensureUserRecord)
     this.table.addGlobalSecondaryIndex({
-      indexName: "GSI_UsersByUid",
-      partitionKey: { name: "GSI6PK", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "GSI6SK", type: dynamodb.AttributeType.STRING },
+      indexName: 'GSI_UsersByUid',
+      partitionKey: { name: 'GSI6PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI6SK', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // Users by email (for invites / member lookup)
+    // 🔥 UNIQUE USERNAME INDEX
     this.table.addGlobalSecondaryIndex({
-      indexName: "GSI_UsersByEmail",
-      partitionKey: { name: "email", type: dynamodb.AttributeType.STRING },
+      indexName: 'GSI_UsersByUsername',
+      partitionKey: { name: 'username', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // Roles by name (used by role resolver)
     this.table.addGlobalSecondaryIndex({
-      indexName: "GSI_RolesByName",
-      partitionKey: { name: "ROLENAME", type: dynamodb.AttributeType.STRING },
-      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      indexName: 'GSI_RolesByName',
+      partitionKey: { name: 'ROLENAME', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    // User → Team mapping (for getTeamspace queries)
     this.table.addGlobalSecondaryIndex({
-      indexName: "GSI_UserTeams",
-      partitionKey: { name: "GSI1PK", type: dynamodb.AttributeType.STRING }, // USER#<userId>
-      sortKey: { name: "GSI1SK", type: dynamodb.AttributeType.STRING },       // TEAM#<teamId>
+      indexName: 'GSI_UserTeams',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
       projectionType: dynamodb.ProjectionType.ALL,
-      contributorInsightsSpecification: { enabled: true },
     });
 
-    const seedProvider = new cr.AwsCustomResource(this, "SeedDefaultRoles", {
+    /* ============================================================
+       DEFAULT ROLE SEEDER
+    ============================================================ */
+
+    const seedProvider = new cr.AwsCustomResource(this, 'SeedDefaultRoles', {
       onCreate: {
-        service: "DynamoDB",
-        action: "batchWriteItem",
+        service: 'DynamoDB',
+        action: 'batchWriteItem',
         parameters: {
           RequestItems: {
             [`${service}-${stage}-data`]: [
-              // ==== OWNER ====
+              // OWNER
               {
                 PutRequest: {
                   Item: {
-                    PK: { S: "ROLENAME#owner" },
-                    SK: { S: "ROLE#OWNER" },
-                    name: { S: "Owner" },
+                    PK: { S: 'ROLE#OWNER' },
+                    SK: { S: 'METADATA' },
+                    roleId: { S: 'OWNER' },
+                    name: { S: 'Owner' },
                     description: {
-                      S: "Full administrative control over the system.",
+                      S: 'Full administrative control over the system.',
                     },
                     permissions: {
-                      S: JSON.stringify([
-                        // Core admin
-                        "team.create",
-                        "team.add_member",
-                        "team.remove_member",
-                        "workspace.create",
-                        "workspace.delete",
-                        "role.add",
-                        "role.modify",
-                        "role.remove",
-                        "role.view",
-                        // Item admin
-                        "item.create",
-                        "item.update",
-                        "item.delete",
-                        "item.view",
-                        "item.upload_image",
-                        "item.manage_damage",
-                        // Damage reports
-                        "damage.create",
-                        "damage.update",
-                        "damage.delete",
-                        "damage.view",
-                        // S3 and logs
-                        "s3.upload",
-                        "s3.delete",
-                        "s3.view",
-                        "log.view",
-                        "log.export",
-                      ]),
+                      L: [
+                        { S: 'team.create' },
+                        { S: 'team.add_member' },
+                        { S: 'team.remove_member' },
+                        { S: 'team.view' },
+                        { S: 'team.delete' },
+                        { S: 'user.invite' },
+                        { S: 'user.delete' },
+                        { S: 'user.assign_roles' },
+                        { S: 'role.add' },
+                        { S: 'role.modify' },
+                        { S: 'role.remove' },
+                        { S: 'role.view' },
+                        { S: 'item.create' },
+                        { S: 'item.view' },
+                        { S: 'item.update' },
+                        { S: 'item.delete' },
+                        { S: 'item.reset' },
+                        { S: 'reports.create' },
+                        { S: 'reports.view' },
+                        { S: 'reports.delete' },
+                      ],
                     },
                     createdAt: { S: new Date().toISOString() },
+                    updatedAt: { S: new Date().toISOString() },
                   },
                 },
               },
-              // ==== MANAGER ====
+
+              // MANAGER
               {
                 PutRequest: {
                   Item: {
-                    PK: { S: "ROLENAME#manager" },
-                    SK: { S: "ROLE#MANAGER" },
-                    name: { S: "Manager" },
+                    PK: { S: 'ROLE#MANAGER' },
+                    SK: { S: 'METADATA' },
+                    roleId: { S: 'MANAGER' },
+                    name: { S: 'Manager' },
                     description: {
-                      S: "Manage members, items, and reports.",
+                      S: 'Manage members, items, and reports.',
                     },
                     permissions: {
-                      S: JSON.stringify([
-                        "team.add_member",
-                        "team.remove_member",
-                        "workspace.create",
-                        "item.create",
-                        "item.view",
-                        "item.update",
-                        "damage.create",
-                        "damage.view",
-                        "s3.upload",
-                      ]),
+                      L: [
+                        { S: 'team.create' },
+                        { S: 'team.add_member' },
+                        { S: 'team.remove_member' },
+                        { S: 'team.view' },
+                        { S: 'item.create' },
+                        { S: 'item.view' },
+                        { S: 'item.update' },
+                        { S: 'reports.create' },
+                        { S: 'reports.view' },
+                      ],
                     },
                     createdAt: { S: new Date().toISOString() },
+                    updatedAt: { S: new Date().toISOString() },
                   },
                 },
               },
-              // ==== MEMBER ====
+
+              // MEMBER
               {
                 PutRequest: {
                   Item: {
-                    PK: { S: "ROLENAME#member" },
-                    SK: { S: "ROLE#MEMBER" },
-                    name: { S: "Member" },
+                    PK: { S: 'ROLE#MEMBER' },
+                    SK: { S: 'METADATA' },
+                    roleId: { S: 'MEMBER' },
+                    name: { S: 'Member' },
                     description: {
-                      S: "Limited access to view and report items.",
+                      S: 'Limited access to view and report items.',
                     },
                     permissions: {
-                      S: JSON.stringify([
-                        "item.view",
-                        "damage.create",
-                        "damage.view",
-                      ]),
+                      L: [
+                        { S: 'item.view' },
+                        { S: 'reports.create' },
+                        { S: 'reports.view' },
+                        { S: 'team.view' },
+                      ],
                     },
                     createdAt: { S: new Date().toISOString() },
+                    updatedAt: { S: new Date().toISOString() },
                   },
                 },
               },
             ],
           },
         },
-        physicalResourceId: cr.PhysicalResourceId.of("SeedRolesOnce"),
+        physicalResourceId: cr.PhysicalResourceId.of('SeedRoles-v4'),
+      },
+      onUpdate: {
+        service: 'DynamoDB',
+        action: 'batchWriteItem',
+        parameters: {
+          RequestItems: {
+            [`${service}-${stage}-data`]: [
+              {
+                PutRequest: {
+                  Item: {
+                    PK: { S: 'ROLE#OWNER' },
+                    SK: { S: 'METADATA' },
+                    roleId: { S: 'OWNER' },
+                    name: { S: 'Owner' },
+                    description: { S: 'Full administrative control over the system.' },
+                    permissions: {
+                      L: [
+                        { S: 'team.create' },
+                        { S: 'team.add_member' },
+                        { S: 'team.remove_member' },
+                        { S: 'team.view' },
+                        { S: 'team.delete' },
+                        { S: 'user.invite' },
+                        { S: 'user.delete' },
+                        { S: 'user.assign_roles' },
+                        { S: 'role.add' },
+                        { S: 'role.modify' },
+                        { S: 'role.remove' },
+                        { S: 'role.view' },
+                        { S: 'item.create' },
+                        { S: 'item.view' },
+                        { S: 'item.update' },
+                        { S: 'item.delete' },
+                        { S: 'item.reset' },
+                        { S: 'reports.create' },
+                        { S: 'reports.view' },
+                        { S: 'reports.delete' },
+                      ],
+                    },
+                    createdAt: { S: new Date().toISOString() },
+                    updatedAt: { S: new Date().toISOString() },
+                  },
+                },
+              },
+              {
+                PutRequest: {
+                  Item: {
+                    PK: { S: 'ROLE#MANAGER' },
+                    SK: { S: 'METADATA' },
+                    roleId: { S: 'MANAGER' },
+                    name: { S: 'Manager' },
+                    description: { S: 'Manage members, items, and reports.' },
+                    permissions: {
+                      L: [
+                        { S: 'team.create' },
+                        { S: 'team.add_member' },
+                        { S: 'team.remove_member' },
+                        { S: 'team.view' },
+                        { S: 'item.create' },
+                        { S: 'item.view' },
+                        { S: 'item.update' },
+                        { S: 'reports.create' },
+                        { S: 'reports.view' },
+                      ],
+                    },
+                    createdAt: { S: new Date().toISOString() },
+                    updatedAt: { S: new Date().toISOString() },
+                  },
+                },
+              },
+              {
+                PutRequest: {
+                  Item: {
+                    PK: { S: 'ROLE#MEMBER' },
+                    SK: { S: 'METADATA' },
+                    roleId: { S: 'MEMBER' },
+                    name: { S: 'Member' },
+                    description: { S: 'Limited access to view and report items.' },
+                    permissions: {
+                      L: [
+                        { S: 'item.view' },
+                        { S: 'reports.create' },
+                        { S: 'reports.view' },
+                        { S: 'team.view' },
+                      ],
+                    },
+                    createdAt: { S: new Date().toISOString() },
+                    updatedAt: { S: new Date().toISOString() },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('SeedRoles-v4'),
       },
       policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
         resources: [this.table.tableArn],
       }),
     });
 
-    // Allow custom resource to encrypt/decrypt items
     key.grantEncryptDecrypt(seedProvider);
-
-    // Run seeder after table creation
     seedProvider.node.addDependency(this.table);
 
-    new CfnOutput(this, "TableName", { value: this.table.tableName });
-    new CfnOutput(this, "TableArn", { value: this.table.tableArn });
-    new CfnOutput(this, "KmsKeyArn", { value: key.keyArn });
+    new CfnOutput(this, 'TableName', { value: this.table.tableName });
+    new CfnOutput(this, 'TableArn', { value: this.table.tableArn });
+    new CfnOutput(this, 'KmsKeyArn', { value: key.keyArn });
   }
 }

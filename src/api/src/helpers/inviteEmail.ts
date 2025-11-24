@@ -1,5 +1,6 @@
-import { SendEmailCommand, SendEmailCommandInput } from "@aws-sdk/client-sesv2";
-import { sesClient } from "../aws";
+import { SendEmailCommand, SendEmailCommandInput } from '@aws-sdk/client-sesv2';
+import { sesClient } from '../aws';
+import { loadConfig } from '../process';
 
 export const sendInviteEmail = async (params: {
   to: string;
@@ -7,12 +8,13 @@ export const sendInviteEmail = async (params: {
   signinUrl: string;
 }) => {
   const { to, tempPassword, signinUrl } = params;
-  const URL_signin = "https://d2cktegyq4qcfk.cloudfront.net/signin";
+  const config = loadConfig()
+  const URL_signin = config.WEB_URL;
 
-  const FROM = process.env.SES_FROM_ADDRESS || "cicotoste.d@northeastern.edu";
+  const FROM = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
   const CONFIG_SET = process.env.SES_CONFIG_SET;
 
-  const subject = "Official Invitation – MNG Inventory Access";
+  const subject = 'Official Invitation – MNG Inventory Access';
 
   const text = `Dear Team Member,
 
@@ -58,6 +60,12 @@ MNG Inventory Support`;
     </a>
   </p>
 
+  <p style="text-align:center;font-size:12px;color:#666;margin-top:-12px;">
+    If you can’t access using the button, copy and paste this URL into your browser:<br />
+    ${URL_signin}
+  </p>
+
+
   <p style="font-size:14px;line-height:1.6;">
     Upon your first login, you will be prompted to create a new password for security purposes.
   </p>
@@ -83,5 +91,5 @@ MNG Inventory Support`;
   };
 
   const res = await sesClient.send(new SendEmailCommand(input));
-  console.log("SES SendEmail MessageId:", res.MessageId);
+  console.log('SES SendEmail MessageId:', res.MessageId);
 };

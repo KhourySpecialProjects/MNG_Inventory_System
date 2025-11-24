@@ -1,27 +1,20 @@
-import React from "react";
-import {
-  AppBar,
-  Toolbar,
-  Stack,
-  Typography,
-  IconButton,
-  Button,
-  Avatar,
-} from "@mui/material";
-import { Link } from "react-router-dom";
-import { useTheme, alpha } from "@mui/material/styles";
-import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
-import SecurityIcon from "@mui/icons-material/Security";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import { useColorMode } from "../ThemeContext";
+import React from 'react';
+import { AppBar, Toolbar, Stack, Typography, IconButton, Button, Avatar } from '@mui/material';
+import { Link } from 'react-router-dom';
+import { useTheme, alpha } from '@mui/material/styles';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
+import SecurityIcon from '@mui/icons-material/Security';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { useColorMode } from '../ThemeContext';
 
 interface TopBarProps {
   isLoggedIn: boolean;
   onProfileClick?: () => void;
   profileImage?: string | null;
-  onRequestAccess?: () => void; 
+  onRequestAccess?: () => void;
+  showThemeToggle?: boolean;
 }
 
 export default function TopBar({
@@ -29,6 +22,7 @@ export default function TopBar({
   onProfileClick,
   profileImage,
   onRequestAccess,
+  showThemeToggle = true,
 }: TopBarProps) {
   const theme = useTheme();
   const { mode, toggleTheme } = useColorMode();
@@ -44,10 +38,10 @@ export default function TopBar({
           sx={{
             flexGrow: 1,
             color: theme.palette.primary.contrastText,
-            textDecoration: "none",
+            textDecoration: 'none',
           }}
           component={Link}
-          to={isLoggedIn ? "/teams" : "/"}
+          to={isLoggedIn ? '/teams' : '/'}
         >
           <MilitaryTechIcon sx={{ color: theme.palette.primary.contrastText }} />
           <Typography variant="h6" fontWeight={800}>
@@ -56,16 +50,18 @@ export default function TopBar({
         </Stack>
 
         {/* Theme toggle */}
-        <IconButton
-          onClick={toggleTheme}
-          sx={{
-            color: theme.palette.primary.contrastText,
-            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.15) },
-            mr: !isLoggedIn ? 1 : 0, // spacing if buttons exist
-          }}
-        >
-          {mode === "light" ? <DarkModeIcon /> : <LightModeIcon />}
-        </IconButton>
+        {showThemeToggle && (
+          <IconButton
+            onClick={toggleTheme}
+            sx={{
+              color: theme.palette.primary.contrastText,
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
+              mr: !isLoggedIn ? 1 : 0, // spacing if buttons exist
+            }}
+          >
+            {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+          </IconButton>
+        )}
 
         {/* Right side */}
         {isLoggedIn ? (
@@ -74,10 +70,14 @@ export default function TopBar({
             onClick={onProfileClick}
             sx={{
               color: theme.palette.primary.contrastText,
-              "&:hover": { bgcolor: theme.palette.primary.dark },
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
             }}
           >
-            {profileImage ? <Avatar src={profileImage} alt="Profile" /> : <AccountCircleIcon fontSize="large" />}
+            {profileImage ? (
+              <Avatar src={profileImage} alt="Profile" />
+            ) : (
+              <AccountCircleIcon fontSize="large" />
+            )}
           </IconButton>
         ) : (
           <Stack direction="row" spacing={1}>
@@ -98,8 +98,8 @@ export default function TopBar({
                 fontWeight: 700,
                 color: theme.palette.primary.contrastText,
                 borderColor: alpha(theme.palette.primary.contrastText, 0.6),
-                "&:hover": {
-                  borderColor: "#fff",
+                '&:hover': {
+                  borderColor: '#fff',
                   bgcolor: alpha(theme.palette.primary.contrastText, 0.1),
                 },
               }}

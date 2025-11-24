@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Box, CircularProgress, Container, Tab, Tabs, Typography } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import ItemListComponent, { ItemListItem } from '../components/ItemListComponent';
+import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
@@ -40,7 +40,7 @@ export default function ReviewedPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReviewedItems = async () => {
@@ -69,17 +69,18 @@ export default function ReviewedPage() {
                 productName: item.name,
                 actualName: item.actualName || item.name,
                 subtitle: item.description || 'No description',
-                image: item.imageLink && item.imageLink.startsWith('http')
-                  ? item.imageLink
-                  : 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400',
+                image:
+                  item.imageLink && item.imageLink.startsWith('http')
+                    ? item.imageLink
+                    : 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400',
                 date: new Date(item.createdAt).toLocaleDateString('en-US', {
                   month: '2-digit',
                   day: '2-digit',
-                  year: '2-digit'
+                  year: '2-digit',
                 }),
                 parent: item.parent,
                 status: item.status,
-                children: []
+                children: [],
               };
             });
 
@@ -96,30 +97,25 @@ export default function ReviewedPage() {
             return roots;
           };
 
-          // Check if item or any descendant has any of the target statuses
           const hasStatusInTree = (item: ItemListItem, targetStatuses: string[]): boolean => {
             const itemStatus = (item.status ?? '').toLowerCase();
-            if (targetStatuses.some(s => s.toLowerCase() === itemStatus)) return true;
+            if (targetStatuses.some((s) => s.toLowerCase() === itemStatus)) return true;
             if (item.children) {
-              return item.children.some(child => hasStatusInTree(child, targetStatuses));
+              return item.children.some((child) => hasStatusInTree(child, targetStatuses));
             }
             return false;
           };
 
-          // Build full hierarchy
           const fullHierarchy = buildHierarchy(itemsArray);
 
-          // Filter by status, showing parent if it or any child matches
-          const completed = fullHierarchy.filter(item =>
-            hasStatusInTree(item, ['completed', 'complete', 'found'])
+          const completed = fullHierarchy.filter((item) =>
+            hasStatusInTree(item, ['completed', 'complete', 'found']),
           );
-
-          const shortages = fullHierarchy.filter(item =>
-            hasStatusInTree(item, ['shortage', 'shortages', 'missing'])
+          const shortages = fullHierarchy.filter((item) =>
+            hasStatusInTree(item, ['shortage', 'shortages', 'missing']),
           );
-
-          const damaged = fullHierarchy.filter(item =>
-            hasStatusInTree(item, ['damaged', 'in repair'])
+          const damaged = fullHierarchy.filter((item) =>
+            hasStatusInTree(item, ['damaged', 'in repair']),
           );
 
           setCompletedItems(completed);
@@ -141,35 +137,40 @@ export default function ReviewedPage() {
     setSelectedTab(newValue);
   };
 
-  const handleProfileImageChange = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === "string") {
-        setProfileImage(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: theme.palette.background.default,
+      }}
+    >
       <TopBar
         isLoggedIn={true}
         profileImage={profileImage}
         onProfileClick={() => setProfileOpen(true)}
       />
 
-      <Box sx={{ flex: 1, width: '100%', bgcolor: '#e8e8e8' }}>
+      <Box sx={{ flex: 1, width: '100%', bgcolor: theme.palette.background.default }}>
         {/* Tabs Header - Full Width */}
-        <Box sx={{ bgcolor: 'white', borderBottom: 1, borderColor: 'divider' }}>
+        <Box
+          sx={{
+            bgcolor: theme.palette.background.paper,
+            borderBottom: 1,
+            borderColor: theme.palette.divider,
+          }}
+        >
           <Tabs
             value={selectedTab}
             onChange={handleTabChange}
@@ -181,15 +182,15 @@ export default function ReviewedPage() {
                 fontSize: '0.95rem',
                 fontWeight: 500,
                 color: theme.palette.text.secondary,
-                minWidth: 'auto'
+                minWidth: 'auto',
               },
               '& .Mui-selected': {
-                color: theme.palette.primary.main
+                color: theme.palette.primary.main,
               },
               '& .MuiTabs-indicator': {
                 backgroundColor: theme.palette.primary.main,
-                height: 3
-              }
+                height: 3,
+              },
             }}
           >
             <Tab label={`Completed (${completedItems.length})`} />
@@ -201,13 +202,17 @@ export default function ReviewedPage() {
         {/* Tab Panels - Constrained Width */}
         <Container maxWidth="md" disableGutters>
           <Box sx={{ p: 2, pb: 10 }}>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
 
             <TabPanel value={selectedTab} index={0}>
               {completedItems.length > 0 ? (
                 <ItemListComponent items={completedItems} />
               ) : (
-                <Typography sx={{ textAlign: 'center', color: '#999', py: 4 }}>
+                <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
                   No completed items
                 </Typography>
               )}
@@ -217,7 +222,7 @@ export default function ReviewedPage() {
               {shortagesItems.length > 0 ? (
                 <ItemListComponent items={shortagesItems} />
               ) : (
-                <Typography sx={{ textAlign: 'center', color: '#999', py: 4 }}>
+                <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
                   No shortages reported
                 </Typography>
               )}
@@ -227,7 +232,7 @@ export default function ReviewedPage() {
               {damagedItems.length > 0 ? (
                 <ItemListComponent items={damagedItems} />
               ) : (
-                <Typography sx={{ textAlign: 'center', color: '#999', py: 4 }}>
+                <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
                   No damaged items
                 </Typography>
               )}
@@ -236,12 +241,9 @@ export default function ReviewedPage() {
         </Container>
       </Box>
 
-      <Profile
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-      />
+      <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
 
-      <Box sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
+      <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
         <NavBar />
       </Box>
     </Box>

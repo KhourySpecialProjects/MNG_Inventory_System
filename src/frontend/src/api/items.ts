@@ -1,17 +1,25 @@
-import { me } from "./auth";
+import { trpcFetch } from './utils';
+import { me } from './auth';
 
-const TRPC = "/trpc";
+const TRPC = '/trpc';
 
-/** 🟢 CREATE ITEM */
+/** CREATE ITEM */
 export async function createItem(
   teamId: string,
   name: string,
   actualName: string,
-  nsn: string,
-  serialNumber: string,
-  imageLink?: string,
+  imageBase64?: string,
   description?: string,
-  parent?: string | null
+  parent?: string | null,
+  isKit?: boolean,
+  // Item-specific fields
+  nsn?: string,
+  serialNumber?: string,
+  authQuantity?: number,
+  ohQuantity?: number,
+  // Kit-specific fields
+  liin?: string,
+  endItemNiin?: string,
 ) {
   const currentUser = await me();
 
@@ -19,147 +27,169 @@ export async function createItem(
     teamId,
     name,
     actualName,
-    nsn,
-    serialNumber,
     userId: currentUser.userId,
-    status: "To Review",
-    imageLink,
+    status: 'To Review',
+    imageBase64,
     description,
     parent,
+    isKit: isKit || false,
+    // Item fields
+    nsn: nsn || '',
+    serialNumber: serialNumber || '',
+    authQuantity: authQuantity || 1,
+    ohQuantity: ohQuantity || 1,
+    // Kit fields
+    liin: liin || '',
+    endItemNiin: endItemNiin || '',
   };
 
-  console.log("[createItem] body:", body);
-
-  const res = await fetch(`${TRPC}/createItem`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  console.log("[createItem] response:", res.status);
-  if (!res.ok) throw new Error(`createItem failed: ${res.status}`);
-  const json = await res.json();
-  console.log("[createItem] json:", json);
-  return json?.result?.data ?? {};
+  return (
+    (await trpcFetch(`${TRPC}/createItem`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })) ?? {}
+  );
 }
 
-
-/** 🟢 GET ALL ITEMS */
+/** GET ALL ITEMS */
 export async function getItems(teamId: string) {
   const currentUser = await me();
-  console.log("[getItems] for user:", currentUser);
 
-  const res = await fetch(
+  const data = await trpcFetch(
     `${TRPC}/getItems?input=${encodeURIComponent(
-      JSON.stringify({ teamId, userId: currentUser.userId })
+      JSON.stringify({ teamId, userId: currentUser.userId }),
     )}`,
-    { method: "GET", credentials: "include" }
+    { method: 'GET' },
   );
-
-  console.log("[getItems] response:", res.status);
-  if (!res.ok) throw new Error(`getItems failed: ${res.status}`);
-  const json = await res.json();
-  console.log("[getItems] json:", json);
-  return json?.result?.data ?? {};
+  // console.log(data);
+  return data ?? {};
 }
 
-/** 🟢 GET SINGLE ITEM */
+/** GET SINGLE ITEM */
 export async function getItem(teamId: string, itemId: string) {
   const currentUser = await me();
-  console.log("[getItem] for user:", currentUser);
 
-  const res = await fetch(
-    `${TRPC}/getItem?input=${encodeURIComponent(
-      JSON.stringify({ teamId, itemId, userId: currentUser.userId })
-    )}`,
-    { method: "GET", credentials: "include" }
+  return (
+    (await trpcFetch(
+      `${TRPC}/getItem?input=${encodeURIComponent(
+        JSON.stringify({ teamId, itemId, userId: currentUser.userId }),
+      )}`,
+      { method: 'GET' },
+    )) ?? {}
   );
-
-  console.log("[getItem] response:", res.status);
-  if (!res.ok) throw new Error(`getItem failed: ${res.status}`);
-  const json = await res.json();
-  console.log("[getItem] json:", json);
-  return json?.result?.data ?? {};
 }
 
-/** 🟢 UPDATE ITEM */
+/**
+ * Helper function to find the closest parent kit and get its liin/endItemNiin
+ * Recursively traverses up the parent chain until it finds a kit
+ */
+async function getKitInfoFromParent(
+  teamId: string,
+  parentId: string | null,
+): Promise<{ liin?: string; endItemNiin?: string }> {
+  if (!parentId) return {};
+
+  try {
+    const parentItem = await getItem(teamId, parentId);
+
+    // If parent is a kit with liin and endItemNiin, return them
+    if (parentItem.item?.isKit && parentItem.item?.liin && parentItem.item?.endItemNiin) {
+      return {
+        liin: parentItem.item.liin,
+        endItemNiin: parentItem.item.endItemNiin,
+      };
+    }
+
+    // If parent is an item (not a kit), recursively check its parent
+    if (parentItem.item?.parent) {
+      return getKitInfoFromParent(teamId, parentItem.item.parent);
+    }
+
+    return {};
+  } catch (error) {
+    console.error('Error fetching parent kit info:', error);
+    return {};
+  }
+}
+
+/** UPDATE ITEM */
 export async function updateItem(
   teamId: string,
   itemId: string,
   updates: {
     name?: string;
     actualName?: string;
-    nsn?: string;
-    serialNumber?: string;
-    quantity?: number;
     description?: string;
-    imageLink?: string;
+    imageBase64?: string;
     status?: string;
     damageReports?: string[];
     parent?: string | null;
     notes?: string;
-  }
+    isKit?: boolean;
+    // Item-specific fields
+    nsn?: string;
+    serialNumber?: string;
+    authQuantity?: number;
+    ohQuantity?: number;
+    // Kit-specific fields
+    liin?: string;
+    endItemNiin?: string;
+  },
 ) {
   const currentUser = await me();
+
+  // If this is an item (not a kit) and doesn't have liin/endItemNiin,
+  // get them from the closest parent kit
+  let finalUpdates = { ...updates };
+
+  if (!updates.isKit && updates.parent && (!updates.liin || !updates.endItemNiin)) {
+    const kitInfo = await getKitInfoFromParent(teamId, updates.parent);
+    finalUpdates = {
+      ...finalUpdates,
+      liin: updates.liin || kitInfo.liin || '',
+      endItemNiin: updates.endItemNiin || kitInfo.endItemNiin || '',
+    };
+  }
+
   const payload = {
     teamId,
     itemId,
     userId: currentUser.userId,
-    ...updates,
+    ...finalUpdates,
   };
 
-  console.log("[updateItem] payload:", payload);
-
-  const res = await fetch(`${TRPC}/updateItem`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  console.log("[updateItem] response:", res.status);
-  if (!res.ok) throw new Error(`updateItem failed: ${res.status}`);
-  const json = await res.json();
-  console.log("[updateItem] json:", json);
-  return json?.result?.data ?? {};
+  return (
+    (await trpcFetch(`${TRPC}/updateItem`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })) ?? {}
+  );
 }
 
-/** 🟢 DELETE ITEM */
+/** DELETE ITEM */
 export async function deleteItem(teamId: string, itemId: string) {
   const currentUser = await me();
-  console.log("[deleteItem] deleting:", itemId);
 
-  const res = await fetch(`${TRPC}/deleteItem`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      teamId,
-      itemId,
-      userId: currentUser.userId,
-    }),
-  });
-
-  console.log("[deleteItem] response:", res.status);
-  if (!res.ok) throw new Error(`deleteItem failed: ${res.status}`);
-  const json = await res.json();
-  console.log("[deleteItem] json:", json);
-  return json?.result?.data ?? {};
+  return (
+    (await trpcFetch(`${TRPC}/deleteItem`, {
+      method: 'POST',
+      body: JSON.stringify({
+        teamId,
+        itemId,
+        userId: currentUser.userId,
+      }),
+    })) ?? {}
+  );
 }
 
-/** 🟢 UPLOAD IMAGE */
-export async function uploadImage(
-  teamId: string,
-  nsn: string,
-  imageBase64: string
-) {
-  console.log("[uploadImage] uploading for nsn:", nsn);
+/** UPLOAD IMAGE */
+export async function uploadImage(teamId: string, nsn: string, imageBase64: string) {
+  interface UploadImageResponse {
+    imageKey?: string;
+  }
 
-  const res = await fetch(`${TRPC}/uploadImage`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+  const data: UploadImageResponse = await trpcFetch(`${TRPC}/uploadImage`, {
+    method: 'POST',
     body: JSON.stringify({
       teamId,
       nsn,
@@ -167,12 +197,5 @@ export async function uploadImage(
     }),
   });
 
-  console.log("[uploadImage] response:", res.status);
-  if (!res.ok) throw new Error(`uploadImage failed: ${res.status}`);
-  const json = await res.json();
-  console.log("[uploadImage] json:", json);
-  return json?.imageLink
-    ? { imageLink: json.imageLink }
-    : json?.result?.data ?? {};
-
+  return data?.imageKey ? { imageKey: data.imageKey } : (data ?? {});
 }
