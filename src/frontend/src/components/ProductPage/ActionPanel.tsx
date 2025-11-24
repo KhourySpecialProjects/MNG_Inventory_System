@@ -16,8 +16,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
-import { createItem, deleteItem, updateItem } from '../api/items';
-import { me } from '../api/auth';
+import { createItem, deleteItem, updateItem } from '../../api/items';
+import { me } from '../../api/auth';
 import { useNavigate } from 'react-router-dom';
 
 async function getUserId(): Promise<string> {
