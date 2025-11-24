@@ -32,7 +32,7 @@ Below are the current API methods and use cases. Methods are called using:
 | respondToChallenge | Complete NEW_PASSWORD_REQUIRED or MFA challenge                  | respondToChallenge({ challengeName, session, newPassword?, mfaCode?, email })             | Challenge → `{ success: false, challengeName, session }`<br>Success → `{ success: true, tokens }` |                                    |          |
 | me                 | Inspect auth cookies and return current user info                | me()                                                                                      | `{ authenticated: false }` or `{ authenticated: true, userId, username, role, accountId }`        |                                    |          |
 | refresh            | Refresh access/id tokens using refresh cookie                    | refresh()                                                                                 | `{ refreshed: false }` or `{ refreshed: true, userId, username, accountId }`                      |                                    |          |
-| logout             | Clear auth cookies and end session                               | logout()                                                                                  | `{ success: true, message: "Signed out" }`                                                        | Clear auth cookies and end session | logout() |
+| logout             | Clear auth cookies and end session                               | logout()                                                                                  | `{ success: true, message: "Signed out" }`                                                        | 
 
 #### S3
 
