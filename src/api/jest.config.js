@@ -11,20 +11,15 @@ module.exports = {
   ],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   setupFilesAfterEnv: ['<rootDir>/__tests__/jest.setup.ts'],
-  testMatch: ['**/__tests__/**/*.test.ts'],
+  testMatch: [
+    '**/__tests__/**/*.test.ts',
+  ],
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 10000,
   transform: {
     '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
-    }],
-  },
-  globals: {
-    'ts-jest': {
+      tsconfig: 'tsconfig.json',
       isolatedModules: true,
-    },
+    }],
   },
 };
