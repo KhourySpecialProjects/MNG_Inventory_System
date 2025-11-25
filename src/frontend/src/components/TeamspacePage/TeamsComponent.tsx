@@ -2,7 +2,6 @@ import {
   Card,
   CardActionArea,
   CardContent,
-  Avatar,
   Stack,
   Typography,
   IconButton,
@@ -10,6 +9,8 @@ import {
   MenuItem,
   Divider,
   Tooltip,
+  CircularProgress,
+  Box,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -20,20 +21,22 @@ export interface TeamIconProps {
   id: string;
   name: string;
   description?: string;
+  percent?: number;
   onInvite?: (teamName: string) => void;
   onRemove?: (teamName: string) => void;
   onDelete?: (teamName: string) => void;
-  onViewMembers?: (teamId: string, teamName: string) => void; // <-- FIXED
+  onViewMembers?: (teamId: string, teamName: string) => void;
 }
 
 export default function TeamIcon({
   id,
   name,
   description,
+  percent = 0,
   onInvite,
   onRemove,
   onDelete,
-  onViewMembers,        // <-- FIXED (was missing!)
+  onViewMembers,
 }: TeamIconProps) {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -48,9 +51,11 @@ export default function TeamIcon({
   const handleClose = () => setAnchorEl(null);
   const handleOpenTeam = () => navigate(`/teams/home/${id}`);
 
-  const blue = theme.palette.primary.main;
   const borderColor = alpha(theme.palette.text.primary, 0.1);
   const hoverShadow = alpha(theme.palette.primary.main, 0.25);
+
+  // background color behind the % circle
+  const bgColor = alpha(theme.palette.success.main, 0.15);
 
   return (
     <>
@@ -87,27 +92,50 @@ export default function TeamIcon({
         >
           <CardContent>
             <Stack alignItems="center" spacing={1.4}>
-              <Avatar
-                variant="rounded"
+
+              <Box
                 sx={{
-                  width: 64,
-                  height: 64,
-                  fontWeight: 800,
-                  bgcolor: alpha(blue, 0.15),
-                  color: blue,
-                  fontSize: 22,
+                  position: 'relative',
+                  width: 80,
+                  height: 80,
+                  borderRadius: 2,
+                  backgroundColor: bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                {getInitials(name)}
-              </Avatar>
+                <CircularProgress
+                  variant="determinate"
+                  value={percent}
+                  size={80}
+                  thickness={5}
+                  sx={{
+                    color: theme.palette.success.main,
+                    position: 'absolute',
+                    '& .MuiCircularProgress-circle': {
+                      strokeLinecap: 'round',
+                    },
+                  }}
+                />
 
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={800}
+                  sx={{ color: theme.palette.text.primary, position: 'relative' }}
+                >
+                  {percent}%
+                </Typography>
+              </Box>
+
+              {/* NAME */}
               <Tooltip title={name}>
                 <Typography
                   variant="subtitle1"
                   sx={{
                     fontWeight: 800,
                     color: theme.palette.text.primary,
-                    textAlign: 'center',
+                    textAlign: 'center',  
                     maxWidth: 180,
                   }}
                   noWrap
@@ -116,6 +144,7 @@ export default function TeamIcon({
                 </Typography>
               </Tooltip>
 
+              {/* DESCRIPTION */}
               <Tooltip title={description || 'No description'}>
                 <Typography
                   variant="body2"
@@ -134,6 +163,7 @@ export default function TeamIcon({
           </CardContent>
         </CardActionArea>
 
+        {/* MENU */}
         <IconButton
           size="small"
           onClick={handleMenu}
@@ -149,7 +179,6 @@ export default function TeamIcon({
         </IconButton>
       </Card>
 
-      {/* MENU */}
       <Menu
         anchorEl={anchorEl}
         open={open}
@@ -157,65 +186,26 @@ export default function TeamIcon({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            handleOpenTeam();
-          }}
-        >
-          Open
-        </MenuItem>
+        <MenuItem onClick={() => { handleClose(); handleOpenTeam(); }}>Open</MenuItem>
 
-        {/* NEW ITEM */}
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onViewMembers?.(id, name);
-          }}
-        >
+        <MenuItem onClick={() => { handleClose(); onViewMembers?.(id, name); }}>
           View Members
         </MenuItem>
 
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onInvite?.(name);
-          }}
-        >
+        <MenuItem onClick={() => { handleClose(); onInvite?.(name); }}>
           Invite Member
         </MenuItem>
 
         <Divider />
 
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onRemove?.(name);
-          }}
-          sx={{ color: 'error.main' }}
-        >
+        <MenuItem sx={{ color: 'error.main' }} onClick={() => { handleClose(); onRemove?.(name); }}>
           Remove Member
         </MenuItem>
 
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onDelete?.(name);
-          }}
-          sx={{ color: 'error.main' }}
-        >
+        <MenuItem sx={{ color: 'error.main' }} onClick={() => { handleClose(); onDelete?.(name); }}>
           Delete Teamspace
         </MenuItem>
       </Menu>
     </>
   );
-}
-
-function getInitials(name?: string) {
-  const safe = name?.trim() || '';
-  if (!safe) return '??';
-
-  const parts = safe.split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
 }

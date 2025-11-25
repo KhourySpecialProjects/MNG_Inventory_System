@@ -100,42 +100,93 @@ export const teamspaceRouter = router({
         return { success: false, error: err.message || 'Failed to create teamspace.' };
       }
     }),
+/** GET TEAMSPACES */
+getTeamspace: permissionedProcedure('team.view')
+  .input(z.object({ userId: z.string().min(1) }))
+  .query(async ({ input }) => {
+    try {
+      // 1. Get memberships
+      const q = await doc.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          IndexName: 'GSI_UserTeams',
+          KeyConditionExpression: 'GSI1PK = :uid',
+          ExpressionAttributeValues: { ':uid': `USER#${input.userId}` },
+        }),
+      );
 
-  /** GET TEAMSPACES */
-  getTeamspace: permissionedProcedure('team.view')
-    .input(z.object({ userId: z.string().min(1) }))
-    .query(async ({ input }) => {
-      try {
-        const q = await doc.send(
-          new QueryCommand({
-            TableName: TABLE_NAME,
-            IndexName: 'GSI_UserTeams',
-            KeyConditionExpression: 'GSI1PK = :uid',
-            ExpressionAttributeValues: { ':uid': `USER#${input.userId}` },
-          }),
-        );
+      const memberships = q.Items ?? [];
+      if (!memberships.length) return { success: true, teams: [] };
 
-        const memberships = q.Items ?? [];
-        if (!memberships.length) return { success: true, teams: [] };
+      // 2. Fetch team metadata + compute status %
+      const teams = await Promise.all(
+        memberships.map(async (m) => {
+          const teamId = m.teamId;
 
-        const teams = await Promise.all(
-          memberships.map(async (m) => {
-            const res = await doc.send(
-              new GetCommand({
-                TableName: TABLE_NAME,
-                Key: { PK: `TEAM#${m.teamId}`, SK: 'METADATA' },
-              }),
-            );
-            return res.Item;
-          }),
-        );
+          // --- Fetch team metadata ---
+          const metaRes = await doc.send(
+            new GetCommand({
+              TableName: TABLE_NAME,
+              Key: { PK: `TEAM#${teamId}`, SK: 'METADATA' },
+            }),
+          );
 
-        return { success: true, teams };
-      } catch (err: any) {
-        console.error('❌ getTeamspace error:', err);
-        return { success: false, error: err.message || 'Failed to fetch teams.' };
-      }
-    }),
+          const team = metaRes.Item;
+          if (!team) return null;
+
+          // --- Fetch all tasks (items) ---
+          const itemsRes = await doc.send(
+            new QueryCommand({
+              TableName: TABLE_NAME,
+              KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+              ExpressionAttributeValues: {
+                ':pk': `TEAM#${teamId}`,
+                ':sk': 'ITEM#',
+              },
+            }),
+          );
+
+          const items = itemsRes.Items ?? [];
+
+          // --- Count statuses (MATCH EXACT STRINGS USED IN itemsRouter) ---
+          let toReview = 0;
+          let completed = 0;
+          let shortages = 0;
+          let damaged = 0;
+
+          for (const item of items) {
+            const s = (item.status ?? "").toLowerCase();
+
+            if (s === "to review") toReview++;
+            else if (s === "completed") completed++;
+            else if (s === "shortages") shortages++;
+            else if (s === "damaged") damaged++;
+          }
+
+          const total = items.length || 1;
+
+          // percent done = Completed / total
+          const percent = Math.round((completed / total) * 100);
+
+          return {
+            ...team,
+            percent,
+            totals: {
+              toReview,
+              completed,
+              shortages,
+              damaged,
+            },
+          };
+        }),
+      );
+
+      return { success: true, teams: teams.filter(Boolean) };
+    } catch (err: any) {
+      console.error("❌ getTeamspace error:", err);
+      return { success: false, error: err.message || "Failed to fetch teams." };
+    }
+  }),
 
   /** GET SINGLE TEAM BY ID */
   getTeamById: publicProcedure

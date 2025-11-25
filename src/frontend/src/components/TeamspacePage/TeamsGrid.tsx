@@ -6,7 +6,9 @@ export interface Team {
   teamId: string;
   GSI_NAME: string;
   description?: string;
+  percent?: number; 
 }
+
 
 interface TeamsGridProps {
   teams: Team[];
@@ -50,10 +52,11 @@ export default function TeamsGrid({
               id={team.teamId}
               name={team.GSI_NAME}
               description={team.description}
+              percent={team.percent ?? 0}    
               onInvite={onInvite}
               onRemove={() => onRemove(team.teamId, team.GSI_NAME)}
               onDelete={() => onDelete(team.teamId, team.GSI_NAME)}
-              onViewMembers={() => onViewMembers(team.teamId, team.GSI_NAME)}  
+              onViewMembers={() => onViewMembers(team.teamId, team.GSI_NAME)}
             />
           </Box>
         </Grid>

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// TeamspacePage.tsx - Main page component
 import { useEffect, useState, useMemo } from 'react';
 import { Box, Container, Divider, Snackbar, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -186,7 +185,7 @@ export default function TeamspacePage() {
             onInvite={() => setOpenInvite(true)}
             onRemove={openRemoveFor}
             onDelete={openDeleteFor}
-            onViewMembers={openMembers}   // 🔥 ADDED HERE
+            onViewMembers={openMembers} 
           />
         )}
       </Container>
@@ -230,7 +229,7 @@ export default function TeamspacePage() {
 
       <MissingNameDialog open={showNameDialog} onOpenProfile={openProfile} />
 
-      {/* 🔥 NEW: View Members Popup */}
+      {/* View Members Popup */}
       <ViewMembersDialog
         open={openViewMembers}
         onClose={() => setOpenViewMembers(false)}
