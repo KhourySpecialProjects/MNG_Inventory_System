@@ -232,53 +232,52 @@ export const teamspaceRouter = router({
       }
     }),
   /** REMOVE USER FROM TEAMSPACE */
-  removeUserTeamspace: permissionedProcedure('team.remove_member')
-    .input(
-      z.object({
-        userId: z.string().min(1),
-        memberUsername: z.string().min(1),
-        inviteWorkspaceId: z.string().min(1),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      try {
-        // 🔍 lookup user by username
-        const q = await doc.send(
-          new QueryCommand({
-            TableName: TABLE_NAME,
-            IndexName: 'GSI_UsersByUsername',
-            KeyConditionExpression: 'username = :u',
-            ExpressionAttributeValues: { ':u': input.memberUsername.trim() },
-            Limit: 1,
-          }),
-        );
-
-        const target = q.Items?.[0];
-        if (!target) {
-          return { success: false, error: 'User not found by username.' };
-        }
-
-        // Delete membership record
-        await doc.send(
-          new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: {
-              PK: `TEAM#${input.inviteWorkspaceId}`,
-              SK: `MEMBER#${target.accountId}`,
-            },
-          }),
-        );
-
-        return { success: true, removed: target.username };
-      } catch (err: any) {
-        console.error('❌ removeUserTeamspace error:', err);
-        return {
-          success: false,
-          error: err.message || 'Failed to remove member.',
-        };
-      }
+removeUserTeamspace: permissionedProcedure('team.remove_member')
+  .input(
+    z.object({
+      userId: z.string().min(1),
+      memberUsername: z.string().min(1),
+      inviteWorkspaceId: z.string().min(1),
     }),
+  )
+  .mutation(async ({ input }) => {
+    try {
+      const q = await doc.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          IndexName: 'GSI_UsersByUsername',
+          KeyConditionExpression: 'username = :u',
+          ExpressionAttributeValues: { ':u': input.memberUsername.trim() },
+          Limit: 1,
+        }),
+      );
 
+      const target = q.Items?.[0];
+      if (!target) {
+        return { success: false, error: 'User not found by username.' };
+      }
+
+      const userIdToRemove = target.sub;
+
+      await doc.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TEAM#${input.inviteWorkspaceId}`,
+            SK: `MEMBER#${userIdToRemove}`,
+          },
+        }),
+      );
+
+      return { success: true, removed: target.username };
+    } catch (err: any) {
+      console.error('❌ removeUserTeamspace error:', err);
+      return {
+        success: false,
+        error: err.message || 'Failed to remove member.',
+      };
+    }
+  }),
   /** DELETE TEAMSPACE */
   deleteTeamspace: permissionedProcedure('team.delete')
     .input(
