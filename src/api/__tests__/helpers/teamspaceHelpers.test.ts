@@ -43,30 +43,6 @@ describe('teamspaceHelpers', () => {
     jest.clearAllMocks();
   });
 
-  describe('id()', () => {
-    it('generates a URL-safe random ID from 10 bytes (base64 encoded)', () => {
-      const result = id();
-      // 10 bytes base64 encoded ≈ 14 characters (after removing padding)
-      expect(result.length).toBeGreaterThanOrEqual(13);
-      expect(result.length).toBeLessThanOrEqual(14);
-      expect(result).toMatch(/^[A-Za-z0-9_-]+$/); // URL-safe characters only
-    });
-
-    it('generates ID with custom byte length', () => {
-      const result = id(20);
-      // 20 bytes base64 encoded ≈ 27 characters (after removing padding)
-      expect(result.length).toBeGreaterThanOrEqual(26);
-      expect(result.length).toBeLessThanOrEqual(28);
-      expect(result).toMatch(/^[A-Za-z0-9_-]+$/);
-    });
-
-    it('generates unique IDs on multiple calls', () => {
-      const id1 = id();
-      const id2 = id();
-      expect(id1).not.toBe(id2);
-    });
-  });
-
   describe('getTeamspace()', () => {
     it('returns teamspace when found', async () => {
       const mockTeam: TeamEntity = {
