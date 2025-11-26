@@ -478,7 +478,10 @@ export const authRouter = router({
       const refreshToken = cookies['auth_refresh'];
 
       if (!refreshToken) {
-        return { refreshed: false, message: 'No refresh token' };
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'No refresh token',
+        });
       }
 
       // 1. REQUEST NEW TOKENS FROM COGNITO
@@ -490,10 +493,28 @@ export const authRouter = router({
         },
       });
 
-      const result = await cognitoClient.send(cmd);
+      let result;
+      try {
+        result = await cognitoClient.send(cmd);
+      } catch (err: any) {
+        console.error('refresh() Cognito error:', err);
+        if (err.name === 'NotAuthorizedException') {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Invalid or expired refresh token',
+          });
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Token refresh failed: ${err.message}`,
+        });
+      }
 
       if (!result.AuthenticationResult) {
-        return { refreshed: false, message: 'Token refresh failed' };
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Token refresh failed',
+        });
       }
 
       // 2. SET NEW COOKIES
@@ -511,10 +532,10 @@ export const authRouter = router({
       const decoded = decodeJwtNoVerify(newId) || decodeJwtNoVerify(newAccess);
 
       if (!decoded || !decoded.sub) {
-        return {
-          refreshed: false,
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
           message: 'Token refresh succeeded but missing userId (sub)',
-        };
+        });
       }
 
       const userId = decoded.sub;
@@ -532,7 +553,11 @@ export const authRouter = router({
       };
     } catch (err) {
       console.error('refresh error:', err);
-      return { refreshed: false, message: 'Token refresh failed' };
+      if (err instanceof TRPCError) throw err;
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Token refresh failed',
+      });
     }
   }),
 
