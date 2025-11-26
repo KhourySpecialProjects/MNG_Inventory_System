@@ -1,6 +1,7 @@
-import os, io, json, base64, csv
+import os, io, json, base64, csv, sys
 import boto3
 from boto3.dynamodb.types import TypeDeserializer
+from collections import defaultdict, deque
 
 UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "").strip()
 TABLE_NAME = os.environ.get("TABLE_NAME", "").strip()
@@ -83,9 +84,32 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     for item in resp.get("Items", []):
         items.append({k: deserializer.deserialize(v) for k, v in item.items()})
 
-    return {"items": items, "overrides": overrides}
+    meta_resp = ddb().get_item(
+        TableName=TABLE_NAME,
+        Key={
+            "PK": {"S": f"TEAM#{team_id}"},
+            "SK": {"S": "METADATA"},
+        },
+        ConsistentRead=True,
+    )
 
-from collections import defaultdict, deque
+    meta = {}
+    if meta_resp.get("Item"):
+        meta = {k: deserializer.deserialize(v) for k, v in meta_resp["Item"].items()}
+
+    merged_overrides = {
+        "fe": meta.get("fe"),
+        "uic": meta.get("uic"),
+        "teamName": meta.get("description") or meta.get("name"),
+    }
+
+    if isinstance(overrides, dict):
+        merged_overrides.update(overrides)
+
+    return {"items": items, "overrides": merged_overrides}
+
+
+
 
 def _compute_lv_for_group(items_for_kit):
     id_to_item = {}
@@ -262,3 +286,29 @@ def lambda_handler(event, context):
         },
         is_b64=True
     )
+
+    main = lambda_handler
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+      
+        sys.stderr.write("teamId argument is required\n")
+        sys.exit(1)
+
+    team_id = sys.argv[1].strip()
+    if not team_id:
+        sys.stderr.write("teamId argument is empty\n")
+        sys.exit(1)
+
+    try:
+       
+        data = fetch_inventory_from_dynamo(team_id, {})
+        csv_bytes = render_inventory_csv(data)
+        
+        sys.stdout.write(csv_bytes.decode("utf-8"))
+    except Exception as e:
+       
+        sys.stderr.write(f"inventory export failed: {e}\n")
+        sys.exit(1)

@@ -9,11 +9,13 @@ from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 import boto3
+import sys
+# make sure it goes through all items and check damaged should produces every pdf
+# going to be called reports instead of damageReports
 
-# ====== Config ======
-TEMPLATE_PATH  = os.environ.get("TEMPLATE_PATH", "").strip()
+TEMPLATE_PATH  = os.environ.get("TEMPLATE_PATH", "").strip()  
 TABLE_NAME     = os.environ.get("TABLE_NAME", "").strip()
-UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "").strip() 
+UPLOADS_BUCKET = os.environ.get("UPLOADS_BUCKET", "").strip()
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
@@ -35,7 +37,6 @@ def s3_client():
         _s3 = boto3.client("s3")
     return _s3
 
-# ====== PDF Layout ======
 FIELD_COORDS = {
     "ORGANIZATION":       (90, 720),
     "NOMENCLATURE":       (390, 720),
@@ -71,7 +72,6 @@ LABELS = {
     "REMARKS":            "REMARKS",
 }
 
-# ====== helpers ======
 def _wrap_to_width(text: str, max_width: float, font: str, size: float):
     words = (text or "").split()
     lines, cur = [], ""
@@ -80,9 +80,11 @@ def _wrap_to_width(text: str, max_width: float, font: str, size: float):
         if pdfmetrics.stringWidth(test, font, size) <= max_width:
             cur = test
         else:
-            if cur: lines.append(cur)
+            if cur:
+                lines.append(cur)
             cur = w
-    if cur: lines.append(cur)
+    if cur:
+        lines.append(cur)
     return lines
 
 def _draw_remarks_list(c: canvas.Canvas, values: dict):
@@ -95,7 +97,7 @@ def _draw_remarks_list(c: canvas.Canvas, values: dict):
             s = (legacy or "").strip()
             rows = [r for r in s.splitlines() if r] if s else []
     if not rows:
-        rows = ["N/A"]  
+        rows = ["N/A"]
 
     x = REMARKS_TABLE["x"]
     y = REMARKS_TABLE["y_start"]
@@ -166,31 +168,56 @@ def stamp(template_bytes, values, font="Helvetica", size=9):
     return out.getvalue()
 
 def read_template_bytes():
-    bucket = "mng-dev-uploads-245120345540"
-    key    = "templates/DA2404_template.pdf"
-
-    if not bucket:
-        raise RuntimeError("TEMPLATE_BUCKET or UPLOADS_BUCKET env var must be set")
-
+    if not UPLOADS_BUCKET:
+        raise RuntimeError("UPLOADS_BUCKET env var must be set for template")
+    key = TEMPLATE_PATH or "templates/2404-template.pdf"
     try:
-        obj = s3_client().get_object(Bucket=bucket, Key=key)
+        obj = s3_client().get_object(Bucket=UPLOADS_BUCKET, Key=key)
         return obj["Body"].read()
     except Exception as e:
-        raise RuntimeError(f"Failed to load template from S3 s3://{bucket}/{key}: {e}")
+        raise RuntimeError(f"Failed to load template from S3 s3://{UPLOADS_BUCKET}/{key}: {e}")
 
-# ====== Dynamo & S3 ======
-def ddb_get(pk: str, sk: str = "LATEST") -> dict:
+def ddb_query_team_items(team_id: str):
+    if not TABLE_NAME:
+        raise RuntimeError("TABLE_NAME env var is not set")
     cli = ddb_client()
+    from boto3.dynamodb.types import TypeDeserializer
+    deser = TypeDeserializer()
+    resp = cli.query(
+        TableName=TABLE_NAME,
+        KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
+        ExpressionAttributeValues={
+            ":pk": {"S": f"TEAM#{team_id}"},
+            ":sk": {"S": "ITEM#"},
+        },
+    )
+    items = []
+    for raw in resp.get("Items", []):
+        items.append({k: deser.deserialize(v) for k, v in raw.items()})
+    return items
+
+def ddb_get_team(team_id: str):
+    if not TABLE_NAME:
+        raise RuntimeError("TABLE_NAME env var is not set")
+
+    cli = ddb_client()
+    from boto3.dynamodb.types import TypeDeserializer
+    deser = TypeDeserializer()
+
     resp = cli.get_item(
         TableName=TABLE_NAME,
-        Key={"PK": {"S": pk}, "SK": {"S": sk}},
+        Key={
+            "PK": {"S": f"TEAM#{team_id}"},
+            "SK": {"S": "TEAM"}
+        },
         ConsistentRead=True
     )
+
     item = resp.get("Item")
     if not item:
-        raise RuntimeError("DDB item not found")
-    from boto3.dynamodb.types import TypeDeserializer
-    return {k: TypeDeserializer().deserialize(v) for k, v in item.items()}
+        return {}
+
+    return {k: deser.deserialize(v) for k, v in item.items()}
 
 def s3_put_pdf(bucket: str, key: str, body: bytes):
     s3_client().put_object(
@@ -208,23 +235,17 @@ def to_pdf_values(payload):
         out["REMARKS_LIST"] = ["REMARKS", "REMARKS (row 2)"]
         return out
 
-    def pick(name, key):
-        v = payload.get(name)
-        if isinstance(v, str):
-            v = v.strip()
-        if v:
-            return v
-        return "N/A"
-
     remarks_list = payload.get("remarksList")
     if remarks_list is None:
         r_legacy = payload.get("remarks")
+        if r_legacy is None:
+            r_legacy = payload.get("reports")
         if isinstance(r_legacy, list):
             remarks_list = r_legacy
         elif isinstance(r_legacy, str):
             remarks_list = [s for s in r_legacy.splitlines() if s.strip()]
         else:
-            remarks_list = ["N/A"] 
+            remarks_list = ["N/A"]
 
     org = payload.get("organization") or payload.get("description")
     if isinstance(org, str):
@@ -246,11 +267,11 @@ def to_pdf_values(payload):
         "REMARKS_LIST":       remarks_list,
     }
 
-# ====== HTTP helpers ======
 def _get_http_method(event) -> str:
     try:
         m = event.get("requestContext", {}).get("http", {}).get("method")
-        if m: return m.upper()
+        if m:
+            return m.upper()
     except Exception:
         pass
     m = event.get("httpMethod")
@@ -271,7 +292,8 @@ def _get_body_json(event) -> dict:
 def _resp(status, body=None, headers=None, is_b64=False):
     h = {"Cache-Control": "no-store"}
     h.update(CORS)
-    if headers: h.update(headers)
+    if headers:
+        h.update(headers)
     out = {"statusCode": status, "headers": h}
     if body is not None:
         out["body"] = body if isinstance(body, str) else json.dumps(body)
@@ -279,7 +301,81 @@ def _resp(status, body=None, headers=None, is_b64=False):
         out["isBase64Encoded"] = True
     return out
 
-# ====== Lambda Handler ======
+def generate_team_2404(team_id: str, save_to_s3: bool = True):
+    if not UPLOADS_BUCKET:
+        return {"ok": False, "error": "UPLOADS_BUCKET env var is not set"}
+
+    try:
+        tmpl_bytes = read_template_bytes()
+    except Exception as e:
+        return {"ok": False, "error": f"Template read failed: {e}"}
+
+    try:
+        items = ddb_query_team_items(team_id)
+    except Exception as e:
+        return {"ok": False, "error": f"DDB query failed: {e}"}
+
+    try:
+        team_data = ddb_get_team(team_id)
+    except Exception:
+        team_data = {}
+
+    org_description = team_data.get("description")
+
+    # filter items that have reports (damage reports)
+    damaged_items = []
+    for itm in items:
+        reports = itm.get("reports")
+        if isinstance(reports, list) and reports:
+            damaged_items.append(itm)
+        elif isinstance(reports, str) and reports.strip():
+            damaged_items.append(itm)
+
+    if not damaged_items:
+        return {"ok": True, "message": "No items with reports found for team", "teamId": team_id}
+
+    writer = PdfWriter()
+
+    for itm in damaged_items:
+        values_input = {
+            "description": org_description,                    # ✅ organization
+            "actualName": itm.get("actualName") or itm.get("name"),
+            "serialNumber": itm.get("serialNumber") or itm.get("serial"),
+            "reports": itm.get("reports"),
+        }
+
+        values = to_pdf_values(values_input)
+        stamped_bytes = stamp(tmpl_bytes, values)
+        stamped_reader = PdfReader(io.BytesIO(stamped_bytes))
+
+        for page in stamped_reader.pages:
+            writer.add_page(page)
+
+    out_buf = io.BytesIO()
+    writer.write(out_buf)
+    out_buf.seek(0)
+    pdf_bytes = out_buf.getvalue()
+
+    form_id = f"team_{team_id}"
+    filename = f"DA2404_{form_id}.pdf"
+    key = f"Documents/{team_id}/2404/{filename}"
+
+    if save_to_s3:
+        try:
+            s3_put_pdf(UPLOADS_BUCKET, key, pdf_bytes)
+        except Exception as e:
+            return {"ok": False, "error": f"S3 put failed: {e}"}
+        return {"ok": True, "s3Key": key, "bucket": UPLOADS_BUCKET, "teamId": team_id}
+
+    b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+    return {
+        "ok": True,
+        "downloadBase64": b64,
+        "filename": filename,
+        "contentType": "application/pdf",
+        "teamId": team_id,
+    }
+
 def lambda_handler(event, context):
     method = _get_http_method(event)
 
@@ -296,54 +392,31 @@ def lambda_handler(event, context):
     if not isinstance(payload, dict):
         return _resp(400, {"error": "Invalid JSON body"})
 
-    pk = payload.get("pk")
-    sk = payload.get("sk", "LATEST")
+    team_id = (payload.get("teamId") or "").strip()
+    if not team_id:
+        return _resp(400, {"error": "teamId is required"})
+
     save_to_s3 = bool(payload.get("saveToS3", True))
 
-    unit = asset = None
-    if pk:
-        parts = pk.split("#")
-        unit  = parts[2] if len(parts) > 2 else None
-        asset = parts[3] if len(parts) > 3 else None
-
-    try:
-        tmpl = read_template_bytes()
-    except Exception as e:
-        return _resp(500, {"error": f"Template read failed: {e}"})
-
-    try:
-        if pk:
-            ddb_item = ddb_get(pk, sk)
-            merged = {**ddb_item, **payload.get("override", {})}
-            values = to_pdf_values(merged)
-        else:
-            values = to_pdf_values(payload)
-        pdf_bytes = stamp(tmpl, values)
-    except Exception as e:
-        return _resp(500, {"error": f"Stamping failed: {e}"})
-
-    form_id = (payload.get("formId") or asset or str(uuid.uuid4())).strip()
-    filename = f"DA2404_{form_id}.pdf"
-
-    if save_to_s3:
-        team_id = payload.get("teamId") or unit or "UnknownTeam"
-        asset_id = asset or payload.get("asset") or form_id
-        key = f"Documents/{team_id}/2404/{filename}"  
-        try:
-            s3_put_pdf(UPLOADS_BUCKET, key, pdf_bytes)
-        except Exception as e:
-            return _resp(500, {"error": f"S3 put failed: {e}"})
-        return _resp(200, {"ok": True, "s3Key": key, "contentType": "application/pdf"})
-
-    b64 = base64.b64encode(pdf_bytes).decode("utf-8")
-    return _resp(
-        200,
-        b64,
-        headers={
-            "Content-Type": "application/pdf",
-            "Content-Disposition": f'inline; filename="{filename}"',
-        },
-        is_b64=True,
-    )
+    result = generate_team_2404(team_id, save_to_s3=save_to_s3)
+    status = 200 if result.get("ok") else 500
+    return _resp(status, result)
 
 main = lambda_handler
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps({"ok": False, "error": "teamId argument is required"}))
+        sys.exit(1)
+    team_id = sys.argv[1].strip()
+    fake_event = {
+        "httpMethod": "POST",
+        "body": json.dumps({"teamId": team_id, "saveToS3": True}),
+        "isBase64Encoded": False,
+    }
+    resp = lambda_handler(fake_event, None)
+    body = resp.get("body")
+    if isinstance(body, dict):
+        print(json.dumps(body))
+    else:
+        print(body or "")

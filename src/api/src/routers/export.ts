@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { router, publicProcedure, permissionedProcedure } from './trpc';
+import { router, permissionedProcedure } from './trpc';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { loadConfig } from '../process';
 import { spawn } from 'child_process';
@@ -53,10 +53,6 @@ export async function runPython(scriptPath: string, teamId: string): Promise<Pyt
   });
 }
 
-// CSV converter
-function toCSV(label: string, output: string): string {
-  return ['field,value', `script,${label}`, `output,${JSON.stringify(output)}`].join('\n');
-}
 
 // Main Export
 export async function runExport(teamId: string) {
@@ -73,15 +69,26 @@ export async function runExport(teamId: string) {
   fs.chmodSync(paths.p2404, 0o755);
   fs.chmodSync(paths.pinv, 0o755);
 
-  const r1 = await runPython(paths.p2404, teamId);
-  const r2 = await runPython(paths.pinv, teamId);
+ const r2404 = await runPython(paths.p2404, teamId);
+ const rInv = await runPython(paths.pinv, teamId);
 
-  const csv2404 = toCSV('2404', r1.stdout);
-  const csvInventory = toCSV('inventory', r2.stdout);
+  // 2404 script: stdout is JSON (metadata about PDF location)
+  let pdf2404: any;
+  try {
+    pdf2404 = JSON.parse(r2404.stdout || '{}');
+  } catch {
+    pdf2404 = {
+      ok: false,
+      error: 'Invalid JSON from 2404 script',
+      raw: r2404.stdout,
+    };
+  }
+
+  const csvInventory = rInv.stdout || '';
 
   return {
     success: true,
-    csv2404,
+    pdf2404,
     csvInventory,
   };
 }
