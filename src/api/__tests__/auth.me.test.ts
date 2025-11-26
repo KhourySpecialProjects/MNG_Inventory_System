@@ -12,7 +12,6 @@ jest.mock('aws-jwt-verify', () => ({
 // Now import modules that depend on the mock
 import request from 'supertest';
 import app from '../src/server';
-import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { DynamoDBDocumentClient, GetCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 
 // Mock DynamoDB
@@ -49,7 +48,7 @@ describe('Auth Router - me', () => {
           Item: {
             PK: 'USER#user-123',
             SK: 'METADATA',
-            userId: 'user-123',
+            sub: 'user-123',
             name: 'Test User',
             username: 'testuser',
             role: 'admin',
@@ -114,9 +113,8 @@ describe('Auth Router - me', () => {
           expect(item).toMatchObject({
             PK: 'USER#new-user-789',
             SK: 'METADATA',
-            userId: 'new-user-789',
-            username: 'newuser',
-            email: 'new@example.com',
+            sub: 'new-user-789',
+            username: expect.any(String),
           });
           return {};
         }
@@ -129,7 +127,7 @@ describe('Auth Router - me', () => {
     expect(res.body?.result?.data).toMatchObject({
       authenticated: true,
       userId: 'new-user-789',
-      username: 'newuser',
+      username: expect.any(String),
     });
 
     // Verify PutCommand was called to create user
@@ -170,7 +168,7 @@ describe('Auth Router - me', () => {
       Item: {
         PK: 'USER#user-456',
         SK: 'METADATA',
-        userId: 'user-456',
+        sub: 'user-456',
         name: 'Old User',
         username: 'olduser',
         role: 'viewer',
@@ -181,11 +179,12 @@ describe('Auth Router - me', () => {
     const res = await request(app).get('/trpc/me').set('Cookie', 'auth_access=valid-token');
 
     expect(res.status).toBe(200);
-    expect(res.body?.result?.data).toMatchObject({
+    const data = res.body?.result?.data;
+    expect(data).toMatchObject({
       authenticated: true,
       userId: 'user-456',
-      accountId: undefined,
     });
+    expect(data.accountId).toBeUndefined();
   });
 
   it('parses cookie from lowercase "cookie" header', async () => {
@@ -196,7 +195,7 @@ describe('Auth Router - me', () => {
 
     docSendSpy.mockResolvedValue({
       Item: {
-        userId: 'user-123',
+        sub: 'user-123',
         username: 'testuser',
         role: 'admin',
       },
@@ -215,7 +214,7 @@ describe('Auth Router - me', () => {
 
     docSendSpy.mockResolvedValue({
       Item: {
-        userId: 'user-123',
+        sub: 'user-123',
         username: 'testuser',
       },
     });

@@ -378,7 +378,10 @@ export const authRouter = router({
     const accessToken = cookies[COOKIE_ACCESS];
 
     if (!accessToken) {
-      return { authenticated: false, message: 'No session' };
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'No access token',
+      });
     }
 
     // 1. VERIFY TOKEN
@@ -387,7 +390,10 @@ export const authRouter = router({
       decoded = await verifier.verify(accessToken);
     } catch (err: any) {
       console.error('me() token verification error:', err);
-      return { authenticated: false, message: 'Invalid session' };
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'Invalid or expired token',
+      });
     }
 
     const userId = decoded.sub;
@@ -409,6 +415,10 @@ export const authRouter = router({
       user = res.Item || null;
     } catch (err) {
       console.error('me() DynamoDB Get error:', err);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to fetch user',
+      });
     }
 
     // 3. CREATE USER IF MISSING
