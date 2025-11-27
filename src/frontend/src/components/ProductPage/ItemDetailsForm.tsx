@@ -397,11 +397,8 @@ export default function ItemDetailsForm({
                   fullWidth
                   value={editedProduct.serialNumber || ''}
                   onChange={(e) => handleChange('serialNumber', e.target.value)}
-                  required
                   error={errors.serialNumber}
-                  helperText={
-                    errors.serialNumber ? 'Serial Number is required and must be unique' : ''
-                  }
+                  helperText={errors.serialNumber ? 'Must be unique if provided' : ''}
                 />
               ) : (
                 <Box sx={{ flex: 1, minWidth: 0 }}>

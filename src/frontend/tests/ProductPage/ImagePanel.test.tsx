@@ -106,7 +106,7 @@ describe('ImagePanel', () => {
       expect(mockSetSelectedImageFile).toHaveBeenCalledWith(file);
     });
 
-    it('rejects non-image files with alert', () => {
+    it('shows error dialog for non-image files', async () => {
       render(<ImagePanel {...baseProps} isEditMode={true} />);
 
       const file = new File(['dummy'], 'test.txt', { type: 'text/plain' });
@@ -114,11 +114,12 @@ describe('ImagePanel', () => {
 
       fireEvent.change(input, { target: { files: [file] } });
 
-      expect(global.alert).toHaveBeenCalledWith('Please select a valid image file');
+      // ErrorDialog should appear with error message
+      expect(await screen.findByText('Please select a valid image file')).toBeInTheDocument();
       expect(mockSetSelectedImageFile).not.toHaveBeenCalled();
     });
 
-    it('rejects files larger than 3MB', () => {
+    it('shows error dialog for files larger than 3MB', async () => {
       render(<ImagePanel {...baseProps} isEditMode={true} />);
 
       const largeFile = new File(['x'.repeat(4 * 1024 * 1024)], 'large.jpg', {
@@ -128,13 +129,11 @@ describe('ImagePanel', () => {
 
       fireEvent.change(input, { target: { files: [largeFile] } });
 
-      expect(global.alert).toHaveBeenCalledWith(
-        'Image is too large. Please select an image smaller than 3MB.',
-      );
+      expect(await screen.findByText('Image is too large. Please select an image smaller than 3MB.')).toBeInTheDocument();
       expect(mockSetSelectedImageFile).not.toHaveBeenCalled();
     });
 
-    it('accepts files under 3MB', () => {
+    it('accepts files under 3MB', async () => {
       render(<ImagePanel {...baseProps} isEditMode={true} />);
 
       const smallFile = new File(['x'.repeat(1024)], 'small.jpg', {
@@ -145,7 +144,6 @@ describe('ImagePanel', () => {
       fireEvent.change(input, { target: { files: [smallFile] } });
 
       expect(mockSetSelectedImageFile).toHaveBeenCalledWith(smallFile);
-      expect(global.alert).not.toHaveBeenCalled();
     });
 
     it('converts file to base64 preview', () => {
@@ -168,11 +166,11 @@ describe('ImagePanel', () => {
       expect(image).toBeInTheDocument();
     });
 
-    it('file input accepts only images', () => {
+    it('file input accepts images and HEIC files', () => {
       render(<ImagePanel {...baseProps} isEditMode={true} />);
 
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-      expect(input).toHaveAttribute('accept', 'image/*');
+      expect(input).toHaveAttribute('accept', 'image/*,.heic,.heif');
     });
   });
 

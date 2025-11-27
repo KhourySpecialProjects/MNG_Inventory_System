@@ -18,6 +18,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 import { createItem, deleteItem, updateItem } from '../../api/items';
 import { useNavigate } from 'react-router-dom';
+import ErrorDialog from '../ErrorDialog';
 
 export default function ActionPanel({
   isCreateMode,
@@ -36,6 +37,7 @@ export default function ActionPanel({
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const updateChildrenStatus = async (children: any[], newStatus: string) => {
     for (const child of children) {
@@ -58,7 +60,7 @@ export default function ActionPanel({
       navigate(`/teams/to-review/${teamId}`);
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Failed to delete item');
+      setErrorMessage('Failed to delete item');
     } finally {
       setDeleting(false);
     }
@@ -80,10 +82,6 @@ export default function ActionPanel({
     if (!editedProduct.isKit) {
       if (!editedProduct.nsn?.trim()) {
         newErrors.nsn = true;
-      }
-
-      if (!editedProduct.serialNumber?.trim()) {
-        newErrors.serialNumber = true;
       }
 
       if (!editedProduct.description?.trim()) {
@@ -129,7 +127,9 @@ export default function ActionPanel({
       newErrors.parent = true;
     }
 
-    setFieldErrors(newErrors);
+    if (setFieldErrors) {
+      setFieldErrors(newErrors);
+    }
     return Object.keys(newErrors).length === 0;
   };
 
@@ -142,22 +142,24 @@ export default function ActionPanel({
         const ohQty = parseInt(editedProduct.ohQuantity) || 0;
 
         if (!editedProduct.isKit && authQty < ohQty) {
-          alert('Authorized Quantity must be greater than or equal to OH Quantity');
+          setErrorMessage('Authorized Quantity must be greater than or equal to OH Quantity');
           return;
         }
 
-        alert('Please fill in all required fields correctly');
+        setErrorMessage('Please fill in all required fields correctly');
         return;
       }
 
       // Require image for both items and kits
       if (isCreateMode && !imagePreview) {
-        alert('Please add an image before creating the item');
+        setErrorMessage('Please add an image before creating the item');
         return;
       }
 
       // Clear any previous errors
-      setFieldErrors({});
+      if (setFieldErrors) {
+        setFieldErrors({});
+      }
 
       // Convert new image → base64 if selected
       let imageBase64: string | undefined = undefined;
@@ -198,7 +200,7 @@ export default function ActionPanel({
           navigate(`/teams/to-review/${teamId}`, { replace: true });
         } else {
           console.log('Create failed with response:', res);
-          alert(res.error || 'Failed to create item');
+          setErrorMessage(res.error || 'Failed to create item');
         }
       } else {
         // UPDATE MODE
@@ -232,12 +234,14 @@ export default function ActionPanel({
           setShowSuccess(true);
           navigate(`/teams/to-review/${teamId}`, { replace: true });
         } else {
-          alert(res.error || 'Failed to update item');
+          setErrorMessage(res.error || 'Failed to update item');
         }
       }
     } catch (err) {
       console.error('Save error:', err);
-      alert('Failed to save item');
+      // Show the actual error message if available
+      const errorMsg = err instanceof Error ? err.message : 'Failed to save item';
+      setErrorMessage(errorMsg);
     }
   };
 
@@ -327,7 +331,9 @@ export default function ActionPanel({
                 startIcon={<CancelIcon />}
                 onClick={() => {
                   setIsEditMode(false);
-                  setFieldErrors({});
+                  if (setFieldErrors) {
+                    setFieldErrors({});
+                  }
                 }}
                 size="small"
                 sx={{
@@ -415,6 +421,13 @@ export default function ActionPanel({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Error Dialog */}
+      <ErrorDialog
+        open={!!errorMessage}
+        message={errorMessage}
+        onClose={() => setErrorMessage('')}
+      />
     </>
   );
 }

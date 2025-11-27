@@ -279,7 +279,7 @@ describe('ActionPanel', () => {
       expect(screen.queryByRole('button', { name: /Cancel/i })).not.toBeInTheDocument();
     });
 
-    it('validates required fields before creating', async () => {
+    it('shows error dialog when required fields missing', async () => {
       const propsNoFields = { 
         ...createModeProps, 
         editedProduct: {
@@ -299,15 +299,12 @@ describe('ActionPanel', () => {
       const createButtons = screen.getAllByRole('button', { name: /^CREATE$/i });
       fireEvent.click(createButtons[0]);
 
-      await waitFor(() => {
-        expect(global.alert).toHaveBeenCalled();
-        expect(mockSetFieldErrors).toHaveBeenCalled();
-      });
-
+      expect(await screen.findByText('Please fill in all required fields correctly')).toBeInTheDocument();
+      expect(mockSetFieldErrors).toHaveBeenCalled();
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
 
-    it('validates image required before creating', async () => {
+    it('shows error dialog when image required before creating', async () => {
       const propsNoImage = { ...createModeProps, imagePreview: '' };
 
       renderWithRouter(<ActionPanel {...propsNoImage} />);
@@ -315,14 +312,11 @@ describe('ActionPanel', () => {
       const createButtons = screen.getAllByRole('button', { name: /^CREATE$/i });
       fireEvent.click(createButtons[0]);
 
-      await waitFor(() => {
-        expect(global.alert).toHaveBeenCalledWith('Please add an image before creating the item');
-      });
-
+      expect(await screen.findByText('Please add an image before creating the item')).toBeInTheDocument();
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
 
-    it('validates Authorized >= OH Quantity', async () => {
+    it('shows error dialog when Authorized < OH Quantity', async () => {
       const invalidQuantityProps = {
         ...createModeProps,
         editedProduct: {
@@ -337,10 +331,7 @@ describe('ActionPanel', () => {
       const createButtons = screen.getAllByRole('button', { name: /^CREATE$/i });
       fireEvent.click(createButtons[0]);
 
-      await waitFor(() => {
-        expect(global.alert).toHaveBeenCalledWith('Authorized Quantity must be greater than or equal to OH Quantity');
-      });
-
+      expect(await screen.findByText('Authorized Quantity must be greater than or equal to OH Quantity')).toBeInTheDocument();
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
 
@@ -568,7 +559,7 @@ describe('ActionPanel', () => {
   });
 
   describe('Error Handling', () => {
-    it('shows alert when save fails', async () => {
+    it('shows error dialog when save fails', async () => {
       vi.mocked(itemsAPI.updateItem).mockRejectedValueOnce(new Error('Network error'));
 
       renderWithRouter(<ActionPanel {...baseProps} isEditMode={true} />);
@@ -576,12 +567,10 @@ describe('ActionPanel', () => {
       const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
 
-      await waitFor(() => {
-        expect(global.alert).toHaveBeenCalledWith('Failed to save item');
-      });
+      expect(await screen.findByText('Network error')).toBeInTheDocument();
     });
 
-    it('shows alert when delete fails', async () => {
+    it('shows error dialog when delete fails', async () => {
       vi.mocked(itemsAPI.deleteItem).mockRejectedValueOnce(new Error('Network error'));
 
       renderWithRouter(<ActionPanel {...baseProps} />);
@@ -597,9 +586,7 @@ describe('ActionPanel', () => {
       const confirmButton = within(dialog).getByRole('button', { name: /Delete/i });
       fireEvent.click(confirmButton);
 
-      await waitFor(() => {
-        expect(global.alert).toHaveBeenCalledWith('Failed to delete item');
-      });
+      expect(await screen.findByText('Failed to delete item')).toBeInTheDocument();
     });
   });
 

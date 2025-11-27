@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Box, Button, CardMedia, Stack, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ImageNotSupportedIcon from '@mui/icons-material/ImageNotSupported';
+import ErrorDialog from '../ErrorDialog';
 
 export default function ImagePanel({
   imagePreview,
@@ -20,30 +21,56 @@ export default function ImagePanel({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const theme = useTheme();
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handlePick = () => fileRef.current?.click();
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
 
-    // Check file type
-    if (!f.type.startsWith('image/')) {
-      alert('Please select a valid image file');
+    // Check file type (accept images and HEIC/HEIF)
+    const isImage = f.type.startsWith('image/');
+    const isHEIC = f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif');
+    
+    if (!isImage && !isHEIC) {
+      setErrorMessage('Please select a valid image file');
       return;
     }
 
     // Check file size (3MB = 3 * 1024 * 1024 bytes)
     const maxSize = 3 * 1024 * 1024;
     if (f.size > maxSize) {
-      alert('Image is too large. Please select an image smaller than 3MB.');
+      setErrorMessage('Image is too large. Please select an image smaller than 3MB.');
       return;
     }
 
-    // Process the file
-    const r = new FileReader();
-    r.onloadend = () => setImagePreview(r.result as string);
-    r.readAsDataURL(f);
-    setSelectedImageFile(f);
+    try {
+      let fileToProcess = f;
+
+      // Convert HEIC to JPG if needed
+      if (isHEIC) {
+        const heic2any = (await import('heic2any')).default;
+        const convertedBlob = await heic2any({
+          blob: f,
+          toType: 'image/jpeg',
+          quality: 0.9,
+        });
+        
+        // heic2any might return an array of blobs, get the first one
+        const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+        fileToProcess = new File([blob], f.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+      }
+
+      // Process the file
+      const r = new FileReader();
+      r.onloadend = () => setImagePreview(r.result as string);
+      r.readAsDataURL(fileToProcess);
+      setSelectedImageFile(fileToProcess);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setErrorMessage('Failed to process image. Please try a different file.');
+    }
   };
 
   return (
@@ -145,7 +172,7 @@ export default function ImagePanel({
           <input
             ref={fileRef}
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             style={{ display: 'none' }}
             onChange={handleFile}
           />
@@ -163,9 +190,15 @@ export default function ImagePanel({
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         style={{ display: 'none' }}
         onChange={handleFile}
+      />
+
+      <ErrorDialog
+        open={!!errorMessage}
+        message={errorMessage}
+        onClose={() => setErrorMessage('')}
       />
     </Stack>
   );
