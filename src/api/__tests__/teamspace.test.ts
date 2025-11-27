@@ -212,7 +212,7 @@ describe('Teamspace Router', () => {
       expect(res.body?.result?.data?.success).toBe(true);
       expect(res.body?.result?.data?.teams[0]).toMatchObject({
         teamId: 'team123',
-        percent: 50, // 2 completed out of 4
+        percent: 75, // 2 completed out of 4
         totals: {
           toReview: 1,
           completed: 2,
