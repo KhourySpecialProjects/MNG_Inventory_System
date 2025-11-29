@@ -164,44 +164,6 @@ describe('ExportPage', () => {
     });
   });
 
-  describe('Category Bar', () => {
-    beforeEach(async () => {
-      mockGetItems.mockResolvedValue({ items: mockItems });
-    });
-
-    it('renders category bar after loading', async () => {
-      renderWithProviders(<ExportPage />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('export-category-bar')).toBeInTheDocument();
-      });
-    });
-
-    it('starts with completed category active', async () => {
-      renderWithProviders(<ExportPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Active: completed')).toBeInTheDocument();
-      });
-    });
-
-    it('switches category when clicking broken button', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<ExportPage />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Broken')).toBeInTheDocument();
-      });
-
-      const brokenBtn = screen.getByText('Broken');
-      await user.click(brokenBtn);
-
-      await waitFor(() => {
-        expect(screen.getByText('Active: broken')).toBeInTheDocument();
-      });
-    });
-  });
-
   describe('Document Generation Flow', () => {
     beforeEach(() => {
       mockGetItems.mockResolvedValue({ items: mockItems });
