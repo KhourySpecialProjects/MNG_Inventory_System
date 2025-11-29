@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { MouseEvent, useState } from 'react';
+import { MouseEvent, useState, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export interface TeamIconProps {
@@ -74,6 +74,34 @@ export default function TeamIcon({
 
   const ringColor = getColor(percent);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+  function updateScale() {
+    const el = containerRef.current;
+    if (!el) {
+      setScale(1);
+      return;
+    }
+
+    const { width } = el.getBoundingClientRect();
+    const target = 200;
+    const newScale = Math.min(Math.max(width / target, 0.9), 1.4);
+    setScale(newScale);
+  }
+
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
+  const ringSize = Math.max(52, Math.min(72 * scale, 90));
+
   return (
     <>
       <Card
@@ -94,105 +122,99 @@ export default function TeamIcon({
           width: '100%',
         }}
       >
-        <CardActionArea
-          onClick={handleOpenTeam}
-          sx={{
-            borderRadius: 3,
-            width: '100%',
-          }}
-        >
+        <CardActionArea onClick={handleOpenTeam} sx={{ borderRadius: 3, width: '100%' }}>
           <CardContent sx={{ p: { xs: 1.5, sm: 2.2 } }}>
-            <Stack alignItems="center" spacing={1.8} sx={{ textAlign: 'center' }}>
+            <Box
+              ref={containerRef}
+              sx={{
+                width: '100%',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top center',
+              }}
+            >
+              <Stack alignItems="center" spacing={1.8} sx={{ textAlign: 'center' }}>
+                <Box sx={{ position: 'relative', width: ringSize, height: ringSize }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={100}
+                    size={ringSize}
+                    thickness={4}
+                    sx={{
+                      color: alpha(theme.palette.text.primary, 0.15),
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
 
-              {/* ===== CLEAN PROGRESS RING ===== */}
-              <Box sx={{ position: 'relative', width: 72, height: 72 }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={percent}
+                    size={ringSize}
+                    thickness={4}
+                    sx={{
+                      color: ringColor,
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      '& .MuiCircularProgress-circle': {
+                        strokeLinecap: 'round',
+                      },
+                    }}
+                  />
 
-                {/* Always show faint outline */}
-                <CircularProgress
-                  variant="determinate"
-                  value={100}
-                  size={72}
-                  thickness={4}
-                  sx={{
-                    color: alpha(theme.palette.text.primary, 0.15),
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                  }}
-                />
-
-                {/* Main colored ring */}
-                <CircularProgress
-                  variant="determinate"
-                  value={percent}
-                  size={72}
-                  thickness={4}
-                  sx={{
-                    color: ringColor,
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    '& .MuiCircularProgress-circle': {
-                      strokeLinecap: 'round',
-                    },
-                  }}
-                />
-
-                {/* % IN MIDDLE */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Typography
-                    fontSize={16}
-                    fontWeight={800}
-                    sx={{ color: theme.palette.text.primary }}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
                   >
-                    {percent}%
-                  </Typography>
+                    <Typography
+                      fontSize="clamp(10px, 1.4vw, 18px)"
+                      fontWeight={800}
+                      sx={{ color: theme.palette.text.primary }}
+                    >
+                      {percent}%
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
 
-              {/* NAME */}
-              <Tooltip title={name}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 800,
-                    color: theme.palette.text.primary,
-                    maxWidth: 180,
-                    fontSize: { xs: 14, sm: 16 },
-                  }}
-                  noWrap
-                >
-                  {name}
-                </Typography>
-              </Tooltip>
+                <Tooltip title={name}>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 800,
+                      color: theme.palette.text.primary,
+                      maxWidth: 180,
+                      fontSize: 'clamp(12px, 1.4vw, 18px)',
+                    }}
+                    noWrap
+                  >
+                    {name}
+                  </Typography>
+                </Tooltip>
 
-              {/* DESCRIPTION */}
-              <Tooltip title={description || 'No description'}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    fontSize: { xs: 12.5, sm: 13 },
-                    maxWidth: 200,
-                  }}
-                  noWrap
-                >
-                  {description || 'No description'}
-                </Typography>
-              </Tooltip>
-            </Stack>
+                <Tooltip title={description || 'No description'}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      fontSize: 'clamp(10px, 1.1vw, 15px)',
+                      maxWidth: 200,
+                    }}
+                    noWrap
+                  >
+                    {description || 'No description'}
+                  </Typography>
+                </Tooltip>
+              </Stack>
+            </Box>
           </CardContent>
         </CardActionArea>
 
-        {/* MENU BTN */}
         <IconButton
           size="small"
           onClick={handleMenu}
@@ -208,7 +230,6 @@ export default function TeamIcon({
         </IconButton>
       </Card>
 
-      {/* MENU */}
       <Menu
         anchorEl={anchorEl}
         open={open}
