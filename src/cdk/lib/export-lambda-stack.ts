@@ -36,6 +36,13 @@ export class ExportLambdaStack extends Stack {
       TEMPLATE_PATH: 'templates/2404-template.pdf',
     };
 
+    const pdfLayer = new lambda.LayerVersion(this, 'PdfDepsLayer', {
+      code: lambda.Code.fromAsset(path.join(__dirname, '../layers/pdf-deps')),
+      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+      description: 'PDF processing dependencies (pypdf, pillow, reportlab, etc)',
+    });
+
+
     this.pdf2404Function = new lambda.Function(this, 'Export2404Handler', {
       functionName: `${service}-export-2404-handler-${stage}`,
       runtime: lambda.Runtime.PYTHON_3_11,
@@ -44,6 +51,7 @@ export class ExportLambdaStack extends Stack {
       environment: commonEnv,
       timeout: Duration.seconds(60),
       memorySize: 512,
+      layers: [pdfLayer],
       description: 'Generates DA Form 2404 PDFs for inventory items',
     });
 
@@ -55,6 +63,7 @@ export class ExportLambdaStack extends Stack {
       environment: commonEnv,
       timeout: Duration.seconds(60),
       memorySize: 512,
+      layers: [pdfLayer],
       description: 'Generates inventory CSV reports',
     });
 
