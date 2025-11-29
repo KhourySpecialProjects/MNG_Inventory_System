@@ -155,18 +155,6 @@ export default function ExportPage() {
           </Box>
         )}
 
-        {/* CATEGORY BAR - Always visible after loading */}
-        {!loading && (
-          <Fade in timeout={400}>
-            <Box>
-              <ExportCategoryBar 
-                activeCategory={activeCategory}
-                onCategoryChange={setActiveCategory}
-              />
-            </Box>
-          </Fade>
-        )}
-
         {/* PAGE CONTENT WHEN NOT LOADING */}
         {!loading && !documentsCreated && !isGenerating && (
           <Fade in timeout={400}>
