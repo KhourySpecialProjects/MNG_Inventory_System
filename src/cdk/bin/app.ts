@@ -234,7 +234,7 @@ const exportLambdas = new ExportLambdaStack(app, `MngLambdaExport-${cfg.name}`, 
   serviceName: 'mng',
   ddbTable: dynamo.table,
   uploadsBucket: uploads.bucket,
-  kmsKey: uploads.key,  // ADD THIS LINE
+  kmsKey: uploads.key,  
   region,
 });
 

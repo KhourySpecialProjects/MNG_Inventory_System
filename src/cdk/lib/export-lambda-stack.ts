@@ -13,7 +13,7 @@ export interface ExportLambdaStackProps extends StackProps {
   serviceName: string;
   ddbTable: dynamodb.ITable;
   uploadsBucket: s3.IBucket;
-  kmsKey: any;  // Add KMS key
+  kmsKey: any; 
   region?: string;
 }
 
@@ -31,7 +31,7 @@ export class ExportLambdaStack extends Stack {
     const commonEnv = {
       TABLE_NAME: ddbTable.tableName,
       UPLOADS_BUCKET: uploadsBucket.bucketName,
-      KMS_KEY_ARN: kmsKey.keyArn,  // Add KMS key ARN
+      KMS_KEY_ARN: kmsKey.keyArn, 
       REGION: region,
       TEMPLATE_PATH: 'templates/2404-template.pdf',
     };

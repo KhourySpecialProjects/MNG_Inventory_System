@@ -77,7 +77,19 @@ export class S3UploadsStack extends Stack {
       sources: [
         s3deploy.Source.asset('./python', {
           exclude: ['**', '!2404-handler.py', '!inventory-handler.py'],
-        }),
+        })
+      ],
+      prune: true,
+    });
+
+    // DEPLOY TEMPLATE
+    new s3deploy.BucketDeployment(this, 'UploadTemplatePython', {
+      destinationBucket: this.bucket,
+      destinationKeyPrefix: 'template/',
+      sources: [
+        s3deploy.Source.asset('./templates', {
+          exclude: ['2404-template.pdf'],
+        })
       ],
       prune: true,
     });
