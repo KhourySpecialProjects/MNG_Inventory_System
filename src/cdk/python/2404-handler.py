@@ -249,8 +249,7 @@ def to_pdf_values(payload):
     if remarks_list is None:
         r_legacy = payload.get("remarks")
         if r_legacy is None:
-            # Try both old and new field names
-            r_legacy = payload.get("reports") or payload.get("damageReports")
+            r_legacy = payload.get("reports") 
         if isinstance(r_legacy, list):
             remarks_list = r_legacy
         elif isinstance(r_legacy, str):
@@ -258,7 +257,7 @@ def to_pdf_values(payload):
         else:
             remarks_list = ["N/A"]
 
-    org = payload.get("organization") or payload.get("description")
+    org = payload.get("teamName") 
     if isinstance(org, str):
         org = org.strip()
     if not org:

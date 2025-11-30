@@ -1,0 +1,16 @@
+FE,UIC,Desc,End Item NIIN,LIN,Desc
+FE123,UIC999,Alpha Team,NIIN-1,LIN-1,Vehicle Tool Kit
+
+Name,LV,Description,Auth Qty,OH Qty
+Toolkit Alpha,A,Main toolkit for vehicle A,1,1
+Wrench Set,B,Full wrench assortment,1,1
+Small Wrench,C,Small size wrench,2,2
+Toolkit Bravo,A,Secondary toolkit,1,1
+Hammer,B,Standard hammer,1,1
+
+FE,UIC,Desc,End Item NIIN,LIN,Desc
+FE123,UIC999,Alpha Team,NIIN-2,LIN-2,Communications Kit
+
+Name,LV,Description,Auth Qty,OH Qty
+Radio Set,A,Radio base unit,1,1
+Handset,B,Radio handset,2,1
