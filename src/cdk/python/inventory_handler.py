@@ -13,7 +13,6 @@ _ddb = None
 def s3():
     global _s3
     if _s3 is None:
-        # keep his s3 v4 config for presigned urls
         from botocore.config import Config
         _s3 = boto3.client("s3", config=Config(signature_version='s3v4'))
     return _s3
@@ -111,7 +110,6 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     merged_overrides = {
         "fe": meta.get("fe"),
         "uic": meta.get("uic"),
-        # prefer explicit teamName if you stored it, otherwise fall back to name
         "teamName": meta.get("teamName") or meta.get("name"),
     }
 
@@ -189,10 +187,10 @@ def render_inventory_csv(data):
     first = True
     for (end_niin, end_lin), kit_items in groups.items():
         if not first:
-            writer.writerow([])  # blank line between groups
+            writer.writerow([])  
         first = False
 
-        # Determine end item description for this group
+        
         end_desc = None
         for itm in kit_items:
             d = itm.get(END_DESC_KEY)
@@ -200,7 +198,6 @@ def render_inventory_csv(data):
                 end_desc = d
                 break
         if not end_desc:
-            # fall back to overrides.actualName if provided
             end_desc = overrides.get("actualName") or ""
 
         # Group header
@@ -216,10 +213,10 @@ def render_inventory_csv(data):
 
         writer.writerow([])
 
-        # Table header – NSN column right after Name
+       
         writer.writerow(["Name", "Material", "LV", "Description", "Auth Qty", "OH Qty"])
 
-        # Compute LV by root
+    
         lv_by_id, roots, children = _compute_lv_for_group(kit_items)
 
         def walk(node, depth):
