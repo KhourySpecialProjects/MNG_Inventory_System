@@ -13,7 +13,7 @@ _ddb = None
 def s3():
     global _s3
     if _s3 is None:
-     
+        # keep his s3 v4 config for presigned urls
         from botocore.config import Config
         _s3 = boto3.client("s3", config=Config(signature_version='s3v4'))
     return _s3
@@ -72,7 +72,8 @@ ITEM_ID_KEY = "itemId"
 PARENT_KEY = "parent"
 END_NIIN_KEY = "endItemNiin"
 END_LIN_KEY = "liin"
-END_DESC_KEY = "endItemDesc"
+END_DESC_KEY = "description"
+NSN_KEY = "nsn"  
 
 
 def fetch_inventory_from_dynamo(team_id, overrides):
@@ -81,7 +82,6 @@ def fetch_inventory_from_dynamo(team_id, overrides):
 
     deserializer = TypeDeserializer()
 
- 
     resp = ddb().query(
         TableName=TABLE_NAME,
         KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
@@ -111,7 +111,8 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     merged_overrides = {
         "fe": meta.get("fe"),
         "uic": meta.get("uic"),
-        "teamName": meta.get("description") or meta.get("name"),
+        # prefer explicit teamName if you stored it, otherwise fall back to name
+        "teamName": meta.get("teamName") or meta.get("name"),
     }
 
     if isinstance(overrides, dict):
@@ -169,9 +170,10 @@ def _compute_lv_for_group(items_for_kit):
 def render_inventory_csv(data):
     """
     Divide by (endItemNiin, liin):
-      - One FE/UIC header + Name/LV table per (endItemNiin, liin).
+      - One FE/UIC header + table per (endItemNiin, liin).
       - Within each table, there may be MULTIPLE roots (kits).
       - For each root: LV A, its children B, grandchildren C, etc.
+      - Table columns: Name, Material (NSN), LV, Description, Auth Qty, OH Qty.
     """
     items = data.get("items", [])
     overrides = data.get("overrides", {})
@@ -187,10 +189,10 @@ def render_inventory_csv(data):
     first = True
     for (end_niin, end_lin), kit_items in groups.items():
         if not first:
-            writer.writerow([])  
+            writer.writerow([])  # blank line between groups
         first = False
 
-       
+        # Determine end item description for this group
         end_desc = None
         for itm in kit_items:
             d = itm.get(END_DESC_KEY)
@@ -198,9 +200,10 @@ def render_inventory_csv(data):
                 end_desc = d
                 break
         if not end_desc:
-            end_desc = overrides.get("endItemDesc") or ""
+            # fall back to overrides.actualName if provided
+            end_desc = overrides.get("actualName") or ""
 
-       
+        # Group header
         writer.writerow(["FE", "UIC", "Desc", "End Item NIIN", "LIN", "Desc"])
         writer.writerow([
             overrides.get("fe") or "",
@@ -213,10 +216,10 @@ def render_inventory_csv(data):
 
         writer.writerow([])
 
-        # Table header
-        writer.writerow(["Name", "LV", "Description", "Auth Qty", "OH Qty"])
+        # Table header – NSN column right after Name
+        writer.writerow(["Name", "Material", "LV", "Description", "Auth Qty", "OH Qty"])
 
-        # Compute LV by root 
+        # Compute LV by root
         lv_by_id, roots, children = _compute_lv_for_group(kit_items)
 
         def walk(node, depth):
@@ -224,13 +227,14 @@ def render_inventory_csv(data):
             lv = lv_by_id.get(nid) or chr(ord("A") + depth)
 
             name = node.get("name") or ""
+            nsn = node.get(NSN_KEY) or ""  
             desc = node.get("description") or ""
             auth_qty = node.get("authQuantity") or 0
             oh_qty = node.get("ohQuantity") if node.get("ohQuantity") is not None else auth_qty
 
-            writer.writerow([name, lv, desc, auth_qty, oh_qty])
+            writer.writerow([name, nsn, lv, desc, auth_qty, oh_qty])
 
-            kids = sorted(children.get(nid, []), key=lambda x: (x.get("name") or ""))
+            kids = sorted(children.get(nid, []), key=lambda x: (x.get("name") or ""))  
             for c in kids:
                 walk(c, depth + 1)
 
@@ -247,7 +251,7 @@ def render_inventory_csv(data):
 def lambda_handler(event, context):
     method = _get_http_method(event)
 
-    # direct Lambda invocation 
+   
     if not method:
         method = "POST"
 
@@ -292,7 +296,6 @@ def lambda_handler(event, context):
         if not UPLOADS_BUCKET:
             return _resp(500, {"error": "UPLOADS_BUCKET env var is not set"})
         try:
-            # KMS support 
             kms_key_arn = os.environ.get('KMS_KEY_ARN', '').strip()
 
             put_params = {
@@ -307,8 +310,7 @@ def lambda_handler(event, context):
                 put_params['SSEKMSKeyId'] = kms_key_arn
 
             s3().put_object(**put_params)
-
-            # Presigned URL 
+          
             url = s3().generate_presigned_url(
                 'get_object',
                 Params={'Bucket': UPLOADS_BUCKET, 'Key': key},
@@ -332,7 +334,7 @@ def lambda_handler(event, context):
         b64,
         headers={
             "Content-Type": "text/csv",
-            "Content-Disposition": f'attachment; filename="{filename}"'
+            "Content-Disposition": f'attachment; filename=\"{filename}\"'
         },
         is_b64=True
     )

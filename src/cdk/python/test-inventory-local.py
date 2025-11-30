@@ -1,7 +1,4 @@
-
-
-from inventory_handler import render_inventory_csv   
-
+from inventory_handler import render_inventory_csv
 
 sample_data = {
     "overrides": {
@@ -11,7 +8,8 @@ sample_data = {
         "endItemDesc": "Default End Item Description",
     },
     "items": [
-        
+        # --- Group 1: NIIN-1 / LIN-1 ---
+
         # Root 1
         {
             "itemId": "KIT1",
@@ -20,6 +18,7 @@ sample_data = {
             "liin": "LIN-1",
             "endItemDesc": "Vehicle Tool Kit",
             "name": "Toolkit Alpha",
+            "nsn": "NSN-0001",
             "description": "Main toolkit for vehicle A",
             "authQuantity": 1,
             "ohQuantity": 1,
@@ -31,6 +30,7 @@ sample_data = {
             "endItemNiin": "NIIN-1",
             "liin": "LIN-1",
             "name": "Wrench Set",
+            "nsn": "NSN-0002",
             "description": "Full wrench assortment",
             "authQuantity": 1,
             "ohQuantity": 1,
@@ -42,34 +42,38 @@ sample_data = {
             "endItemNiin": "NIIN-1",
             "liin": "LIN-1",
             "name": "Small Wrench",
+            "nsn": "NSN-0003",
             "description": "Small size wrench",
             "authQuantity": 2,
             "ohQuantity": 2,
         },
-       
+        # Root 2 in same NIIN/LIN group
         {
             "itemId": "KIT2",
             "parent": None,
             "endItemNiin": "NIIN-1",
             "liin": "LIN-1",
             "name": "Toolkit Bravo",
+            "nsn": "NSN-0004",
             "description": "Secondary toolkit",
             "authQuantity": 1,
             "ohQuantity": 1,
         },
-       
+        # Child of KIT2
         {
             "itemId": "ITEM2",
             "parent": "KIT2",
             "endItemNiin": "NIIN-1",
             "liin": "LIN-1",
             "name": "Hammer",
+            "nsn": "NSN-0005",
             "description": "Standard hammer",
             "authQuantity": 1,
             "ohQuantity": 1,
         },
 
-       
+        # --- Group 2: NIIN-2 / LIN-2 ---
+
         {
             "itemId": "KIT3",
             "parent": None,
@@ -77,6 +81,7 @@ sample_data = {
             "liin": "LIN-2",
             "endItemDesc": "Communications Kit",
             "name": "Radio Set",
+            "nsn": "NSN-0100",
             "description": "Radio base unit",
             "authQuantity": 1,
             "ohQuantity": 1,
@@ -87,6 +92,7 @@ sample_data = {
             "endItemNiin": "NIIN-2",
             "liin": "LIN-2",
             "name": "Handset",
+            "nsn": "NSN-0101",
             "description": "Radio handset",
             "authQuantity": 2,
             "ohQuantity": 1,
