@@ -104,17 +104,17 @@ export default function ItemListComponent({
           onClick={() => handleAddItemClick(parentId)}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '64px 1fr', sm: '96px 1fr' },
-            gap: { xs: 1.5, sm: 2 },
+            gridTemplateColumns: { xs: '80px 1fr', sm: '96px 1fr' },
+            gap: 2,
             alignItems: 'center',
-            p: { xs: 1.5, sm: 2 },
-            ml: { xs: level * 1.5, sm: level * 3 },
+            p: 2,
+            ml: level * 3,
             backgroundColor: alpha(theme.palette.primary.main, 0.02),
             border: '2px dashed',
             borderColor: alpha(theme.palette.primary.main, 0.3),
             borderRadius: 2,
             transition: 'all 0.2s ease',
-            minHeight: { xs: 80, sm: 112 },
+            minHeight: { xs: 96, sm: 112 },
             cursor: 'pointer',
             '&:hover': {
               backgroundColor: alpha(theme.palette.primary.main, 0.08),
@@ -126,8 +126,8 @@ export default function ItemListComponent({
           {/* Icon */}
           <Box
             sx={{
-              width: { xs: 64, sm: 96 },
-              height: { xs: 64, sm: 96 },
+              width: { xs: 80, sm: 96 },
+              height: { xs: 80, sm: 96 },
               borderRadius: 1.5,
               display: 'flex',
               alignItems: 'center',
@@ -138,7 +138,7 @@ export default function ItemListComponent({
           >
             <AddIcon
               sx={{
-                fontSize: { xs: 32, sm: 48 },
+                fontSize: { xs: 40, sm: 48 },
                 color: theme.palette.primary.main,
               }}
             />
@@ -150,7 +150,7 @@ export default function ItemListComponent({
               variant="body1"
               sx={{
                 fontWeight: 600,
-                fontSize: { xs: '0.95rem', sm: '1.1rem' },
+                fontSize: { xs: '1rem', sm: '1.1rem' },
                 color: theme.palette.primary.main,
               }}
             >
@@ -175,11 +175,11 @@ export default function ItemListComponent({
           onClick={(e) => handleItemClick(item.id, e)}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '64px 1fr', sm: '96px 1fr auto' },
-            gap: { xs: 1.5, sm: 2 },
+            gridTemplateColumns: { xs: '80px 1fr', sm: '96px 1fr auto' },
+            gap: 2,
             alignItems: 'flex-start',
-            p: { xs: 1.5, sm: 2 },
-            ml: { xs: level * 1.5, sm: level * 3 },
+            p: 2,
+            ml: level * 3,
             backgroundColor:
               level > 0
                 ? alpha(theme.palette.background.paper, 0.6)
@@ -190,7 +190,7 @@ export default function ItemListComponent({
             transition: 'all 0.2s ease',
             position: 'relative',
             boxShadow: 'none',
-            minHeight: { xs: 'auto', sm: 112 },
+            minHeight: { xs: 96, sm: 112 },
             ...(level > 0 && {
               borderLeft: `3px solid ${theme.palette.primary.main}`,
             }),
@@ -208,13 +208,12 @@ export default function ItemListComponent({
           {/* Image */}
           <Box
             sx={{
-              width: { xs: 64, sm: 96 },
-              height: { xs: 64, sm: 96 },
+              width: { xs: 80, sm: 96 },
+              height: { xs: 80, sm: 96 },
               borderRadius: 1.5,
               overflow: 'hidden',
               flexShrink: 0,
               boxShadow: `0 2px 8px ${alpha('#000', 0.1)}`,
-              mt: { xs: 0.5, sm: 0 },
             }}
           >
             <CardMedia
@@ -231,23 +230,16 @@ export default function ItemListComponent({
             />
           </Box>
 
-          {/* Content - Mobile: 2 columns, Desktop: 3 columns */}
-          <Box
-            sx={{
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0.5,
-              gridColumn: { xs: 'span 1', sm: 'span 1' }
-            }}
-          >
+          {/* Content */}
+          <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Typography
               variant="body1"
               sx={{
                 fontWeight: 600,
-                fontSize: { xs: '0.95rem', sm: '1.1rem' },
+                fontSize: { xs: '1rem', sm: '1.1rem' },
                 color: theme.palette.text.primary,
                 wordBreak: 'break-word',
+                overflowWrap: 'break-word',
               }}
             >
               {item.productName}
@@ -256,9 +248,10 @@ export default function ItemListComponent({
             <Typography
               variant="body2"
               sx={{
-                fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                fontSize: { xs: '0.85rem', sm: '0.9rem' },
                 color: theme.palette.text.secondary,
                 wordBreak: 'break-word',
+                overflowWrap: 'break-word',
               }}
             >
               {item.actualName}
@@ -267,149 +260,33 @@ export default function ItemListComponent({
             <Typography
               variant="body2"
               sx={{
-                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                fontSize: { xs: '0.8rem', sm: '0.85rem' },
                 color: theme.palette.text.secondary,
                 wordBreak: 'break-word',
+                overflowWrap: 'break-word',
               }}
             >
               {item.subtitle}
             </Typography>
-
-            {/* Mobile: Show metadata below text */}
-            <Box
-              sx={{
-                display: { xs: 'flex', sm: 'none' },
-                flexDirection: 'column',
-                gap: 1,
-                mt: 1,
-              }}
-            >
-              {/* Date and Children count */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '0.75rem',
-                    color: theme.palette.text.secondary,
-                    fontWeight: 500,
-                  }}
-                >
-                  {item.date}
-                </Typography>
-
-                {isKit && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      px: 1,
-                      py: 0.25,
-                      borderRadius: 1,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                    }}
-                  >
-                    📦 {totalChildCount} {totalChildCount === 1 ? 'item' : 'items'}
-                  </Box>
-                )}
-              </Box>
-
-              {/* Badges */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.75,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 1,
-                    backgroundColor: isKit
-                      ? alpha(theme.palette.info.main, 0.1)
-                      : alpha(theme.palette.success.main, 0.1),
-                    fontSize: '0.65rem',
-                    fontWeight: 700,
-                    color: isKit ? theme.palette.info.main : theme.palette.success.main,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.3px',
-                  }}
-                >
-                  {isKit ? 'Kit' : 'Item'}
-                </Box>
-
-                {item.status && (
-                  <Box
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1,
-                      backgroundColor: statusColors.bg,
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      color: statusColors.text,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.3px',
-                    }}
-                  >
-                    {item.status}
-                  </Box>
-                )}
-
-                {isKit && (
-                  <IconButton
-                    className="expand-button"
-                    onClick={(e) => toggleExpand(item.id, e)}
-                    size="small"
-                    sx={{
-                      color: theme.palette.text.secondary,
-                      p: 0.5,
-                      '&:hover': {
-                        color: theme.palette.primary.main,
-                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                      },
-                    }}
-                  >
-                    {isExpanded ? (
-                      <ExpandLessIcon fontSize="small" />
-                    ) : (
-                      <ExpandMoreIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                )}
-              </Box>
-            </Box>
           </Box>
 
-          {/* Right side - Desktop only */}
+          {/* Right side - Date, Children count, Status & Expand button */}
           <Box
             sx={{
-              display: { xs: 'none', sm: 'flex' },
+              display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-end',
               justifyContent: 'space-between',
-              gap: 1,
               flexShrink: 0,
               height: '100%',
-              minHeight: 96,
+              gridColumn: { xs: '1 / 3', sm: '3' },
+              gridRow: { xs: '2', sm: '1' },
             }}
           >
-            {/* Top section - Date and Children count */}
+            {/* Top section - Date and Children count (desktop only) */}
             <Box
               sx={{
-                display: 'flex',
+                display: { xs: 'none', sm: 'flex' },
                 flexDirection: 'column',
                 alignItems: 'flex-end',
                 gap: 0.5,
@@ -446,24 +323,67 @@ export default function ItemListComponent({
               )}
             </Box>
 
-            {/* Bottom section - Kit/Item indicator, Status and Expand button */}
+            {/* Bottom section - All badges and button in one row */}
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
+                flexWrap: 'wrap',
+                justifyContent: 'flex-end',
+                width: '100%',
               }}
             >
+              {/* Date and item count (mobile only) - on the left */}
+              <Box
+                sx={{
+                  display: { xs: 'flex', sm: 'none' },
+                  alignItems: 'center',
+                  gap: 1,
+                  marginRight: 'auto',
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '0.75rem',
+                    color: theme.palette.text.secondary,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.date}
+                </Typography>
+
+                {isKit && (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                      color: theme.palette.primary.main,
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    📦 {totalChildCount} {totalChildCount === 1 ? 'item' : 'items'}
+                  </Box>
+                )}
+              </Box>
+
               {/* Kit/Item Indicator */}
               <Box
                 sx={{
-                  px: 1.5,
+                  px: { xs: 1, sm: 1.5 },
                   py: 0.5,
                   borderRadius: 1,
                   backgroundColor: isKit
                     ? alpha(theme.palette.info.main, 0.1)
                     : alpha(theme.palette.success.main, 0.1),
-                  fontSize: '0.7rem',
+                  fontSize: { xs: '0.65rem', sm: '0.7rem' },
                   fontWeight: 700,
                   color: isKit ? theme.palette.info.main : theme.palette.success.main,
                   textTransform: 'uppercase',
@@ -477,11 +397,11 @@ export default function ItemListComponent({
               {item.status && (
                 <Box
                   sx={{
-                    px: 1.5,
+                    px: { xs: 1, sm: 1.5 },
                     py: 0.5,
                     borderRadius: 1,
                     backgroundColor: statusColors.bg,
-                    fontSize: '0.7rem',
+                    fontSize: { xs: '0.65rem', sm: '0.7rem' },
                     fontWeight: 700,
                     color: statusColors.text,
                     textTransform: 'uppercase',

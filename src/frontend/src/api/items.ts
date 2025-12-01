@@ -3,6 +3,27 @@ import { me } from './auth';
 
 const TRPC = '/trpc';
 
+interface Item {
+  itemId: string;
+  name: string;
+  actualName?: string;
+  description?: string;
+  imageLink?: string;
+  status?: string;
+  parent?: string | null;
+  isKit?: boolean;
+  liin?: string;
+  endItemNiin?: string;
+  nsn?: string;
+  serialNumber?: string;
+  authQuantity?: number;
+  ohQuantity?: number;
+  damageReports?: string[];
+  notes?: string;
+  createdAt?: string;
+  children?: Item[];
+}
+
 /** CREATE ITEM */
 export async function createItem(
   teamId: string,
@@ -170,17 +191,47 @@ export async function updateItem(
 export async function deleteItem(teamId: string, itemId: string) {
   const currentUser = await me();
 
-  return (
-    (await trpcFetch(`${TRPC}/deleteItem`, {
-      method: 'POST',
-      body: JSON.stringify({
-        teamId,
-        itemId,
-        userId: currentUser.userId,
-      }),
-    })) ?? {}
-  );
+  try {
+    // Fetch all items once
+    const allItemsResult = await getItems(teamId);
+
+    if (!allItemsResult.success || !allItemsResult.items) {
+      return { success: false, error: 'Failed to fetch items' };
+    }
+
+    const allItems: Item[] = allItemsResult.items;
+    const toDelete: string[] = [itemId];
+
+    // Build deletion list iteratively
+    let i = 0;
+    while (i < toDelete.length) {
+      const currentId = toDelete[i];
+      const children = allItems.filter((item: Item) => item.parent === currentId);
+      toDelete.push(...children.map((c: Item) => c.itemId));
+      i++;
+    }
+
+    // Batch delete in parallel
+    await Promise.all(
+      toDelete.map(id =>
+        trpcFetch(`${TRPC}/deleteItem`, {
+          method: 'POST',
+          body: JSON.stringify({
+            teamId,
+            itemId: id,
+            userId: currentUser.userId,
+          }),
+        })
+      )
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting item and descendants:', error);
+    return { success: false, error: 'Failed to delete item and its contents' };
+  }
 }
+
 
 /** UPLOAD IMAGE */
 export async function uploadImage(teamId: string, nsn: string, imageBase64: string) {
