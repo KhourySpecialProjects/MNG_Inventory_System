@@ -258,10 +258,6 @@ def to_pdf_values(payload):
             remarks_list = ["N/A"]
 
     org = payload.get("teamName") 
-    if isinstance(org, str):
-        org = org.strip()
-    if not org:
-        org = "N/A"
 
     nom = payload.get("nomenclature") or payload.get("actualName")
     if isinstance(nom, str):

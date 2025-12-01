@@ -71,7 +71,7 @@ ITEM_ID_KEY = "itemId"
 PARENT_KEY = "parent"
 END_NIIN_KEY = "endItemNiin"
 END_LIN_KEY = "liin"
-END_DESC_KEY = "description"
+END_DESC_KEY = "nomenclature"
 NSN_KEY = "nsn"  
 
 
@@ -110,7 +110,7 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     merged_overrides = {
         "fe": meta.get("fe"),
         "uic": meta.get("uic"),
-        "teamName": meta.get("teamName") or meta.get("name"),
+        "teamName": meta.get("teamName"),
     }
 
     if isinstance(overrides, dict):
@@ -198,14 +198,14 @@ def render_inventory_csv(data):
                 end_desc = d
                 break
         if not end_desc:
-            end_desc = overrides.get("actualName") or ""
+            end_desc = overrides.get("actualName") or overrides.get("nomenclature") or ""
 
         # Group header
         writer.writerow(["FE", "UIC", "Desc", "End Item NIIN", "LIN", "Desc"])
         writer.writerow([
             overrides.get("fe") or "",
             overrides.get("uic") or "",
-            overrides.get("teamName") or "",
+            overrides.get("teamName"),
             end_niin or "",
             end_lin or "",
             end_desc or ""
