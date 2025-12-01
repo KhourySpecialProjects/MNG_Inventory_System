@@ -3,6 +3,27 @@ import { me } from './auth';
 
 const TRPC = '/trpc';
 
+interface Item {
+  itemId: string;
+  name: string;
+  actualName?: string;
+  description?: string;
+  imageLink?: string;
+  status?: string;
+  parent?: string | null;
+  isKit?: boolean;
+  liin?: string;
+  endItemNiin?: string;
+  nsn?: string;
+  serialNumber?: string;
+  authQuantity?: number;
+  ohQuantity?: number;
+  damageReports?: string[];
+  notes?: string;
+  createdAt?: string;
+  children?: Item[];
+}
+
 /** CREATE ITEM */
 export async function createItem(
   teamId: string,
@@ -112,40 +133,6 @@ async function getKitInfoFromParent(
   }
 }
 
-/**
- * Recursively collect all descendant IDs of an item
- */
-async function getAllDescendantIds(teamId: string, itemId: string): Promise<string[]> {
-  try {
-    // Get all items
-    const allItemsResult = await getItems(teamId);
-
-    if (!allItemsResult.success || !allItemsResult.items) {
-      return [];
-    }
-
-    const allItems = allItemsResult.items;
-    const descendantIds: string[] = [];
-
-    // Recursive function to find all children
-    const findChildren = (parentId: string) => {
-      const children = allItems.filter((item: any) => item.parent === parentId);
-
-      children.forEach((child: any) => {
-        descendantIds.push(child.itemId);
-        // Recursively find this child's children
-        findChildren(child.itemId);
-      });
-    };
-
-    findChildren(itemId);
-    return descendantIds;
-  } catch (error) {
-    console.error('Error getting descendant IDs:', error);
-    return [];
-  }
-}
-
 /** UPDATE ITEM */
 export async function updateItem(
   teamId: string,
@@ -212,15 +199,15 @@ export async function deleteItem(teamId: string, itemId: string) {
       return { success: false, error: 'Failed to fetch items' };
     }
 
-    const allItems = allItemsResult.items;
+    const allItems: Item[] = allItemsResult.items;
     const toDelete: string[] = [itemId];
 
     // Build deletion list iteratively
     let i = 0;
     while (i < toDelete.length) {
       const currentId = toDelete[i];
-      const children = allItems.filter((item: any) => item.parent === currentId);
-      toDelete.push(...children.map((c: any) => c.itemId));
+      const children = allItems.filter((item: Item) => item.parent === currentId);
+      toDelete.push(...children.map((c: Item) => c.itemId));
       i++;
     }
 
