@@ -112,6 +112,40 @@ async function getKitInfoFromParent(
   }
 }
 
+/**
+ * Recursively collect all descendant IDs of an item
+ */
+async function getAllDescendantIds(teamId: string, itemId: string): Promise<string[]> {
+  try {
+    // Get all items
+    const allItemsResult = await getItems(teamId);
+
+    if (!allItemsResult.success || !allItemsResult.items) {
+      return [];
+    }
+
+    const allItems = allItemsResult.items;
+    const descendantIds: string[] = [];
+
+    // Recursive function to find all children
+    const findChildren = (parentId: string) => {
+      const children = allItems.filter((item: any) => item.parent === parentId);
+
+      children.forEach((child: any) => {
+        descendantIds.push(child.itemId);
+        // Recursively find this child's children
+        findChildren(child.itemId);
+      });
+    };
+
+    findChildren(itemId);
+    return descendantIds;
+  } catch (error) {
+    console.error('Error getting descendant IDs:', error);
+    return [];
+  }
+}
+
 /** UPDATE ITEM */
 export async function updateItem(
   teamId: string,
@@ -166,20 +200,41 @@ export async function updateItem(
   );
 }
 
-/** DELETE ITEM */
+/** DELETE ITEM - Recursively deletes item and all descendants */
 export async function deleteItem(teamId: string, itemId: string) {
   const currentUser = await me();
 
-  return (
-    (await trpcFetch(`${TRPC}/deleteItem`, {
-      method: 'POST',
-      body: JSON.stringify({
-        teamId,
-        itemId,
-        userId: currentUser.userId,
-      }),
-    })) ?? {}
-  );
+  try {
+    // Get all descendant IDs first
+    const descendantIds = await getAllDescendantIds(teamId, itemId);
+
+    // Delete all descendants first (in reverse order to delete deepest first)
+    for (const descendantId of descendantIds.reverse()) {
+      await trpcFetch(`${TRPC}/deleteItem`, {
+        method: 'POST',
+        body: JSON.stringify({
+          teamId,
+          itemId: descendantId,
+          userId: currentUser.userId,
+        }),
+      });
+    }
+
+    // Finally delete the parent item itself
+    return (
+      (await trpcFetch(`${TRPC}/deleteItem`, {
+        method: 'POST',
+        body: JSON.stringify({
+          teamId,
+          itemId,
+          userId: currentUser.userId,
+        }),
+      })) ?? {}
+    );
+  } catch (error) {
+    console.error('Error deleting item and descendants:', error);
+    return { success: false, error: 'Failed to delete item and its contents' };
+  }
 }
 
 /** UPLOAD IMAGE */
