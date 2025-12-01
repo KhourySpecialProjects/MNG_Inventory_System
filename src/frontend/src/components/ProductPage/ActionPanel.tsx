@@ -122,8 +122,8 @@ export default function ActionPanel({
       }
     }
 
-    // Items must have a parent in create mode
-    if (isCreateMode && !editedProduct.isKit && !editedProduct.parent) {
+    // Items must explicitly select either a kit or "No Kit" in create mode
+    if (isCreateMode && !editedProduct.isKit && editedProduct.parent === undefined) {
       newErrors.parent = true;
     }
 
@@ -177,8 +177,6 @@ export default function ActionPanel({
         `Item-${editedProduct.serialNumber || 'Unknown'}`;
 
       if (isCreateMode) {
-        // For kits: use endItemNiin as NSN, use liin as serialNumber
-        // For items: use nsn and serialNumber as normal
         const res = await createItem(
           teamId,
           nameValue,
@@ -187,12 +185,12 @@ export default function ActionPanel({
           editedProduct.description || '',
           editedProduct.parent || null,
           editedProduct.isKit || false,
-          editedProduct.isKit ? editedProduct.endItemNiin || '' : editedProduct.nsn || '',
-          editedProduct.isKit ? editedProduct.liin || '' : editedProduct.serialNumber || '',
+          editedProduct.isKit ? '' : editedProduct.nsn || '', // Empty for kits, NSN for items
+          editedProduct.isKit ? '' : editedProduct.serialNumber || '', // Empty for kits, serial for items
           editedProduct.isKit ? 0 : parseInt(editedProduct.authQuantity) || 1,
           editedProduct.isKit ? 0 : parseInt(editedProduct.ohQuantity) || 1,
-          editedProduct.isKit ? editedProduct.liin || '' : '',
-          editedProduct.isKit ? editedProduct.endItemNiin || '' : '',
+          editedProduct.isKit ? editedProduct.liin || '' : '', // LIIN only for kits
+          editedProduct.isKit ? editedProduct.endItemNiin || '' : '', // End Item NIIN only for kits
         );
 
         if (res.success) {
