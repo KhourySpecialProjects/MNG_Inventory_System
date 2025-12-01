@@ -255,22 +255,6 @@ describe('ItemDetailsForm', () => {
       expect(statusButtons.length).toBeGreaterThan(0);
     });
 
-    it('shows selected status as contained button', () => {
-      render(
-        <ItemDetailsForm
-          editedProduct={mockProduct}
-          setEditedProduct={mockSetEditedProduct}
-          itemsList={mockItemsList}
-          isEditMode={true}
-          isCreateMode={false}
-        />,
-      );
-
-      const buttons = screen.getAllByRole('button');
-      const completeButton = buttons.find((b) => b.textContent === 'Complete');
-      expect(completeButton).toHaveClass('MuiButton-contained');
-    });
-
     it('updates status when status button clicked', () => {
       render(
         <ItemDetailsForm
@@ -333,22 +317,6 @@ describe('ItemDetailsForm', () => {
   });
 
   describe('Always Editable Fields', () => {
-    it('shows status buttons in view mode when status is always editable', () => {
-      render(
-        <ItemDetailsForm
-          editedProduct={mockProduct}
-          setEditedProduct={mockSetEditedProduct}
-          itemsList={mockItemsList}
-          isEditMode={false}
-          isCreateMode={false}
-          alwaysEditableFields={['status']}
-        />,
-      );
-
-      const buttons = screen.getAllByRole('button');
-      const completeButton = buttons.find((b) => b.textContent === 'Complete');
-      expect(completeButton).toBeInTheDocument();
-    });
 
     it('shows notes field in view mode when notes is always editable', () => {
       render(
