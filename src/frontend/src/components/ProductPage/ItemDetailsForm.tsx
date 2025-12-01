@@ -87,9 +87,9 @@ export default function ItemDetailsForm({
 
   const statuses = [
     { value: 'To Review', label: 'To Review', icon: <PendingIcon />, color: '#9e9e9e' },
-    { value: 'Completed', label: 'Complete', icon: <CheckCircleIcon />, color: '#4caf50' },
+    { value: 'Completed', label: 'Completed', icon: <CheckCircleIcon />, color: '#4caf50' },
     { value: 'Damaged', label: 'Damaged', icon: <ReportProblemIcon />, color: '#f44336' },
-    { value: 'Shortages', label: 'Shortage', icon: <WarningIcon />, color: '#ff9800' },
+    { value: 'Shortages', label: 'Shortages', icon: <WarningIcon />, color: '#ff9800' },
   ];
 
   // React.useEffect(() => {

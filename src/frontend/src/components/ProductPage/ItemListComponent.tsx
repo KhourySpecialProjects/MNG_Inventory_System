@@ -25,17 +25,17 @@ interface ItemListComponentProps {
 }
 
 export default function ItemListComponent({
-                                            items = [],
-                                            initialExpandedItems
-                                          }: ItemListComponentProps) {
+  items = [],
+  initialExpandedItems
+}: ItemListComponentProps) {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
+
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(
     initialExpandedItems || new Set()
   );
 
-  // Update expanded items when initialExpandedItems changes
   useEffect(() => {
     if (initialExpandedItems) {
       setExpandedItems(initialExpandedItems);
@@ -52,19 +52,44 @@ export default function ItemListComponent({
     );
   }
 
-  // Recursively count all nested children (including all descendants)
+  // Count all nested children
   const getTotalChildCount = (item: ItemListItem): number => {
-    if (!item.children || item.children.length === 0) {
-      return 0;
-    }
-
+    if (!item.children || item.children.length === 0) return 0;
     let count = 0;
     item.children.forEach((child) => {
-      count += 1; // Count the child itself
-      count += getTotalChildCount(child); // Count the child's descendants
+      count += 1;
+      count += getTotalChildCount(child);
     });
-
     return count;
+  };
+
+  const getAllDescendantStatuses = (item: ItemListItem): string[] => {
+    let res: string[] = [];
+    if (!item.children) return res;
+
+    for (const child of item.children) {
+      if (!child.isKit && child.status) {
+        res.push(child.status.toLowerCase());
+      }
+      res = res.concat(getAllDescendantStatuses(child));
+    }
+
+    return res;
+  };
+
+  const getKitStatus = (item: ItemListItem): string | undefined => {
+    if (!item.isKit) return undefined;
+
+    const statuses = getAllDescendantStatuses(item);
+    if (statuses.length === 0) return undefined;
+
+    const allSame = statuses.every((s) => s === statuses[0]);
+    return allSame ? statuses[0] : undefined;
+  };
+
+  const getEffectiveStatus = (item: ItemListItem): string | undefined => {
+    if (item.isKit) return getKitStatus(item);
+    return item.status?.toLowerCase();
   };
 
   const getStatusColor = (status?: string) => {
@@ -92,82 +117,77 @@ export default function ItemListComponent({
   };
 
   const handleAddItemClick = (parentId: string | number) => {
-    navigate(`/teams/${teamId}/items/new`, {
-      state: { parentId: parentId },
-    });
+    navigate(`/teams/${teamId}/items/new`, { state: { parentId } });
   };
 
-  const renderAddItemButton = (parentId: string | number, level: number) => {
-    return (
-      <Box sx={{ mb: 1 }}>
-        <Card
-          onClick={() => handleAddItemClick(parentId)}
+  const renderAddItemButton = (parentId: string | number, level: number) => (
+    <Box sx={{ mb: 1 }}>
+      <Card
+        onClick={() => handleAddItemClick(parentId)}
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '80px 1fr', sm: '96px 1fr' },
+          gap: 2,
+          alignItems: 'center',
+          p: 2,
+          ml: level * 3,
+          backgroundColor: alpha(theme.palette.primary.main, 0.02),
+          border: '2px dashed',
+          borderColor: alpha(theme.palette.primary.main, 0.3),
+          borderRadius: 2,
+          transition: 'all 0.2s ease',
+          minHeight: { xs: 96, sm: 112 },
+          cursor: 'pointer',
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            borderColor: theme.palette.primary.main,
+            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`
+          }
+        }}
+      >
+        <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '80px 1fr', sm: '96px 1fr' },
-            gap: 2,
+            width: { xs: 80, sm: 96 },
+            height: { xs: 80, sm: 96 },
+            borderRadius: 1.5,
+            display: 'flex',
             alignItems: 'center',
-            p: 2,
-            ml: level * 3,
-            backgroundColor: alpha(theme.palette.primary.main, 0.02),
-            border: '2px dashed',
-            borderColor: alpha(theme.palette.primary.main, 0.3),
-            borderRadius: 2,
-            transition: 'all 0.2s ease',
-            minHeight: { xs: 96, sm: 112 },
-            cursor: 'pointer',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.primary.main, 0.08),
-              borderColor: theme.palette.primary.main,
-              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
-            },
+            justifyContent: 'center',
+            backgroundColor: alpha(theme.palette.primary.main, 0.1),
+            border: `2px dashed ${alpha(theme.palette.primary.main, 0.3)}`
           }}
         >
-          {/* Icon */}
-          <Box
+          <AddIcon
             sx={{
-              width: { xs: 80, sm: 96 },
-              height: { xs: 80, sm: 96 },
-              borderRadius: 1.5,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: alpha(theme.palette.primary.main, 0.1),
-              border: `2px dashed ${alpha(theme.palette.primary.main, 0.3)}`,
+              fontSize: { xs: 40, sm: 48 },
+              color: theme.palette.primary.main
             }}
-          >
-            <AddIcon
-              sx={{
-                fontSize: { xs: 40, sm: 48 },
-                color: theme.palette.primary.main,
-              }}
-            />
-          </Box>
+          />
+        </Box>
 
-          {/* Content */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography
-              variant="body1"
-              sx={{
-                fontWeight: 600,
-                fontSize: { xs: '1rem', sm: '1.1rem' },
-                color: theme.palette.primary.main,
-              }}
-            >
-              Add New Item
-            </Typography>
-          </Box>
-        </Card>
-      </Box>
-    );
-  };
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: '1rem', sm: '1.1rem' },
+            color: theme.palette.primary.main
+          }}
+        >
+          Add New Item
+        </Typography>
+      </Card>
+    </Box>
+  );
 
   const renderItem = (item: ItemListItem, level = 0) => {
     const hasChildren = item.children && item.children.length > 0;
-    const totalChildCount = getTotalChildCount(item);
     const isExpanded = expandedItems.has(item.id);
-    const statusColors = getStatusColor(item.status);
     const isKit = item.isKit;
+
+    const totalChildCount = getTotalChildCount(item);
+
+    const shownStatus = getEffectiveStatus(item);
+    const statusColors = getStatusColor(shownStatus);
 
     return (
       <Box key={item.id} sx={{ mb: 1 }}>
@@ -184,15 +204,14 @@ export default function ItemListComponent({
               level > 0
                 ? alpha(theme.palette.background.paper, 0.6)
                 : theme.palette.background.paper,
-            border: '1px solid',
-            borderColor: 'transparent',
+            border: '1px solid transparent',
             borderRadius: 2,
             transition: 'all 0.2s ease',
             position: 'relative',
             boxShadow: 'none',
             minHeight: { xs: 96, sm: 112 },
             ...(level > 0 && {
-              borderLeft: `3px solid ${theme.palette.primary.main}`,
+              borderLeft: `3px solid ${theme.palette.primary.main}`
             }),
             '&:hover': {
               backgroundColor: alpha(theme.palette.primary.main, 0.04),
@@ -200,12 +219,12 @@ export default function ItemListComponent({
               boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.1)}`,
               cursor: 'pointer',
               '& .item-image': {
-                transform: 'scale(1.05)',
-              },
-            },
+                transform: 'scale(1.05)'
+              }
+            }
           }}
         >
-          {/* Image */}
+          {/* IMAGE */}
           <Box
             sx={{
               width: { xs: 80, sm: 96 },
@@ -213,7 +232,7 @@ export default function ItemListComponent({
               borderRadius: 1.5,
               overflow: 'hidden',
               flexShrink: 0,
-              boxShadow: `0 2px 8px ${alpha('#000', 0.1)}`,
+              boxShadow: `0 2px 8px ${alpha('#000', 0.1)}`
             }}
           >
             <CardMedia
@@ -225,12 +244,12 @@ export default function ItemListComponent({
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transition: 'transform 0.2s ease',
+                transition: 'transform 0.2s ease'
               }}
             />
           </Box>
 
-          {/* Content */}
+          {/* TEXT CONTENT */}
           <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Typography
               variant="body1"
@@ -238,8 +257,7 @@ export default function ItemListComponent({
                 fontWeight: 600,
                 fontSize: { xs: '1rem', sm: '1.1rem' },
                 color: theme.palette.text.primary,
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
               }}
             >
               {item.productName}
@@ -250,8 +268,7 @@ export default function ItemListComponent({
               sx={{
                 fontSize: { xs: '0.85rem', sm: '0.9rem' },
                 color: theme.palette.text.secondary,
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
               }}
             >
               {item.actualName}
@@ -262,15 +279,14 @@ export default function ItemListComponent({
               sx={{
                 fontSize: { xs: '0.8rem', sm: '0.85rem' },
                 color: theme.palette.text.secondary,
-                wordBreak: 'break-word',
-                overflowWrap: 'break-word',
+                wordBreak: 'break-word'
               }}
             >
               {item.subtitle}
             </Typography>
           </Box>
 
-          {/* Right side - Date, Children count, Status & Expand button */}
+          {/* RIGHT SIDE BADGES / DATE / STATUS */}
           <Box
             sx={{
               display: 'flex',
@@ -280,16 +296,16 @@ export default function ItemListComponent({
               flexShrink: 0,
               height: '100%',
               gridColumn: { xs: '1 / 3', sm: '3' },
-              gridRow: { xs: '2', sm: '1' },
+              gridRow: { xs: '2', sm: '1' }
             }}
           >
-            {/* Top section - Date and Children count (desktop only) */}
+            {/* DESKTOP DATE + COUNT */}
             <Box
               sx={{
                 display: { xs: 'none', sm: 'flex' },
                 flexDirection: 'column',
                 alignItems: 'flex-end',
-                gap: 0.5,
+                gap: 0.5
               }}
             >
               <Typography
@@ -297,7 +313,7 @@ export default function ItemListComponent({
                   fontSize: '0.8rem',
                   color: theme.palette.text.secondary,
                   fontWeight: 500,
-                  whiteSpace: 'nowrap',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 {item.date}
@@ -315,7 +331,7 @@ export default function ItemListComponent({
                     backgroundColor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
                     fontSize: '0.75rem',
-                    fontWeight: 600,
+                    fontWeight: 600
                   }}
                 >
                   📦 {totalChildCount} {totalChildCount === 1 ? 'item' : 'items'}
@@ -323,7 +339,7 @@ export default function ItemListComponent({
               )}
             </Box>
 
-            {/* Bottom section - All badges and button in one row */}
+            {/* BOTTOM ROW: STATUS + KIT/ITEM LABEL + EXPAND */}
             <Box
               sx={{
                 display: 'flex',
@@ -331,16 +347,16 @@ export default function ItemListComponent({
                 gap: 1,
                 flexWrap: 'wrap',
                 justifyContent: 'flex-end',
-                width: '100%',
+                width: '100%'
               }}
             >
-              {/* Date and item count (mobile only) - on the left */}
+              {/* MOBILE DATE + ITEM COUNT */}
               <Box
                 sx={{
                   display: { xs: 'flex', sm: 'none' },
                   alignItems: 'center',
                   gap: 1,
-                  marginRight: 'auto',
+                  marginRight: 'auto'
                 }}
               >
                 <Typography
@@ -348,7 +364,7 @@ export default function ItemListComponent({
                     fontSize: '0.75rem',
                     color: theme.palette.text.secondary,
                     fontWeight: 500,
-                    whiteSpace: 'nowrap',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   {item.date}
@@ -366,7 +382,7 @@ export default function ItemListComponent({
                       backgroundColor: alpha(theme.palette.primary.main, 0.1),
                       color: theme.palette.primary.main,
                       fontSize: '0.7rem',
-                      fontWeight: 600,
+                      fontWeight: 600
                     }}
                   >
                     📦 {totalChildCount} {totalChildCount === 1 ? 'item' : 'items'}
@@ -374,7 +390,7 @@ export default function ItemListComponent({
                 )}
               </Box>
 
-              {/* Kit/Item Indicator */}
+              {/* KIT / ITEM LABEL */}
               <Box
                 sx={{
                   px: { xs: 1, sm: 1.5 },
@@ -388,13 +404,14 @@ export default function ItemListComponent({
                   color: isKit ? theme.palette.info.main : theme.palette.success.main,
                   textTransform: 'uppercase',
                   letterSpacing: '0.3px',
-                  flexShrink: 0,
+                  flexShrink: 0
                 }}
               >
                 {isKit ? 'Kit' : 'Item'}
               </Box>
 
-              {item.status && (
+              {/* STATUS BADGE */}
+              {shownStatus && (
                 <Box
                   sx={{
                     px: { xs: 1, sm: 1.5 },
@@ -406,14 +423,14 @@ export default function ItemListComponent({
                     color: statusColors.text,
                     textTransform: 'uppercase',
                     letterSpacing: '0.3px',
-                    flexShrink: 0,
+                    flexShrink: 0
                   }}
                 >
-                  {item.status}
+                  {shownStatus}
                 </Box>
               )}
 
-              {/* Show expand button for all kits, even with 0 children */}
+              {/* EXPAND BUTTON FOR KITS */}
               {isKit && (
                 <IconButton
                   className="expand-button"
@@ -424,27 +441,22 @@ export default function ItemListComponent({
                     flexShrink: 0,
                     '&:hover': {
                       color: theme.palette.primary.main,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                    },
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1)
+                    }
                   }}
                 >
-                  {isExpanded ? (
-                    <ExpandLessIcon fontSize="small" />
-                  ) : (
-                    <ExpandMoreIcon fontSize="small" />
-                  )}
+                  {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                 </IconButton>
               )}
             </Box>
           </Box>
         </Card>
 
-        {/* Show collapse for all kits, even with 0 children */}
+        {/* COLLAPSE CHILDREN */}
         {isKit && (
           <Collapse in={isExpanded} timeout="auto">
             <Box sx={{ mt: 1 }}>
               {hasChildren && item.children!.map((child) => renderItem(child, level + 1))}
-              {/* Add button for kits */}
               {renderAddItemButton(item.id, level + 1)}
             </Box>
           </Collapse>
