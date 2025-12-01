@@ -200,42 +200,51 @@ export async function updateItem(
   );
 }
 
-/** DELETE ITEM - Recursively deletes item and all descendants */
+/** DELETE ITEM */
 export async function deleteItem(teamId: string, itemId: string) {
   const currentUser = await me();
 
   try {
-    // Get all descendant IDs first
-    const descendantIds = await getAllDescendantIds(teamId, itemId);
+    // Fetch all items once
+    const allItemsResult = await getItems(teamId);
 
-    // Delete all descendants first (in reverse order to delete deepest first)
-    for (const descendantId of descendantIds.reverse()) {
-      await trpcFetch(`${TRPC}/deleteItem`, {
-        method: 'POST',
-        body: JSON.stringify({
-          teamId,
-          itemId: descendantId,
-          userId: currentUser.userId,
-        }),
-      });
+    if (!allItemsResult.success || !allItemsResult.items) {
+      return { success: false, error: 'Failed to fetch items' };
     }
 
-    // Finally delete the parent item itself
-    return (
-      (await trpcFetch(`${TRPC}/deleteItem`, {
-        method: 'POST',
-        body: JSON.stringify({
-          teamId,
-          itemId,
-          userId: currentUser.userId,
-        }),
-      })) ?? {}
+    const allItems = allItemsResult.items;
+    const toDelete: string[] = [itemId];
+
+    // Build deletion list iteratively
+    let i = 0;
+    while (i < toDelete.length) {
+      const currentId = toDelete[i];
+      const children = allItems.filter((item: any) => item.parent === currentId);
+      toDelete.push(...children.map((c: any) => c.itemId));
+      i++;
+    }
+
+    // Batch delete in parallel
+    await Promise.all(
+      toDelete.map(id =>
+        trpcFetch(`${TRPC}/deleteItem`, {
+          method: 'POST',
+          body: JSON.stringify({
+            teamId,
+            itemId: id,
+            userId: currentUser.userId,
+          }),
+        })
+      )
     );
+
+    return { success: true };
   } catch (error) {
     console.error('Error deleting item and descendants:', error);
     return { success: false, error: 'Failed to delete item and its contents' };
   }
 }
+
 
 /** UPLOAD IMAGE */
 export async function uploadImage(teamId: string, nsn: string, imageBase64: string) {
