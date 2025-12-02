@@ -49,7 +49,7 @@ export default function ItemDetailsForm({
   const [itemType, setItemType] = React.useState<'item' | 'kit'>(
     editedProduct?.isKit ? 'kit' : 'item',
   );
-  const [parentError, setParentError] = React.useState(false);
+  // const [parentError, setParentError] = React.useState(false);
 
   if (!editedProduct) {
     return null;
@@ -58,9 +58,9 @@ export default function ItemDetailsForm({
   const handleChange = (field: string, value: any) => {
     setEditedProduct({ ...editedProduct, [field]: value });
 
-    if (field === 'parent' && value) {
-      setParentError(false);
-    }
+    // if (field === 'parent' && value) {
+    //   setParentError(false);
+    // }
   };
 
   const handleItemTypeChange = (
@@ -71,9 +71,9 @@ export default function ItemDetailsForm({
       setItemType(newType);
       setEditedProduct({ ...editedProduct, isKit: newType === 'kit' });
 
-      if (newType === 'kit') {
-        setParentError(false);
-      }
+      // if (newType === 'kit') {
+      //   setParentError(false);
+      // }
     }
   };
 
@@ -87,16 +87,16 @@ export default function ItemDetailsForm({
 
   const statuses = [
     { value: 'To Review', label: 'To Review', icon: <PendingIcon />, color: '#9e9e9e' },
-    { value: 'Completed', label: 'Complete', icon: <CheckCircleIcon />, color: '#4caf50' },
+    { value: 'Completed', label: 'Completed', icon: <CheckCircleIcon />, color: '#4caf50' },
     { value: 'Damaged', label: 'Damaged', icon: <ReportProblemIcon />, color: '#f44336' },
-    { value: 'Shortages', label: 'Shortage', icon: <WarningIcon />, color: '#ff9800' },
+    { value: 'Shortages', label: 'Shortages', icon: <WarningIcon />, color: '#ff9800' },
   ];
 
-  React.useEffect(() => {
-    if (isCreateMode && itemType === 'item' && !editedProduct.parent) {
-      setParentError(true);
-    }
-  }, [isCreateMode, itemType, editedProduct.parent]);
+  // React.useEffect(() => {
+  //   if (isCreateMode && itemType === 'item' && !editedProduct.parent) {
+  //     //setParentError(true);
+  //   }
+  // }, [isCreateMode, itemType, editedProduct.parent]);
 
   // Find the parent object from itemsList if parent is just an ID
   const getParentObject = () => {
@@ -169,7 +169,7 @@ export default function ItemDetailsForm({
       <Grid container spacing={2}>
         {itemType === 'item' && (
           <Grid size={{ xs: 12, sm: 6 }}>
-            {isEditMode ? (
+            {(isEditMode || isCreateMode) ? (
               <TextField
                 label="Authorized Quantity"
                 type="text"
@@ -181,65 +181,83 @@ export default function ItemDetailsForm({
                 error={errors.authQuantity}
                 helperText={errors.authQuantity ? 'Must be a number ≥ 0' : ''}
               />
-            ) : !isCreateMode ? (
+            ) : (
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
                   Authorized Quantity
                 </Typography>
                 <Typography>{editedProduct.authQuantity || 0}</Typography>
               </Box>
-            ) : null}
-          </Grid>
-        )}
-
-        {(isEditMode || !isCreateMode) && (
-          <Grid size={{ xs: 12, sm: itemType === 'item' ? 6 : 12 }}>
-            {isEditMode ? (
-              <Autocomplete
-                options={itemsList.filter((item: any) => item.isKit !== false)}
-                getOptionLabel={(option: any) =>
-                  `${option.name || option.productName || ''} (${option.actualName || 'No name'})`
-                }
-                value={getParentObject()}
-                onChange={(_e, val) => {
-                  if (val) {
-                    const cleanParent = typeof val === 'string' ? val : val.itemId || val;
-                    handleChange('parent', cleanParent);
-                  } else {
-                    handleChange('parent', null);
-                  }
-                }}
-                isOptionEqualToValue={(o, v) => {
-                  const oId = typeof o === 'string' ? o : o.itemId;
-                  const vId = typeof v === 'string' ? v : v?.itemId;
-                  return oId === vId;
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Kit From"
-                    placeholder="Select parent kit (optional)"
-                    required={itemType === 'item' && isCreateMode}
-                    error={parentError}
-                    helperText={
-                      itemType === 'kit' ? 'Optional - leave empty if this is a top-level kit' : ''
-                    }
-                    size="small"
-                  />
-                )}
-              />
-            ) : (
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Kit From
-                </Typography>
-                <Typography sx={{ wordBreak: 'break-word' }}>
-                  {getParentObject()?.name || getParentObject()?.productName || 'N/A'}
-                </Typography>
-              </Box>
             )}
           </Grid>
         )}
+
+        <Grid size={{ xs: 12, sm: itemType === 'item' ? 6 : 12 }}>
+          {(isEditMode || isCreateMode) ? (
+            <Autocomplete
+              options={[
+                { itemId: 'NO_KIT', name: 'No Kit', actualName: '' },
+                ...itemsList.filter((item: any) => item.isKit !== false),
+              ]}
+              getOptionLabel={(option: any) => {
+                if (option.itemId === 'NO_KIT') return 'No Kit';
+                return `${option.name || option.productName || ''} (${option.actualName || 'No name'})`;
+              }}
+              value={
+                editedProduct.parent === null || editedProduct.parent === 'NO_KIT'
+                  ? { itemId: 'NO_KIT', name: 'No Kit', actualName: '' }
+                  : getParentObject()
+              }
+              onChange={(_e, val) => {
+                if (val) {
+                  if (val.itemId === 'NO_KIT') {
+                    handleChange('parent', null);
+                    //setParentError(false);
+                  } else {
+                    const cleanParent = typeof val === 'string' ? val : val.itemId || val;
+                    handleChange('parent', cleanParent);
+                  }
+                } else {
+                  handleChange('parent', null);
+                  //setParentError(false);
+                }
+              }}
+              isOptionEqualToValue={(o, v) => {
+                const oId = typeof o === 'string' ? o : o.itemId;
+                const vId = typeof v === 'string' ? v : v?.itemId;
+                return oId === vId;
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Kit From"
+                  placeholder="Select parent kit or 'No Kit'"
+                  required={itemType === 'item' && isCreateMode}
+                  error={errors.parent}
+                  helperText={
+                    itemType === 'kit'
+                      ? 'Optional - leave empty if this is a top-level kit'
+                      : itemType === 'item' && isCreateMode
+                        ? 'Required - select a kit or "No Kit" for standalone items'
+                        : ''
+                  }
+                  size="small"
+                />
+              )}
+            />
+          ) : (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Kit From
+              </Typography>
+              <Typography sx={{ wordBreak: 'break-word' }}>
+                {editedProduct.parent === null
+                  ? 'No Kit'
+                  : getParentObject()?.name || getParentObject()?.productName || 'N/A'}
+              </Typography>
+            </Box>
+          )}
+        </Grid>
       </Grid>
 
       {/* 3. Status Buttons (moved up from bottom, only shown when not in create mode) */}

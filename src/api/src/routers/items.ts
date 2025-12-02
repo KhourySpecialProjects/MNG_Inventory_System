@@ -106,14 +106,24 @@ export const itemsRouter = router({
           }),
         );
 
-        const duplicate = (existing.Items ?? []).find(
-          (it: any) => it.nsn?.trim().toLowerCase() === input.nsn.trim().toLowerCase(),
-        );
-
+        const duplicate = (existing.Items ?? []).find((it: any) => {
+          // For kits, check endItemNiin uniqueness
+          if (input.isKit && input.endItemNiin && it.isKit && it.endItemNiin) {
+            return it.endItemNiin.trim().toLowerCase() === input.endItemNiin.trim().toLowerCase();
+          }
+          // For items, check NSN uniqueness
+          if (!input.isKit && input.nsn && !it.isKit && it.nsn) {
+            return it.nsn.trim().toLowerCase() === input.nsn.trim().toLowerCase();
+          }
+          return false;
+        });
+        
         if (duplicate) {
+          const field = input.isKit ? 'End Item NIIN' : 'NSN';
+          const value = input.isKit ? input.endItemNiin : input.nsn;
           throw new TRPCError({
             code: 'CONFLICT',
-            message: `An item with NSN "${input.nsn}" already exists.`,
+            message: `A ${input.isKit ? 'kit' : 'item'} with ${field} "${value}" already exists.`,
           });
         }
 

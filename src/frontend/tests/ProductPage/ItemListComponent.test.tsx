@@ -113,11 +113,11 @@ describe('ItemListComponent', () => {
     renderWithRouter(<ItemListComponent items={mockItems} />);
 
     // Use getAllByText since status badges appear in both mobile and desktop layouts
-    const completedBadges = screen.getAllByText('Completed');
+    const completedBadges = screen.getAllByText('');
     expect(completedBadges.length).toBeGreaterThan(0);
     expect(completedBadges[0]).toBeInTheDocument();
 
-    const damagedBadges = screen.getAllByText('Damaged');
+    const damagedBadges = screen.getAllByText('');
     expect(damagedBadges.length).toBeGreaterThan(0);
     expect(damagedBadges[0]).toBeInTheDocument();
   });

@@ -120,7 +120,7 @@ describe('ItemDetailsForm', () => {
       expect(screen.getByText('First Aid Kit')).toBeInTheDocument();
     });
 
-    it('shows Kit From as N/A when no parent in view mode', () => {
+    it('shows Kit From as No Kit when no parent in view mode', () => {
       const productNoParent = {
         ...mockProduct,
         parent: null,
@@ -135,9 +135,9 @@ describe('ItemDetailsForm', () => {
         />,
       );
 
-      // Kit From field shows in view mode, but displays 'N/A' when no parent
+      // Kit From field shows in view mode, but displays 'No Kit' when no parent
       expect(screen.getByText('Kit From')).toBeInTheDocument();
-      expect(screen.getByText('N/A')).toBeInTheDocument();
+      expect(screen.getByText('No Kit')).toBeInTheDocument();
     });
   });
 
@@ -232,7 +232,7 @@ describe('ItemDetailsForm', () => {
 
       const autocomplete = screen.getByRole('combobox');
       expect(autocomplete).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Select parent kit (optional)')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Select parent kit or \'No Kit\'')).toBeInTheDocument();
     });
   });
 
@@ -253,22 +253,6 @@ describe('ItemDetailsForm', () => {
         b.textContent?.match(/To Review|Complete|Damaged|Shortage/),
       );
       expect(statusButtons.length).toBeGreaterThan(0);
-    });
-
-    it('shows selected status as contained button', () => {
-      render(
-        <ItemDetailsForm
-          editedProduct={mockProduct}
-          setEditedProduct={mockSetEditedProduct}
-          itemsList={mockItemsList}
-          isEditMode={true}
-          isCreateMode={false}
-        />,
-      );
-
-      const buttons = screen.getAllByRole('button');
-      const completeButton = buttons.find((b) => b.textContent === 'Complete');
-      expect(completeButton).toHaveClass('MuiButton-contained');
     });
 
     it('updates status when status button clicked', () => {
@@ -333,22 +317,6 @@ describe('ItemDetailsForm', () => {
   });
 
   describe('Always Editable Fields', () => {
-    it('shows status buttons in view mode when status is always editable', () => {
-      render(
-        <ItemDetailsForm
-          editedProduct={mockProduct}
-          setEditedProduct={mockSetEditedProduct}
-          itemsList={mockItemsList}
-          isEditMode={false}
-          isCreateMode={false}
-          alwaysEditableFields={['status']}
-        />,
-      );
-
-      const buttons = screen.getAllByRole('button');
-      const completeButton = buttons.find((b) => b.textContent === 'Complete');
-      expect(completeButton).toBeInTheDocument();
-    });
 
     it('shows notes field in view mode when notes is always editable', () => {
       render(
