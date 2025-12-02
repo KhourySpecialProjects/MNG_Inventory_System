@@ -247,36 +247,30 @@ def to_pdf_values(payload):
 
     remarks_list = payload.get("remarksList")
     if remarks_list is None:
-        r_legacy = payload.get("remarks")
-        if r_legacy is None:
-            # Try both old and new field names
-            r_legacy = payload.get("reports") or payload.get("damageReports")
-        if isinstance(r_legacy, list):
-            remarks_list = r_legacy
-        elif isinstance(r_legacy, str):
-            remarks_list = [s for s in r_legacy.splitlines() if s.strip()]
+        r = payload.get("reports") or payload.get("remarks")
+        if isinstance(r, list):
+            remarks_list = r
+        elif isinstance(r, str):
+            remarks_list = [s for s in r.splitlines() if s.strip()]
         else:
             remarks_list = ["N/A"]
 
-    org = payload.get("organization") or payload.get("description")
-    if isinstance(org, str):
-        org = org.strip()
-    if not org:
-        org = "N/A"
+    
+    org = payload.get("name") or "N/A"
 
-    nom = payload.get("nomenclature") or payload.get("actualName")
+   
+    nom = payload.get("nomenclature") or payload.get("actualName") or "N/A"
     if isinstance(nom, str):
         nom = nom.strip()
-    if not nom:
-        nom = "N/A"
 
     return {
-        "ORGANIZATION":       org,
-        "NOMENCLATURE":       nom,
-        "SERIAL_NUMBER":      (payload.get("serial") or payload.get("serialNumber") or "N/A"),
-        "DATE":               (payload.get("date") or datetime.now(timezone.utc).strftime("%Y-%m-%d")),
-        "REMARKS_LIST":       remarks_list,
+        "ORGANIZATION": org,
+        "NOMENCLATURE": nom,
+        "SERIAL_NUMBER": payload.get("serialNumber") or payload.get("serial") or "N/A",
+        "DATE": payload.get("date") or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "REMARKS_LIST": remarks_list,
     }
+
 
 def _get_http_method(event) -> str:
     try:
@@ -331,26 +325,33 @@ def generate_team_2404(team_id: str, save_to_s3: bool = True):
     except Exception:
         team_data = {}
 
-    org_description = team_data.get("description")
+   
+    org_name = team_data.get("name") or "N/A"
 
-    # Filter items that have status = "Damaged" (case-insensitive)
-    damaged_items = []
+  
+    items_with_reports = []
     for itm in items:
-        status = (itm.get("status") or "").lower()
-        if status == "damaged":
-            damaged_items.append(itm)
+        reports = itm.get("reports")
+        if isinstance(reports, list) and len(reports) > 0:
+            items_with_reports.append(itm)
+        elif isinstance(reports, str) and reports.strip():
+            items_with_reports.append(itm)
 
-    if not damaged_items:
-        return {"ok": True, "message": "No items with reports found for team", "teamId": team_id}
+    if not items_with_reports:
+        return {
+            "ok": True,
+            "message": "No items with reports found for team",
+            "teamId": team_id,
+        }
 
     writer = PdfWriter()
 
-    for itm in damaged_items:
+    for itm in items_with_reports:
         values_input = {
-            "description": org_description,
+            "name": org_name,
             "actualName": itm.get("actualName") or itm.get("name"),
             "serialNumber": itm.get("serialNumber") or itm.get("serial"),
-            "reports": itm.get("damageReports"),
+            "reports": itm.get("reports"),
         }
 
         values = to_pdf_values(values_input)
@@ -371,24 +372,22 @@ def generate_team_2404(team_id: str, save_to_s3: bool = True):
     filename = f"DA2404_{form_id}_{timestamp}.pdf"
     key = f"Documents/{team_id}/2404/{filename}"
 
-
     if save_to_s3:
         try:
             s3_put_pdf(UPLOADS_BUCKET, key, pdf_bytes)
-            
-            # Generate presigned URL for download (valid for 1 hour)
+
             url = s3_client().generate_presigned_url(
-                'get_object',
-                Params={'Bucket': UPLOADS_BUCKET, 'Key': key},
-                ExpiresIn=3600
+                "get_object",
+                Params={"Bucket": UPLOADS_BUCKET, "Key": key},
+                ExpiresIn=3600,
             )
-            
+
             return {
                 "ok": True,
                 "s3Key": key,
                 "bucket": UPLOADS_BUCKET,
                 "url": url,
-                "teamId": team_id
+                "teamId": team_id,
             }
         except Exception as e:
             return {"ok": False, "error": f"S3 put failed: {e}"}
@@ -402,12 +401,12 @@ def generate_team_2404(team_id: str, save_to_s3: bool = True):
         "teamId": team_id,
     }
 
+
 def lambda_handler(event, context):
     method = _get_http_method(event)
 
-    # Allow direct Lambda invocation (no httpMethod field)
+  
     if not method:
-        # Direct invocation from another Lambda - treat as POST
         pass
     elif method == "OPTIONS":
         return _resp(200, "")

@@ -1,0 +1,7 @@
+FE,UIC,Desc,End Item NIIN,LIN,Desc
+FE123,UIC999,Alpha Team,8888,1111,77777
+
+Name,Material,LV,Description,Auth Qty,OH Qty
+nnnnn,8888,A,,1,1
+Broken Widget,99999,B,This one is broken,1,0
+item,12343,B,nnnn,1,1

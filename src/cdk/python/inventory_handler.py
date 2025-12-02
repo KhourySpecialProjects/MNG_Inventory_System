@@ -9,6 +9,7 @@ TABLE_NAME = os.environ.get("TABLE_NAME", "").strip()
 _s3 = None
 _ddb = None
 
+
 def s3():
     global _s3
     if _s3 is None:
@@ -16,17 +17,20 @@ def s3():
         _s3 = boto3.client("s3", config=Config(signature_version='s3v4'))
     return _s3
 
+
 def ddb():
     global _ddb
     if _ddb is None:
         _ddb = boto3.client("dynamodb")
     return _ddb
 
+
 CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,Authorization",
     "Access-Control-Allow-Methods": "POST,OPTIONS,GET"
 }
+
 
 def _get_http_method(event):
     try:
@@ -36,6 +40,7 @@ def _get_http_method(event):
         pass
     m = event.get("httpMethod")
     return m.upper() if isinstance(m, str) else ""
+
 
 def _get_body_json(event):
     body = event.get("body") or "{}"
@@ -49,6 +54,7 @@ def _get_body_json(event):
     except:
         return {}
 
+
 def _resp(status, body=None, headers=None, is_b64=False):
     h = {"Cache-Control": "no-store", **CORS}
     if headers:
@@ -60,11 +66,14 @@ def _resp(status, body=None, headers=None, is_b64=False):
         out["isBase64Encoded"] = True
     return out
 
+
 ITEM_ID_KEY = "itemId"
 PARENT_KEY = "parent"
 END_NIIN_KEY = "endItemNiin"
 END_LIN_KEY = "liin"
-END_DESC_KEY = "endItemDesc"
+END_DESC_KEY = "actualName"
+NSN_KEY = "nsn"  
+
 
 def fetch_inventory_from_dynamo(team_id, overrides):
     if not TABLE_NAME:
@@ -74,17 +83,19 @@ def fetch_inventory_from_dynamo(team_id, overrides):
 
     resp = ddb().query(
         TableName=TABLE_NAME,
-        KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
+        KeyConditionExpression="PK = :pk",
         ExpressionAttributeValues={
             ":pk": {"S": f"TEAM#{team_id}"},
-            ":sk": {"S": "ITEM#"}
         }
     )
 
-    items = []
-    for item in resp.get("Items", []):
-        items.append({k: deserializer.deserialize(v) for k, v in item.items()})
+    raw_rows = [ {k: deserializer.deserialize(v) for k, v in item.items()}
+                 for item in resp.get("Items", []) ]
 
+   
+    items = [row for row in raw_rows if row.get("itemId")]
+
+    
     meta_resp = ddb().get_item(
         TableName=TABLE_NAME,
         Key={
@@ -101,7 +112,7 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     merged_overrides = {
         "fe": meta.get("fe"),
         "uic": meta.get("uic"),
-        "teamName": meta.get("description") or meta.get("name"),
+        "teamName": meta.get("name"),
     }
 
     if isinstance(overrides, dict):
@@ -110,9 +121,14 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     return {"items": items, "overrides": merged_overrides}
 
 
-
-
 def _compute_lv_for_group(items_for_kit):
+    """
+    Build parent/child relationships just for this (endItemNiin, liin) group.
+    LV is assigned per root subtree:
+      root depth 0 => A, child depth 1 => B, etc.
+    Multiple roots in the same group each get their own A/B/C chain,
+    and they are all printed in the same table.
+    """
     id_to_item = {}
     children = defaultdict(list)
 
@@ -150,7 +166,15 @@ def _compute_lv_for_group(items_for_kit):
 
     return lv_by_id, roots, children
 
+
 def render_inventory_csv(data):
+    """
+    Divide by (endItemNiin, liin):
+      - One FE/UIC header + table per (endItemNiin, liin).
+      - Within each table, there may be MULTIPLE roots (kits).
+      - For each root: LV A, its children B, grandchildren C, etc.
+      - Table columns: Name, Material (NSN), LV, Description, Auth Qty, OH Qty.
+    """
     items = data.get("items", [])
     overrides = data.get("overrides", {})
 
@@ -165,9 +189,10 @@ def render_inventory_csv(data):
     first = True
     for (end_niin, end_lin), kit_items in groups.items():
         if not first:
-            writer.writerow([])
+            writer.writerow([])  
         first = False
 
+        
         end_desc = None
         for itm in kit_items:
             d = itm.get(END_DESC_KEY)
@@ -175,13 +200,14 @@ def render_inventory_csv(data):
                 end_desc = d
                 break
         if not end_desc:
-            end_desc = overrides.get("endItemDesc") or ""
+            end_desc = overrides.get("actualName") or ""
 
+        # Group header
         writer.writerow(["FE", "UIC", "Desc", "End Item NIIN", "LIN", "Desc"])
         writer.writerow([
             overrides.get("fe") or "",
             overrides.get("uic") or "",
-            overrides.get("teamName") or "",
+            overrides.get("name"),
             end_niin or "",
             end_lin or "",
             end_desc or ""
@@ -189,8 +215,10 @@ def render_inventory_csv(data):
 
         writer.writerow([])
 
-        writer.writerow(["Name", "LV", "Description", "Auth Qty", "OH Qty"])
+       
+        writer.writerow(["Name", "Material", "LV", "Description", "Auth Qty", "OH Qty"])
 
+    
         lv_by_id, roots, children = _compute_lv_for_group(kit_items)
 
         def walk(node, depth):
@@ -198,16 +226,18 @@ def render_inventory_csv(data):
             lv = lv_by_id.get(nid) or chr(ord("A") + depth)
 
             name = node.get("name") or ""
+            nsn = node.get(NSN_KEY) or ""  
             desc = node.get("description") or ""
             auth_qty = node.get("authQuantity") or 0
             oh_qty = node.get("ohQuantity") if node.get("ohQuantity") is not None else auth_qty
 
-            writer.writerow([name, lv, desc, auth_qty, oh_qty])
+            writer.writerow([name, nsn, lv, desc, auth_qty, oh_qty])
 
-            kids = sorted(children.get(nid, []), key=lambda x: (x.get("name") or ""))
+            kids = sorted(children.get(nid, []), key=lambda x: (x.get("name") or ""))  
             for c in kids:
                 walk(c, depth + 1)
 
+        # Multiple roots in the same (niin, lin) group all in same table
         roots_sorted = sorted(roots, key=lambda x: (x.get("name") or ""))
         for r in roots_sorted:
             walk(r, 0)
@@ -216,14 +246,15 @@ def render_inventory_csv(data):
     buf.close()
     return out.encode("utf-8")
 
+
 def lambda_handler(event, context):
     method = _get_http_method(event)
 
-    # Allow direct Lambda invocation (no httpMethod field)
+   
     if not method:
-        # Direct invocation from another Lambda - treat as POST
-        pass
-    elif method == "OPTIONS":
+        method = "POST"
+
+    if method == "OPTIONS":
         return _resp(200, "")
     elif method == "GET":
         return _resp(200, {
@@ -264,30 +295,27 @@ def lambda_handler(event, context):
         if not UPLOADS_BUCKET:
             return _resp(500, {"error": "UPLOADS_BUCKET env var is not set"})
         try:
-            # Get KMS key ARN from environment (set by CDK)
             kms_key_arn = os.environ.get('KMS_KEY_ARN', '').strip()
-            
+
             put_params = {
                 'Bucket': UPLOADS_BUCKET,
                 'Key': key,
                 'Body': csv_bytes,
                 'ContentType': 'text/csv',
             }
-            
-            # Add KMS encryption if key is provided
+
             if kms_key_arn:
                 put_params['ServerSideEncryption'] = 'aws:kms'
                 put_params['SSEKMSKeyId'] = kms_key_arn
-            
+
             s3().put_object(**put_params)
-            
-            # Generate presigned URL for download (valid for 1 hour)
+          
             url = s3().generate_presigned_url(
                 'get_object',
                 Params={'Bucket': UPLOADS_BUCKET, 'Key': key},
                 ExpiresIn=3600
             )
-            
+
             return _resp(200, {
                 "ok": True,
                 "s3Key": key,
@@ -298,24 +326,24 @@ def lambda_handler(event, context):
         except Exception as e:
             return _resp(500, {"error": f"S3 put failed: {e}"})
 
+    # Direct download path
     b64 = base64.b64encode(csv_bytes).decode("utf-8")
     return _resp(
         200,
         b64,
         headers={
             "Content-Type": "text/csv",
-            "Content-Disposition": f'attachment; filename="{filename}"'
+            "Content-Disposition": f'attachment; filename=\"{filename}\"'
         },
         is_b64=True
     )
 
-    main = lambda_handler
+
+main = lambda_handler
+
 
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) < 2:
-      
         sys.stderr.write("teamId argument is required\n")
         sys.exit(1)
 
@@ -325,12 +353,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-       
         data = fetch_inventory_from_dynamo(team_id, {})
         csv_bytes = render_inventory_csv(data)
-        
         sys.stdout.write(csv_bytes.decode("utf-8"))
     except Exception as e:
-       
         sys.stderr.write(f"inventory export failed: {e}\n")
         sys.exit(1)
