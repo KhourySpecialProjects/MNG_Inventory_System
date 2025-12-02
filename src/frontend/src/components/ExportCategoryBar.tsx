@@ -17,12 +17,12 @@ export default function ExportCategoryBar({
   const categories = [
     {
       id: 'completed' as const,
-      label: 'Completed Inventory',
+      label: 'Reviewed Inventory',
       icon: <CheckCircleIcon />,
     },
     {
       id: 'broken' as const,
-      label: 'Broken Items',
+      label: 'Damaged Items',
       icon: <BuildIcon />,
     },
   ];

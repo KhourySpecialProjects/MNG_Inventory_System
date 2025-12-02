@@ -67,7 +67,7 @@ export default function TeamIcon({
 
     const t = (clamp - 50) / 50;
     const r = Math.round(251 + (56 - 251) * t);
-    const g = Math.round(192 + (142 - 192) * t);
+    const g = Math.round(192 + (56 - 192) * t);
     const b = Math.round(45 + (60 - 45) * t);
     return `rgb(${r}, ${g}, ${b})`;
   }
@@ -81,19 +81,18 @@ export default function TeamIcon({
     const el = containerRef.current;
     if (!el) return;
 
-  function updateScale() {
-    const el = containerRef.current;
-    if (!el) {
-      setScale(1);
-      return;
+    function updateScale() {
+      const el = containerRef.current;
+      if (!el) {
+        setScale(1);
+        return;
+      }
+
+      const { width } = el.getBoundingClientRect();
+      const target = 200;
+      const newScale = Math.min(Math.max(width / target, 0.9), 1.4);
+      setScale(newScale);
     }
-
-    const { width } = el.getBoundingClientRect();
-    const target = 200;
-    const newScale = Math.min(Math.max(width / target, 0.9), 1.4);
-    setScale(newScale);
-  }
-
 
     updateScale();
     window.addEventListener('resize', updateScale);
@@ -188,10 +187,13 @@ export default function TeamIcon({
                     sx={{
                       fontWeight: 800,
                       color: theme.palette.text.primary,
-                      maxWidth: 180,
-                      fontSize: 'clamp(12px, 1.4vw, 18px)',
+                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      width: '100%',
+                      maxWidth: { xs: '100%', sm: 180 },
                     }}
-                    noWrap
                   >
                     {name}
                   </Typography>
@@ -202,10 +204,13 @@ export default function TeamIcon({
                     variant="body2"
                     sx={{
                       color: theme.palette.text.secondary,
-                      fontSize: 'clamp(10px, 1.1vw, 15px)',
-                      maxWidth: 200,
+                      fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.9rem' },
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      width: '100%',
+                      maxWidth: { xs: '100%', sm: 200 },
                     }}
-                    noWrap
                   >
                     {description || 'No description'}
                   </Typography>
