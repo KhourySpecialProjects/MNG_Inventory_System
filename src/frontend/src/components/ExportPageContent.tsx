@@ -60,7 +60,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
   // Calculate category-specific stats
   const completedItems = items.filter((i) => {
     const status = (i.status ?? '').toLowerCase();
-    return ['completed', 'complete', 'missing', 'shortages', 'shortage'].includes(status);
+    return ['completed', 'complete', 'missing', 'shortages', 'shortage', 'damaged'].includes(status);
   });
 
   const damagedItems = items.filter((i) => {
@@ -206,7 +206,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
         <List>
           <ListItem>
             <ListItemText
-              primary={showingCompleted ? 'Completed/Missing/Shortage Items' : 'Damaged Items'}
+              primary={showingCompleted ? 'Reviewed Items' : 'Damaged Items'}
               secondary={itemCount}
               primaryTypographyProps={{ fontWeight: 600 }}
             />
