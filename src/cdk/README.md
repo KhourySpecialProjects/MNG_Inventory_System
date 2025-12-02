@@ -1,68 +1,113 @@
-# CDK
+# CDK Documentation
 
-The CDK folder defines the infrastructure that supports all runtime components of the system. It contains stack definitions, shared configuration, and cross-stack wiring logic.
+This document describes the infrastructure components defined in the CDK folder and how they support the system.
 
-### Current components
+---
 
-These are the currently implemented stacks in the CDK folder.
+## Overview
 
-- App (bin/app.ts): Entry point that initializes all stacks, resolves stage configuration, and links stack outputs.
-- AuthStack: Creates the authentication layer using Cognito resources and exposes identifiers for use by the API.
-- DynamoStack: Creates the primary DynamoDB table and all related indexes used across routers.
-- ApiStack: Creates the Lambda-based backend API and associated gateway. Injects environment variables and required permissions.
-- WebStack: Creates the CloudFront distribution and the S3 bucket that serves the frontend build artifacts. Configures proxy routes to the API.
-- S3UploadsStack: Provides the S3 bucket used exclusively for file uploads (images, documents). Exports bucket identifiers and grants write/read permissions to the API.
-- SesStack: Defines the SES identity and configuration set used for system emails such as invitations and onboarding.
-- Stage configuration (stage.ts): Central configuration resolver that sets per-environment values used across all stacks.
+The CDK folder contains all infrastructure definitions, shared configuration, and cross-stack wiring. The stacks provision the runtime environment for the API, frontend, authentication, storage, and email systems.
 
-### Usage of components
+---
 
-Below are the current CDK components and what they provide to the system. These values are consumed by the API, frontend, Lambda handlers, and automated systems through environment variables, stack outputs, and IAM role grants.
+## Stacks
 
-#### AuthStack
+### **App (bin/app.ts)**
 
-- Provides Cognito resources: user pool, app client, domain, issuer URLs.
-- Supports mandatory email verification and MFA.
-- Sets OAuth redirect URLs using stage configuration.
-- Makes user pool information available to ApiStack for authentication.
+Gets all the stacks and stage configuration, initializes the and wire them out and deploys it.
 
-#### DynamoStack
+---
 
-- Creates the main DynamoDB table (${service}-${stage}-data).
-- Defines primary keys (PK, SK).
-- Enables KMS encryption, PITR, TTL, Contributor Insights, and stage-dependent deletion rules.
-- Supplies all GSIs used by the API. Current GSIs can be found in `dynamo-stack.ts` or in
+### **AuthStack**
 
-#### ApiStack
+* Creates the Cognito User Pool, App Client, and domain.
+* Sets email verification and MFA rules.
+* Applies OAuth redirect URLs from stage config.
+* Exports user pool details to the API for authentication.
 
-- Contains the Lambda that executes all API routing logic.
-- Wraps the Lambda with API Gateway HTTP API.
-- Configures CORS using stage-derived allowed origins.
-- Receives and injects: cognito pool identifiers, AllowedOrigins, SES configuration, Dynamo table details and index names, S3 upload bucket name and encryption key, Web distribution URL
-- Grants the API Lambda: DynamoDB read/write access, S3 object read/write/delete access, SES send permissions, Cognito admin abilities used by the Auth router.
+---
 
-#### WebStack
+### **DynamoStack**
 
-- Creates the S3 bucket hosting the built frontend.
-- Creates the CloudFront distribution that serves the frontend.
-- Proxies requests such as /trpc/\*, /health, and /hello to the API.
-- Makes the API URL available to the frontend at deploy time.
+* Creates the primary table (`${service}-${stage}-data`).
+* Defines `PK` and `SK` structure.
+* Enables PITR, TTL, KMS encryption, and Contributor Insights.
+* Defines all GSIs used by the API.
 
-#### S3UploadsStack
+---
 
-- Provides the uploads bucket for all file-based storage.
-- Enables server-side encryption using a managed KMS key.
-- Exposes the bucket and key identifiers for API use.
-- Grants the API write, delete, and head-object access.
+### **ApiStack**
 
-#### SesStack
+* Hosts the Lambda running the API.
+* Wraps the Lambda in an HTTP API Gateway.
+* Injects environment variables from stage configuration.
+* Grants:
 
-- Creates the system email identity used for onboarding and notifications.
-- Optionally attaches SNS topics if a stage supports feedback logging.
-- Exports sender addresses and configuration set names.
+  * DynamoDB read/write access
+  * S3 upload bucket access
+  * SES send permissions
+  * Cognito admin rights for Auth routes
+* Provides API URL to WebStack.
 
-#### Stage configuration
+---
 
-- Computes the active stage (dev, prod, optional beta).
-- Defines removalPolicy, autoDeleteObjects, tags, Lambda sizing, and CORS policies per environment.
-- Provides stage outputs used by all stacks to ensure resources are named and configured consistently.
+## ExportLambdaStack
+
+This stack provides Lambda functions used for generating PDF and CSV export reports.
+
+### Components
+
+* **pdf2404Function**: Generates DA Form 2404 PDFs.
+* **inventoryFunction**: Generates inventory CSV exports.
+* **pdfLayer**: Shared Python layer including PDF processing dependencies.
+* **commonEnv**: Injected environment variables (Dynamo table, uploads bucket, KMS key, region, template path).
+
+### Permissions
+
+* Grants DynamoDB read access.
+* Grants S3 read/write access.
+* Adds explicit `s3:GetObject` permission for template files.
+
+### Outputs
+
+* Exposes function ARNs for external invocation.
+
+---
+
+### **WebStack**
+
+* Hosts the frontend build in an S3 bucket.
+* Creates the CloudFront distribution.
+* Proxies `/trpc/*`, `/health`, `/hello` to the API.
+* Provides the distribution URL to the frontend at build time.
+
+---
+
+### **S3UploadsStack**
+
+* Creates the uploads bucket for images/documents.
+* Enables managed KMS encryption.
+* Exports bucket + key identifiers to the API.
+* Grants read/write/delete permissions.
+
+---
+
+### **SesStack**
+
+* Sets up SES identity for all system emails.
+* Exports sender address and configuration set.
+* Optionally configures SNS topics if enabled for a stage.
+
+---
+
+## Usage Summary
+
+Each stack contributes critical resources:
+
+* **AuthStack**: authentication backend.
+* **DynamoStack**: primary database.
+* **ApiStack**: backend logic + permissions.
+* **WebStack**: frontend hosting + API proxy.
+* **S3UploadsStack**: secure file storage.
+* **SesStack**: email system.
+* **ExportLambdaStack**: sets up lambda for automation output

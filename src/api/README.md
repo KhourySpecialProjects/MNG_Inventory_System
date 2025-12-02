@@ -16,6 +16,7 @@ These are the currently implemented router pathways in the /API pathway.
 - Home: Returns top-level system summaries and simple status information.
 - Process: Handles long-running or multi-step backend processes.
 - TRPC: Helpers for intializing TPRC routers. Documentation for tPRC can be found [here](https://trpc.io/docs/server/routers).
+- Export: Fetches all the information in team DynamoDB and automates it to a CSV or PDF ouput. 
 
 ### Usage of current pathways
 
@@ -118,20 +119,3 @@ When the backend loads its configuration, the console prints a summary containin
 | Web URL      | Public-facing web client URL         |
 
 ---
-
-### Example Usage
-
-```ts
-const caller = await createCaller({ cookies });
-
-const ws = await createTeamspace({ name: 'Ops', description: '', userId });
-await uploadImage({ scope: 'item', serialNumber: '123', dataUrl });
-await caller.itemProfiles.create({ nsn: '1234-00-000-0000', name: 'Toolkit' });
-```
-
-### Testing Example
-
-```ts
-const caller = await createCallerTest();
-const { items } = await caller.itemProfiles.list({ limit: 10 });
-```

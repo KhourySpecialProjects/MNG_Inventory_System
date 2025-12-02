@@ -25,6 +25,16 @@ Bootstrap the CDK environment:
 npm run bootstrap
 ```
 
+## Prerequisites in order to deploy to prod
+
+1. Register or own a domain.
+2. Add the domain to SES for verification.
+3. Add SES TXT and DKIM CNAME records in Route 53.
+4. Configure SPF to allow SES sending.
+5. Update CDK to use a domain identity instead of an email identity.
+6. Update sender address in environment variables.
+7. Follow deployment step bellow
+
 ## Deployment
 
 These steps build and publish your infrastructure to AWS.

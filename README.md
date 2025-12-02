@@ -57,9 +57,9 @@ Once these changes are done and deployed, the infrastructure will be fully confi
 
 ## Bugs
 
-1. **Updating Database in Items**
+1. **Updating Database in Profile Fields**
    Currently, once a user updates the status of an item, it saves their userId, username, and name to that item as the last reviewed person. However, if a user then switches their name and/or username, it does not dynamically update the name and/or username to that already reviewed item. In order to fix this, we need to save only the userId to that item, and when getItems is called, the current username and name will be fetched based on that unique userId.
-2. **Change URL**
+2. **Change URL (Instructions in Deployment documentation)**
    inside `src/cdk/bin/app.ts` once you set up your domain, make sure to switch all the URL with the correct domain URL.
 
 ## Future Improvements
@@ -67,4 +67,6 @@ Once these changes are done and deployed, the infrastructure will be fully confi
 1. **Tranfer items between teams**
    Currently, items can only be created or deleted within a specific team. If a user manages multiple teams and needs to move an item from one team to another, they must manually delete it from the original team and recreate it in the new one. Implementing a dedicated item transfer feature would streamline this process and improve usability.
 2. **Include E2E Testing**
-3. 
+   For security fix the E2E testing
+3. **OPTIONAL: Make UI better**
+   Inlcude animations and make some components more consistent
