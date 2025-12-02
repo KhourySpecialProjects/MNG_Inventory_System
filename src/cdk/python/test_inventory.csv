@@ -1,16 +1,7 @@
 FE,UIC,Desc,End Item NIIN,LIN,Desc
-FE123,UIC999,Alpha Team,NIIN-1,LIN-1,Main toolkit for vehicle A
+FE123,UIC999,Alpha Team,8888,1111,77777
 
 Name,Material,LV,Description,Auth Qty,OH Qty
-Toolkit Alpha,NSN-0001,A,Main toolkit for vehicle A,1,1
-Wrench Set,NSN-0002,B,Full wrench assortment,1,1
-Small Wrench,NSN-0003,C,Small size wrench,2,2
-Toolkit Bravo,NSN-0004,A,Secondary toolkit,1,1
-Hammer,NSN-0005,B,Standard hammer,1,1
-
-FE,UIC,Desc,End Item NIIN,LIN,Desc
-FE123,UIC999,Alpha Team,NIIN-2,LIN-2,Radio base unit
-
-Name,Material,LV,Description,Auth Qty,OH Qty
-Radio Set,NSN-0100,A,Radio base unit,1,1
-Handset,NSN-0101,B,Radio handset,2,1
+nnnnn,8888,A,,1,1
+Broken Widget,99999,B,This one is broken,1,0
+item,12343,B,nnnn,1,1

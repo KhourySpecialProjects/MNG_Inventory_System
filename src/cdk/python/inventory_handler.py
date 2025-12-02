@@ -71,7 +71,7 @@ ITEM_ID_KEY = "itemId"
 PARENT_KEY = "parent"
 END_NIIN_KEY = "endItemNiin"
 END_LIN_KEY = "liin"
-END_DESC_KEY = "nomenclature"
+END_DESC_KEY = "actualName"
 NSN_KEY = "nsn"  
 
 
@@ -83,17 +83,19 @@ def fetch_inventory_from_dynamo(team_id, overrides):
 
     resp = ddb().query(
         TableName=TABLE_NAME,
-        KeyConditionExpression="PK = :pk AND begins_with(SK, :sk)",
+        KeyConditionExpression="PK = :pk",
         ExpressionAttributeValues={
             ":pk": {"S": f"TEAM#{team_id}"},
-            ":sk": {"S": "ITEM#"}
         }
     )
 
-    items = []
-    for item in resp.get("Items", []):
-        items.append({k: deserializer.deserialize(v) for k, v in item.items()})
+    raw_rows = [ {k: deserializer.deserialize(v) for k, v in item.items()}
+                 for item in resp.get("Items", []) ]
 
+   
+    items = [row for row in raw_rows if row.get("itemId")]
+
+    
     meta_resp = ddb().get_item(
         TableName=TABLE_NAME,
         Key={
@@ -110,7 +112,7 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     merged_overrides = {
         "fe": meta.get("fe"),
         "uic": meta.get("uic"),
-        "teamName": meta.get("teamName"),
+        "teamName": meta.get("name"),
     }
 
     if isinstance(overrides, dict):
@@ -198,14 +200,14 @@ def render_inventory_csv(data):
                 end_desc = d
                 break
         if not end_desc:
-            end_desc = overrides.get("actualName") or overrides.get("nomenclature") or ""
+            end_desc = overrides.get("actualName") or ""
 
         # Group header
         writer.writerow(["FE", "UIC", "Desc", "End Item NIIN", "LIN", "Desc"])
         writer.writerow([
             overrides.get("fe") or "",
             overrides.get("uic") or "",
-            overrides.get("teamName"),
+            overrides.get("name"),
             end_niin or "",
             end_lin or "",
             end_desc or ""
