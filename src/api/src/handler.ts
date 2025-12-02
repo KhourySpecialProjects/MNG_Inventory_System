@@ -7,7 +7,7 @@ import type {
 import { appRouter } from './routers';
 import { createLambdaContext } from './routers/trpc';
 
-// ===== CORS helpers (unchanged) =====
+// CORS helpers 
 function resolveAllowedOrigin(originHeader?: string): string {
   const allow = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')

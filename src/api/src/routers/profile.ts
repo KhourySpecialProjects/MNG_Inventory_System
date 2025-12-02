@@ -1,19 +1,25 @@
+// Profile router — handles authenticated profile fetch + profile updates
 import { z } from 'zod';
 import { router, protectedProcedure } from './trpc';
 import { TRPCError } from '@trpc/server';
 import { loadConfig } from '../process';
 import { doc } from '../aws';
-import { GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+  QueryCommand,
+} from '@aws-sdk/lib-dynamodb';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
 
-// token verification is handled by `protectedProcedure` middleware
-
+// Generate a random username base
 function randomUsername(): string {
   return 'user-' + Math.random().toString(36).substring(2, 8);
 }
 
+// Ensure username uniqueness across GSI_UsersByUsername
 async function ensureUniqueUsername(base: string): Promise<string> {
   let username = base;
   let counter = 1;
@@ -39,12 +45,14 @@ async function ensureUniqueUsername(base: string): Promise<string> {
 export const profileRouter = router({
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     const userCtx = ctx.user;
-    if (!userCtx) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No session' });
+    if (!userCtx)
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No session' });
 
     const userId = userCtx.userId;
+    console.log(`[Profile] getProfile start userId=${userId}`);
 
     try {
-      // FETCH USER RECORD
+      // Get profile record
       const userRes = await doc.send(
         new GetCommand({
           TableName: TABLE_NAME,
@@ -54,11 +62,12 @@ export const profileRouter = router({
 
       let user = userRes.Item;
 
-      // CREATE USER IF MISSING
+      // Auto-create user if missing
       if (!user) {
-        const now = new Date().toISOString();
+        console.log(`[Profile] Creating new user record userId=${userId}`);
 
-        let generated = await ensureUniqueUsername(randomUsername());
+        const now = new Date().toISOString();
+        const generated = await ensureUniqueUsername(randomUsername());
 
         user = {
           PK: `USER#${userId}`,
@@ -79,9 +88,11 @@ export const profileRouter = router({
             Item: user,
           }),
         );
+
+        console.log(`[DynamoDB] Created USER#${userId}`);
       }
 
-      // TEAM LOOKUP
+      // Lookup team from GSI_UserTeams
       const teamRes = await doc.send(
         new QueryCommand({
           TableName: TABLE_NAME,
@@ -95,6 +106,10 @@ export const profileRouter = router({
       const teamItem = teamRes.Items?.[0];
       const teamName = teamItem?.teamName ?? 'No Team Assigned';
 
+      console.log(
+        `[Profile] Returning profile userId=${userId} username=${user.username} team=${teamName}`,
+      );
+
       return {
         authenticated: true,
         userId,
@@ -105,7 +120,10 @@ export const profileRouter = router({
       };
     } catch (err) {
       console.error('❌ getProfile error:', err);
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch profile' });
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to fetch profile',
+      });
     }
   }),
 
@@ -121,9 +139,17 @@ export const profileRouter = router({
     .mutation(async ({ input, ctx }) => {
       const callerId = ctx.user?.userId;
       if (!callerId)
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Missing user in context' });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Missing user in context',
+        });
       if (callerId !== input.userId)
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot update another user' });
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot update another user',
+        });
+
+      console.log(`[Profile] updateProfile start userId=${input.userId}`);
 
       try {
         const existing = await doc.send(
@@ -133,13 +159,16 @@ export const profileRouter = router({
           }),
         );
 
-        if (!existing.Item) return { success: false, message: 'User not found' };
+        if (!existing.Item) {
+          console.log(`[Profile] updateProfile user not found userId=${input.userId}`);
+          return { success: false, message: 'User not found' };
+        }
 
         const updates: string[] = [];
         const vars: Record<string, any> = {};
         const names: Record<string, string> = {};
 
-        // USERNAME UPDATE
+        // Username change
         if (
           input.username &&
           input.username.trim() &&
@@ -150,26 +179,32 @@ export const profileRouter = router({
           updates.push('#un = :username');
           names['#un'] = 'username';
           vars[':username'] = unique;
+          console.log(`[Profile] username updated -> ${unique}`);
         }
 
-        // NAME UPDATE (independent)
+        // Name change
         if (input.name && input.name.trim() && input.name.trim() !== existing.Item.name) {
           updates.push('#nm = :name');
           names['#nm'] = 'name';
           vars[':name'] = input.name.trim();
+          console.log(`[Profile] name updated -> ${input.name.trim()}`);
         }
 
-        // ROLE UPDATE
+        // Role change
         if (input.role && input.role.trim() && input.role !== existing.Item.role) {
           updates.push('#rl = :role');
           names['#rl'] = 'role';
           vars[':role'] = input.role.trim();
+          console.log(`[Profile] role updated -> ${input.role.trim()}`);
         }
 
         // Nothing to update
-        if (updates.length === 0) return { success: true, message: 'No changes' };
+        if (updates.length === 0) {
+          console.log('[Profile] No changes to update');
+          return { success: true, message: 'No changes' };
+        }
 
-        // Always update timestamp
+        // Always update updatedAt
         updates.push('updatedAt = :updatedAt');
         vars[':updatedAt'] = new Date().toISOString();
 
@@ -178,15 +213,20 @@ export const profileRouter = router({
             TableName: TABLE_NAME,
             Key: { PK: `USER#${input.userId}`, SK: 'METADATA' },
             UpdateExpression: `SET ${updates.join(', ')}`,
-            ExpressionAttributeValues: vars,
             ExpressionAttributeNames: names,
+            ExpressionAttributeValues: vars,
           }),
         );
+
+        console.log(`[DynamoDB] updateProfile success userId=${input.userId}`);
 
         return { success: true, message: 'Profile updated' };
       } catch (err) {
         console.error('❌ updateProfile error:', err);
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update profile' });
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to update profile',
+        });
       }
     }),
 });

@@ -1,3 +1,4 @@
+// Handles all the team managment
 import { z } from 'zod';
 import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import {

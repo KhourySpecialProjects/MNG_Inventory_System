@@ -1,3 +1,4 @@
+// Handles inventory items
 import { z } from 'zod';
 import { router, publicProcedure, permissionedProcedure, protectedProcedure } from './trpc';
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
@@ -22,7 +23,7 @@ const KMS_KEY_ARN = config.KMS_KEY_ARN;
 if (!BUCKET_NAME) throw new Error('❌ Missing S3 bucket name');
 const s3 = new S3Client({ region: REGION });
 
-/* =========================== HELPERS =========================== */
+// creates an ID for the item
 function newId(n = 10): string {
   return crypto
     .randomBytes(n)
@@ -30,15 +31,18 @@ function newId(n = 10): string {
     .replace(/[+/=]/g, (c) => ({ '+': '-', '/': '_', '=': '' })[c] as string);
 }
 
+// getting image extension
 function getImageExtension(base64: string): string {
   const m = base64.match(/^data:image\/(\w+);base64,/);
   return m ? m[1].toLowerCase() : 'png';
 }
 
+// remove the base64 Header
 function stripBase64Header(base64: string): string {
   return base64.replace(/^data:image\/\w+;base64,/, '');
 }
 
+// geting the user username
 async function getUserName(userId: string): Promise<string | undefined> {
   const res = await doc.send(
     new GetCommand({
@@ -50,6 +54,7 @@ async function getUserName(userId: string): Promise<string | undefined> {
   return res.Item?.name;
 }
 
+// getting a presigned URL
 async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
   if (!imageKey) return undefined;
 
@@ -65,7 +70,6 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
   return url;
 }
 
-/* =========================== ROUTER =========================== */
 export const itemsRouter = router({
   /** CREATE ITEM **/
   createItem: permissionedProcedure('item.create')

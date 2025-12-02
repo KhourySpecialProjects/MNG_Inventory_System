@@ -1,3 +1,4 @@
+// Handles Logout, Signin, checking new account, inviting user to the platform
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure, permissionedProcedure } from './trpc';
@@ -39,17 +40,19 @@ const verifier = CognitoJwtVerifier.create({
   tokenUse: 'access',
 });
 
+// generates a temp password
 const generateTempPassword = (): string => {
-  const base = crypto.randomBytes(6).toString('base64');
-  const extras = 'Aa1!';
-  return (base + extras).slice(0, 16);
+  return crypto.randomBytes(12).toString('base64').replace(/[^a-zA-Z]/g, '').slice(0, 16);
 };
 
+// handles invite user
 const inviteUser = async (params: { email: string }) => {
   const { email } = params;
   const tempPassword = generateTempPassword();
+  console.log('[Cognito] Generating a temp account for user ', email);
 
   try {
+    // setting up account with temp pass
     await cognitoClient.send(
       new AdminGetUserCommand({ UserPoolId: USER_POOL_ID, Username: email }),
     );
@@ -62,7 +65,7 @@ const inviteUser = async (params: { email: string }) => {
         Permanent: false,
       }),
     );
-    console.log(`Re-invited existing user: ${email}`);
+    console.log(`[Cognito] Re-invited existing user: ${email}`);
   } catch (err: any) {
     if (err.name === 'UserNotFoundException') {
       await cognitoClient.send(
@@ -77,7 +80,7 @@ const inviteUser = async (params: { email: string }) => {
           MessageAction: MessageActionType.SUPPRESS,
         }),
       );
-      console.log(`Created new user: ${email}`);
+      console.log(`[Cognito] Created new user: ${email}`);
     } else {
       throw err;
     }
@@ -100,6 +103,7 @@ const signIn = async (params: { email: string; password: string }) => {
 };
 
 export const authRouter = router({
+  // invite user to the platform
   inviteUser: publicProcedure
     .input(
       z.object({
@@ -108,7 +112,7 @@ export const authRouter = router({
     )
     .mutation(async ({ input }) => {
       try {
-        console.log(`Inviting user via SES: ${input.email}`);
+        console.log(`[Cognito] Inviting user via SES: ${input.email}`);
 
         const result = await inviteUser({
           email: input.email,
@@ -141,7 +145,7 @@ export const authRouter = router({
         });
       }
     }),
-
+  // handle sign in
   signIn: publicProcedure
     .input(
       z.object({
@@ -151,7 +155,7 @@ export const authRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        console.log(`Sign in attempt for: ${input.email}`);
+        console.log(`[Cognito] Sign in attempt for: ${input.email}`);
 
         const result = await signIn({
           email: input.email,
@@ -250,7 +254,7 @@ export const authRouter = router({
         });
       }
     }),
-
+  // checking if the password is a temp password or not
   respondToChallenge: publicProcedure
     .input(
       z
@@ -309,7 +313,7 @@ export const authRouter = router({
 
         const result = await cognitoClient.send(command);
 
-        // More challenge?
+        // More challenges
         if (result.ChallengeName) {
           return {
             success: false,
@@ -370,9 +374,7 @@ export const authRouter = router({
         });
       }
     }),
-  // ------------------------------
-  // me()
-  // ------------------------------
+  // finding out who is the user
   me: publicProcedure.query(async ({ ctx }) => {
     const cookies = parseCookiesFromCtx(ctx);
     const accessToken = cookies[COOKIE_ACCESS];
@@ -384,12 +386,12 @@ export const authRouter = router({
       });
     }
 
-    // 1. VERIFY TOKEN
+    // verify token
     let decoded;
     try {
       decoded = await verifier.verify(accessToken);
     } catch (err: any) {
-      console.error('me() token verification error:', err);
+      console.error('[DynamoDB] me() token verification error:', err);
       throw new TRPCError({
         code: 'UNAUTHORIZED',
         message: 'Invalid or expired token',
@@ -398,7 +400,7 @@ export const authRouter = router({
 
     const userId = decoded.sub;
 
-    // 2. LOOK UP USER IN DYNAMODB
+    // look up user in dynamo
     const { doc } = await import('../aws');
     const { GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb');
     const TABLE = config.TABLE_NAME;
@@ -414,14 +416,14 @@ export const authRouter = router({
       );
       user = res.Item || null;
     } catch (err) {
-      console.error('me() DynamoDB Get error:', err);
+      console.error('[DynamoDB] me() DynamoDB Get error:', err);
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to fetch user',
       });
     }
 
-    // 3. CREATE USER IF MISSING
+    // Create user if missing
     if (!user) {
       const now = new Date().toISOString();
       const username = 'user-' + Math.random().toString(36).substring(2, 8);
@@ -432,7 +434,7 @@ export const authRouter = router({
         SK: 'METADATA',
         sub: userId,
         username,
-        name: username,
+        name: "",
         role: 'Owner',
         accountId,
         createdAt: now,
@@ -448,9 +450,9 @@ export const authRouter = router({
             Item: user,
           }),
         );
-        console.log('Created new DynamoDB user record:', user);
+        console.log('[DynamoDB] Created new DynamoDB user record:', user);
       } catch (err) {
-        console.error('FAILED TO CREATE USER RECORD:', err);
+        console.error('[DynamoDB] FAILED TO CREATE USER RECORD:', err);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Could not create user record',
@@ -458,7 +460,7 @@ export const authRouter = router({
       }
     }
 
-    // 4. RETURN PROFILE (NOW INCLUDES accountId)
+    // Return Profile
     return {
       authenticated: true,
       userId,
@@ -469,9 +471,7 @@ export const authRouter = router({
     };
   }),
 
-  // ------------------------------
-  // refresh()
-  // ------------------------------
+  // getting a new token
   refresh: publicProcedure.mutation(async ({ ctx }) => {
     try {
       const cookies = parseCookiesFromCtx(ctx);
@@ -484,7 +484,7 @@ export const authRouter = router({
         });
       }
 
-      // 1. REQUEST NEW TOKENS FROM COGNITO
+      // Request New tokens from cognito 
       const cmd = new InitiateAuthCommand({
         ClientId: USER_POOL_CLIENT_ID,
         AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
@@ -497,7 +497,7 @@ export const authRouter = router({
       try {
         result = await cognitoClient.send(cmd);
       } catch (err: any) {
-        console.error('refresh() Cognito error:', err);
+        console.error('[Cognito] refresh() Cognito error:', err);
         if (err.name === 'NotAuthorizedException') {
           throw new TRPCError({
             code: 'UNAUTHORIZED',
@@ -517,7 +517,7 @@ export const authRouter = router({
         });
       }
 
-      // 2. SET NEW COOKIES
+      // Set new cookies
       const headers = setAuthCookies(ctx.res, {
         AccessToken: result.AuthenticationResult.AccessToken ?? null,
         IdToken: result.AuthenticationResult.IdToken ?? null,
@@ -525,7 +525,7 @@ export const authRouter = router({
       });
       emitCookiesToLambda(ctx, headers);
 
-      // 3. DECODE NEW TOKENS
+      // Decode new token
       const newAccess = result.AuthenticationResult.AccessToken;
       const newId = result.AuthenticationResult.IdToken;
 
@@ -540,7 +540,7 @@ export const authRouter = router({
 
       const userId = decoded.sub;
 
-      // 4. CREATE OR FIX USER RECORD (ensureUserRecord always returns username + accountId)
+      // Create or fix user records 
       const record = await ensureUserRecord({ sub: userId });
 
       return {
@@ -560,7 +560,7 @@ export const authRouter = router({
       });
     }
   }),
-
+  // log out user
   logout: protectedProcedure.mutation(async ({ ctx }) => {
     const headers = clearAuthCookies(ctx.res);
     emitCookiesToLambda(ctx, headers);

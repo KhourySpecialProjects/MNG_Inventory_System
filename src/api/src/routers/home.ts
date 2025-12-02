@@ -95,6 +95,7 @@ export const homeRouter = router({
     .input(z.object({ teamId: z.string().min(1) }))
     .mutation(async ({ input }) => {
       try {
+        console.log('[DynamoDB] hardReset on team: ', input.teamId);
         return await hardReset(input.teamId);
       } catch (err: any) {
         console.error('❌ hardReset error:', err);
@@ -107,6 +108,7 @@ export const homeRouter = router({
     .input(z.object({ teamId: z.string().min(1) }))
     .mutation(async ({ input }) => {
       try {
+        console.log('[DynamoDB] softReset on team: ', input.teamId);
         return await softReset(input.teamId);
       } catch (err: any) {
         console.error('❌ softReset error:', err);

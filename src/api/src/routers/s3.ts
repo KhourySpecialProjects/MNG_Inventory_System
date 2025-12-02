@@ -1,5 +1,5 @@
+// S3 router – uploads profile images and fetches inventory PDFs
 import { z } from 'zod';
-import { router, publicProcedure, protectedProcedure, permissionedProcedure } from './trpc';
 import {
   S3Client,
   PutObjectCommand,
@@ -8,8 +8,8 @@ import {
   PutObjectCommandInput,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { router, protectedProcedure, permissionedProcedure } from './trpc';
 import { loadConfig } from '../process';
-import { permission } from 'process';
 
 const config = loadConfig();
 const REGION = config.REGION;
@@ -18,10 +18,11 @@ const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
 const s3 = new S3Client({ region: REGION });
 
-if (!BUCKET_NAME) throw new Error('❌ Missing S3_BUCKET_NAME');
-if (!KMS_KEY_ARN) console.warn('⚠️ No KMS key ARN provided — uploads not encrypted');
+if (!BUCKET_NAME) throw new Error('Missing S3_BUCKET_NAME');
+if (!KMS_KEY_ARN) console.warn('[S3] Warning: KMS encryption disabled');
 
 function parseDataUrl(dataUrl: string) {
+  // Parse base64 data URL into { mime, buffer }
   const match = /^data:([^;]+);base64,(.+)$/i.exec(dataUrl);
   if (!match) throw new Error('Invalid data URL format');
   const mime = match[1];
@@ -42,55 +43,61 @@ export const s3Router = router({
       const ext = mime.split('/')[1] || 'jpg';
       const key = `Profile/${input.userId}.${ext}`;
 
+      console.log(`[S3] Upload profile image start user=${input.userId} key=${key}`);
+
       const putParams: PutObjectCommandInput = {
         Bucket: BUCKET_NAME,
         Key: key,
         Body: buffer,
         ContentType: mime,
         ...(KMS_KEY_ARN
-          ? {
-              ServerSideEncryption: 'aws:kms',
-              SSEKMSKeyId: KMS_KEY_ARN,
-            }
+          ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN }
           : {}),
       };
 
-      console.log(`[S3] Uploading ${key} (${buffer.byteLength} bytes)`);
-
       await s3.send(new PutObjectCommand(putParams));
+      console.log(`[S3] Uploaded ${key} size=${buffer.byteLength}`);
 
-      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
-        expiresIn: 3600,
-      });
+      const url = await getSignedUrl(
+        s3,
+        new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
+        { expiresIn: 3600 },
+      );
 
-      console.log(`[S3] ✅ Uploaded & signed URL generated for ${key}`);
+      console.log(`[S3] Generated signed URL for ${key}`);
+
       return { key, url };
     }),
 
   getProfileImage: protectedProcedure
     .input(z.object({ userId: z.string().min(3) }))
     .query(async ({ input }) => {
+      console.log(`[S3] Fetch profile image user=${input.userId}`);
+
       const prefix = `Profile/${input.userId}`;
       const exts = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
       let foundUrl: string | null = null;
 
       for (const ext of exts) {
         const key = `${prefix}.${ext}`;
+
         try {
           await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+          console.log(`[S3] Found profile image: ${key}`);
+
           foundUrl = await getSignedUrl(
             s3,
             new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
             { expiresIn: 3600 },
           );
-          console.log(`[S3] Found profile image for ${input.userId}: ${key}`);
           break;
         } catch {
           continue;
         }
       }
 
-      if (!foundUrl) console.log(`[S3] No profile image found for ${input.userId}`);
+      if (!foundUrl) console.log(`[S3] No profile image for user=${input.userId}`);
+
       return foundUrl ? { url: foundUrl } : { url: null };
     }),
 
@@ -102,28 +109,28 @@ export const s3Router = router({
       }),
     )
     .query(async ({ input }) => {
-      // Use BUCKET_NAME directly instead of requireBucket()
-      const bucket = BUCKET_NAME;
+      console.log(
+        `[S3] getInventoryForm teamId=${input.teamId ?? 'defaultTeam'} nsn=${input.nsn}`,
+      );
 
-      // Derive teamId (fallback to default if not provided)
       const teamId = input.teamId ?? 'defaultTeam';
-
-      // S3 key
       const key = `Documents/${teamId}/inventoryForm/${input.nsn}.pdf`;
 
-      // Check if the object exists
       try {
-        await s3.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+        await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+        console.log(`[S3] Inventory form exists: ${key}`);
       } catch {
+        console.log(`[S3] Missing inventory form for nsn=${input.nsn}`);
         throw new Error(`Inventory form for NSN ${input.nsn} not found`);
       }
 
-      // Generate a presigned GET URL
       const url = await getSignedUrl(
         s3,
-        new GetObjectCommand({ Bucket: bucket, Key: key }),
-        { expiresIn: 600 }, // 10 minutes
+        new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
+        { expiresIn: 600 },
       );
+
+      console.log(`[S3] Signed URL generated for form ${key}`);
 
       return { url, key };
     }),
