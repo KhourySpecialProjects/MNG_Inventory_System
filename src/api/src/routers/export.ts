@@ -10,7 +10,7 @@ const REGION = config.REGION;
 const lambda = new LambdaClient({ region: REGION });
 const s3 = new S3Client({ region: REGION });
 
-const UPLOADS_BUCKET = process.env.UPLOADS_BUCKET;
+const UPLOADS_BUCKET = config.BUCKET_NAME;
 
 /**
  * Clears ALL previous exports under:

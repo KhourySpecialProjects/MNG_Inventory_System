@@ -46,7 +46,7 @@ export class ExportLambdaStack extends Stack {
     this.pdf2404Function = new lambda.Function(this, 'Export2404Handler', {
       functionName: `${service}-export-2404-handler-${stage}`,
       runtime: lambda.Runtime.PYTHON_3_11,
-      handler: '2404-handler.lambda_handler',
+      handler: '2404_handler.lambda_handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../python_2404')),
       environment: commonEnv,
       timeout: Duration.seconds(60),
