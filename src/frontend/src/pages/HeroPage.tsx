@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useMemo } from 'react';
 import {
   Box,
@@ -120,7 +121,7 @@ export default function HeroPage() {
           {/* Features */}
           <Grid container spacing={2.5} sx={{ mt: { xs: 6, md: 8 }, justifyContent: 'center' }}>
             {features.map((f) => (
-              <Grid item xs={12} sm={6} key={f.title}>
+              <Grid size={{ xs: 12, sm: 6 }} key={f.title}>
                 <Card
                   elevation={0}
                   sx={{

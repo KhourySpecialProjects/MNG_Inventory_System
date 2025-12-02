@@ -42,7 +42,6 @@ export default function ReviewedPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchReviewedItems = async () => {
@@ -224,7 +223,6 @@ export default function ReviewedPage() {
     >
       <TopBar
         isLoggedIn={true}
-        profileImage={profileImage}
         onProfileClick={() => setProfileOpen(true)}
       />
 
@@ -281,7 +279,7 @@ export default function ReviewedPage() {
 
         {/* Tab Panels - Constrained Width */}
         <Container maxWidth="md" disableGutters>
-          <Box sx={{ p: 2, pb: 10 }}>
+          <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}

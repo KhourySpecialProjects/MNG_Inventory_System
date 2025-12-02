@@ -14,7 +14,7 @@ import { useParams } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import NavBar from '../components/NavBar';
 import ExportPageContent from '../components/ExportPageContent';
-import ExportCategoryBar from '../components/ExportCategoryBar';
+import Profile from '../components/Profile';
 import { getItems } from '../api/items';
 import { generateExportDocuments } from '../api/download';
 
@@ -47,6 +47,7 @@ export default function ExportPage() {
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<'completed' | 'broken'>('completed');
   const [error, setError] = useState<string | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // Fetch items on mount
   useEffect(() => {
@@ -138,7 +139,7 @@ export default function ExportPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
-      <TopBar isLoggedIn={true} />
+      <TopBar isLoggedIn={true} onProfileClick={() => setProfileOpen(true)} />
 
       <Box sx={{ px: { xs: 2, md: 4 }, pt: { xs: 3, md: 5 }, pb: 10 }}>
         {/* ERROR ALERT */}
@@ -174,7 +175,7 @@ export default function ExportPage() {
               </Typography>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Generate your team's completed inventory form for export.
+                Generate your team's reviewed inventory form for export.
               </Typography>
 
               <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
@@ -271,6 +272,7 @@ export default function ExportPage() {
       >
         <NavBar />
       </Box>
+      <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
     </Box>
   );
 }

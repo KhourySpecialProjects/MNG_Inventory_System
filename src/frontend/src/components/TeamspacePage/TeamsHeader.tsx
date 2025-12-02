@@ -32,7 +32,12 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           component={RouterLink}
           to="/admin"
           startIcon={<AdminPanelSettingsIcon />}
-          sx={{ fontWeight: 900, textTransform: 'none' }}
+          sx={{ 
+            fontWeight: 900, 
+            textTransform: 'none',
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            px: { xs: 1.5, sm: 2 },
+          }}
         >
           Management
         </Button>
@@ -41,7 +46,12 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           color="warning"
           onClick={onCreateTeam}
           startIcon={<AddIcon />}
-          sx={{ fontWeight: 900, textTransform: 'none' }}
+          sx={{ 
+            fontWeight: 900, 
+            textTransform: 'none',
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            px: { xs: 1.5, sm: 2 },
+          }}
         >
           Create Team
         </Button>
@@ -50,7 +60,12 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           color="warning"
           onClick={onInviteMember}
           startIcon={<GroupAddIcon />}
-          sx={{ fontWeight: 900, textTransform: 'none' }}
+          sx={{ 
+            fontWeight: 900, 
+            textTransform: 'none',
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            px: { xs: 1.5, sm: 2 },
+          }}
         >
           Invite Member
         </Button>

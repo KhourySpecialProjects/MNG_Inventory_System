@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import {
   Button,
@@ -34,7 +33,7 @@ export default function RestartProcess({ teamId, onRestart }: RestartProcessCard
         setError(result.error || 'Failed to restart process');
         return;
       }
-      console.log('Soft reset completed');
+      //console.log('Soft reset completed');
       setIsDialogOpen(false);
       if (onRestart) onRestart();
     } catch (err) {
@@ -114,8 +113,8 @@ export default function RestartProcess({ teamId, onRestart }: RestartProcessCard
             </Typography>
           ) : (
             <Typography>
-              ⚠️ Final confirmation: This action will move all items to "To Review", reset "%
-              Reviewed" to 0%, and clear all completed, shortages, damaged, and notes data. This
+              ⚠️ Final confirmation: This action will move all items to "To Review" 
+              and clear out all dashboard components related to reviewed items. This
               cannot be undone.
             </Typography>
           )}
