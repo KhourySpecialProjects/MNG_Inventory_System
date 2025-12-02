@@ -43,16 +43,11 @@ def _get_http_method(event):
 
 
 def _get_body_json(event):
+    if isinstance(event, dict) and "teamId" in event:
+        return event
+
     body = event.get("body") or "{}"
-    if event.get("isBase64Encoded"):
-        try:
-            body = base64.b64decode(body).decode("utf-8")
-        except:
-            pass
-    try:
-        return json.loads(body)
-    except:
-        return {}
+
 
 
 def _resp(status, body=None, headers=None, is_b64=False):
@@ -286,9 +281,9 @@ def lambda_handler(event, context):
     except Exception as e:
         return _resp(500, {"error": f"CSV build failed: {e}"})
 
-    from datetime import datetime
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"inventory_{timestamp}.csv"
+    team_name = data.get("overrides", {}).get("name") or "team"
+    safe_team_name = str(team_name).replace(" ", "_").replace("/", "_")
+    filename = f"inventory_{safe_team_name}.csv"
     key = f"Documents/{team_id}/inventory/{filename}"
 
     if save_to_s3:

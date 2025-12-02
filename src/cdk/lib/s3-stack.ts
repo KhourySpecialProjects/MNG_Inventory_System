@@ -71,11 +71,22 @@ export class S3UploadsStack extends Stack {
     });
 
     // DEPLOY PYTHON SCRIPTS
-    new s3deploy.BucketDeployment(this, 'UploadSpecificPythonFiles', {
+    new s3deploy.BucketDeployment(this, 'Upload2404Script', {
       destinationBucket: this.bucket,
       destinationKeyPrefix: 'scripts/',
       sources: [
-        s3deploy.Source.asset('./python', {
+        s3deploy.Source.asset('./python_2404', {
+          exclude: ['**', '!2404-handler.py', '!inventory-handler.py'],
+        })
+      ],
+      prune: true,
+    });
+
+    new s3deploy.BucketDeployment(this, 'UploadInventoryScript', {
+      destinationBucket: this.bucket,
+      destinationKeyPrefix: 'scripts/',
+      sources: [
+        s3deploy.Source.asset('./python_inventory', {
           exclude: ['**', '!2404-handler.py', '!inventory-handler.py'],
         })
       ],

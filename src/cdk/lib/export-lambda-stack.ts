@@ -46,8 +46,8 @@ export class ExportLambdaStack extends Stack {
     this.pdf2404Function = new lambda.Function(this, 'Export2404Handler', {
       functionName: `${service}-export-2404-handler-${stage}`,
       runtime: lambda.Runtime.PYTHON_3_11,
-      handler: '2404-lambda.lambda_handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda-2404')),
+      handler: '2404-handler.lambda_handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../python_2404')),
       environment: commonEnv,
       timeout: Duration.seconds(60),
       memorySize: 512,
@@ -58,8 +58,8 @@ export class ExportLambdaStack extends Stack {
     this.inventoryFunction = new lambda.Function(this, 'ExportInventoryHandler', {
       functionName: `${service}-export-inventory-handler-${stage}`,
       runtime: lambda.Runtime.PYTHON_3_11,
-      handler: 'inventory-lambda.lambda_handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda-inventory')),
+      handler: 'inventory_handler.lambda_handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../python_inventory')),
       environment: commonEnv,
       timeout: Duration.seconds(60),
       memorySize: 512,
