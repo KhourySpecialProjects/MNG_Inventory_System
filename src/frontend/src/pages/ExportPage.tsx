@@ -175,7 +175,7 @@ export default function ExportPage() {
               </Typography>
 
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Generate your team's reviewed inventory form for export.
+                Generate your team's required inventory forms for export.
               </Typography>
 
               <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
