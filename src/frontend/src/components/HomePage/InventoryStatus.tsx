@@ -66,7 +66,7 @@ export default function InventoryStatus({ teamName, totals }: InventoryStatusPro
                   },
                 }}
               >
-                <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
                   {item.title}
                 </Typography>
                 <Typography variant="h4" fontWeight={700} sx={{ color: item.color, mt: 0.5 }}>

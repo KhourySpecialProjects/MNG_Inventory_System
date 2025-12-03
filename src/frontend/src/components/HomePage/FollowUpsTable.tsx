@@ -1,6 +1,7 @@
 import { Paper, Typography, Box, Fade } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
 
 interface FollowUpsTableProps {
   followUps: Array<{
@@ -17,6 +18,8 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { teamId } = useParams();
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const handleRowClick = (itemId: string) => {
     if (teamId) {
@@ -57,9 +60,6 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
           '& tbody tr': {
             cursor: 'pointer',
             transition: 'background-color 0.2s ease',
-            '&:hover': {
-              bgcolor: alpha(theme.palette.primary.main, 0.04),
-            },
           },
         }}
       >
@@ -78,6 +78,16 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
               <tr
                 key={item.itemId}
                 onClick={() => handleRowClick(item.itemId)}
+                onMouseEnter={() => {
+                  setHoveredRow(item.itemId);
+                  setHasInteracted(true);
+                }}
+                onMouseLeave={() => setHoveredRow(null)}
+                style={{
+                  backgroundColor: hoveredRow === item.itemId 
+                    ? alpha(theme.palette.primary.main, 0.04) 
+                    : hasInteracted ? 'transparent' : '',
+                }}
               >
                 <td>{item.name}</td>
                 <td>{item.parentName ?? 'N/A'}</td>

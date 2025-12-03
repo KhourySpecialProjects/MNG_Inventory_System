@@ -47,7 +47,7 @@ export default function AddInventoryCard({ teamId }: AddInventoryCardProps) {
           },
         }}
       >
-        Add New Item
+        Add New Inventory Item
       </Button>
     </Paper>
   );

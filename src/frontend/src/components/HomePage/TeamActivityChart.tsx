@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Paper, Typography, Box, Fade } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 interface TeamActivityChartProps {
   teamStats: Array<{
@@ -58,8 +58,14 @@ export default function TeamActivityChart({ teamStats }: TeamActivityChartProps)
               completed: t.completed,
               shortages: t.shortages,
               damaged: t.damaged,
-              total: t.completed + t.shortages + t.damaged,
             }))}
+            data-testid="bar-chart"
+            data-chart-data={JSON.stringify(teamStats.map((t) => ({
+              name: t.name,
+              completed: t.completed,
+              shortages: t.shortages,
+              damaged: t.damaged,
+            })))}
             margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             barCategoryGap="20%"
           >
@@ -93,23 +99,25 @@ export default function TeamActivityChart({ teamStats }: TeamActivityChartProps)
               dataKey="completed"
               stackId="a"
               fill={theme.palette.success.main}
+              shape={RoundedTopBar}
+              data-testid="bar-completed"
+              data-has-shape="true"
             />
             <Bar 
               dataKey="shortages" 
               stackId="a" 
               fill={theme.palette.warning.main}
+              shape={RoundedTopBar}
+              data-testid="bar-shortages"
+              data-has-shape="true"
             />
             <Bar 
               dataKey="damaged" 
               stackId="a" 
               fill={theme.palette.error.main}
-              shape={(props: any) => {
-                // Only apply rounded corners if this is the top bar (has damaged items)
-                if (props.payload.damaged > 0) {
-                  return <RoundedTopBar {...props} />;
-                }
-                return <rect {...props} />;
-              }}
+              shape={RoundedTopBar}
+              data-testid="bar-damaged"
+              data-has-shape="true"
             />
           </BarChart>
         </ResponsiveContainer>

@@ -1,6 +1,6 @@
 // components/TeamsHeader.tsx
 import { Stack, Typography, Button } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import AddIcon from '@mui/icons-material/Add';
@@ -39,6 +39,7 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
       >
         <Button
           variant="contained"
+          color="warning"
           component={RouterLink}
           to="/admin"
           startIcon={<AdminPanelSettingsIcon />}
@@ -54,6 +55,7 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
         </Button>
         <Button
           variant="contained"
+          color="warning"
           onClick={onCreateTeam}
           startIcon={<AddIcon />}
           sx={{ 
@@ -79,7 +81,7 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
             transition: 'all 0.2s ease',
           }}
         >
-          Invite
+          Invite Member
         </Button>
       </Stack>
     </Stack>

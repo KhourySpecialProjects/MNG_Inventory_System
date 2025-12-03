@@ -138,10 +138,7 @@ export default function ViewMembersDialog({
           </Avatar>
           <Box>
             <Typography variant="h6" fontWeight={700}>
-              Team Members
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {teamName}
+              Members – {teamName}
             </Typography>
           </Box>
         </Stack>

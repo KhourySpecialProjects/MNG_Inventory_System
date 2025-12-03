@@ -21,6 +21,7 @@ export default function TeamsSearch({ value, onChange }: TeamsSearchProps) {
       }}
     >
       <TextField
+        label="Search teams"
         placeholder="Search teams..."
         fullWidth
         value={value}
