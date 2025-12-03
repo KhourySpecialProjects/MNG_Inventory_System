@@ -13,7 +13,7 @@ export default function EmptyState({ loading, error, isEmpty }: EmptyStateProps)
 
   if (loading) {
     return (
-      <Box textAlign="center" mt={6}>
+      <Box textAlign="center" sx={{ mt: 6, mb: 6 }}>
         <CircularProgress />
         <Typography sx={{ mt: 2, color: theme.palette.text.secondary }}>
           Loading your teams...
@@ -24,7 +24,7 @@ export default function EmptyState({ loading, error, isEmpty }: EmptyStateProps)
 
   if (error) {
     return (
-      <Box textAlign="center" mt={6}>
+      <Box textAlign="center" sx={{ mt: 6, mb: 6 }}>
         <Typography color="error">{error}</Typography>
       </Box>
     );
@@ -32,8 +32,13 @@ export default function EmptyState({ loading, error, isEmpty }: EmptyStateProps)
 
   if (isEmpty) {
     return (
-      <Box textAlign="center" mt={6}>
-        <Typography>No teams found</Typography>
+      <Box textAlign="center" sx={{ mt: 6, mb: 6 }}>
+        <Typography variant="h6" sx={{ color: theme.palette.text.secondary }}>
+          No teams found
+        </Typography>
+        <Typography variant="body2" sx={{ mt: 1, color: theme.palette.text.secondary }}>
+          Try adjusting your search or create a new teamspace
+        </Typography>
       </Box>
     );
   }

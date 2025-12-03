@@ -95,27 +95,90 @@ export default function ViewMembersDialog({
   });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="sm"
+      TransitionProps={{
+        timeout: 400,
+      }}
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: `0 24px 48px rgba(0,0,0,0.15)`,
+        },
+      }}
+    >
       <DialogTitle
         sx={{
           fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          pb: 1,
+          pb: 2,
+          pt: 3,
+          px: 3,
+          background: (theme) => `linear-gradient(135deg, 
+            ${theme.palette.primary.main}15 0%, 
+            ${theme.palette.secondary.main}15 100%)`,
         }}
       >
-        Members – {teamName}
-        <IconButton onClick={onClose}><CloseIcon /></IconButton>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar 
+            sx={{ 
+              bgcolor: (theme) => theme.palette.primary.main,
+              width: 36,
+              height: 36,
+            }}
+          >
+            <Typography fontSize={14} fontWeight={700}>
+              {teamName[0]?.toUpperCase()}
+            </Typography>
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Team Members
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {teamName}
+            </Typography>
+          </Box>
+        </Stack>
+        <IconButton 
+          onClick={onClose}
+          sx={{
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'rotate(90deg)',
+              bgcolor: (theme) => theme.palette.error.main + '15',
+              color: (theme) => theme.palette.error.main,
+            },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ px: 3 }}>
+      <DialogContent dividers sx={{ px: 3, py: 3 }}>
         <TextField
           fullWidth
           placeholder="Search by name, username, or role..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 3 }}
+          sx={{ 
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+              },
+              '&.Mui-focused': {
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}40`,
+              },
+            },
+          }}
         />
 
         {loading && (
@@ -125,36 +188,86 @@ export default function ViewMembersDialog({
         )}
 
         {!loading &&
-          filtered.map((m) => (
+          filtered.map((m, index) => (
             <Stack
               key={m.userId}
               direction="row"
               alignItems="center"
               justifyContent="space-between"
               sx={{
-                py: 1.5,
-                borderBottom: '1px solid #eee',
+                py: 2,
+                px: 2,
+                mb: 1,
+                borderRadius: 2,
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                transition: 'all 0.3s ease',
+                animation: `fadeInUp 0.4s ease ${index * 0.05}s both`,
+                '@keyframes fadeInUp': {
+                  from: {
+                    opacity: 0,
+                    transform: 'translateY(10px)',
+                  },
+                  to: {
+                    opacity: 1,
+                    transform: 'translateY(0)',
+                  },
+                },
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.action.hover,
+                  transform: 'translateX(4px)',
+                  boxShadow: (theme) => `0 4px 12px ${theme.palette.primary.main}15`,
+                },
               }}
             >
               <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar sx={{ width: 42, height: 42, fontWeight: 700 }}>
+                <Avatar 
+                  sx={{ 
+                    width: 44, 
+                    height: 44, 
+                    fontWeight: 700,
+                    bgcolor: (theme) => theme.palette.primary.main,
+                    boxShadow: (theme) => `0 4px 12px ${theme.palette.primary.main}30`,
+                  }}
+                >
                   {m.name ? m.name[0].toUpperCase() : '?'}
                 </Avatar>
 
                 <Box>
-                  <Typography fontWeight={600}>@{m.username}</Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography fontWeight={700} fontSize={15}>
+                    @{m.username}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" fontSize={13}>
                     {m.name}
                   </Typography>
                 </Box>
               </Stack>
 
               <Stack direction="row" spacing={1} alignItems="center">
-                <Select size="small" value={m.roleName} sx={{ minWidth: 130 }}>
+                <Select 
+                  size="small" 
+                  value={m.roleName} 
+                  sx={{ 
+                    minWidth: 130,
+                    borderRadius: 1.5,
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: (theme) => theme.palette.divider,
+                    },
+                  }}
+                >
                   <MenuItem value={m.roleName}>{m.roleName}</MenuItem>
                 </Select>
 
-                <IconButton color="error" onClick={() => handleRemove(m.username)}>
+                <IconButton 
+                  color="error" 
+                  onClick={() => handleRemove(m.username)}
+                  sx={{
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: 'scale(1.1)',
+                      bgcolor: (theme) => theme.palette.error.main + '15',
+                    },
+                  }}
+                >
                   <DeleteIcon />
                 </IconButton>
               </Stack>
@@ -162,17 +275,20 @@ export default function ViewMembersDialog({
           ))}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2 }}>
+      <DialogActions sx={{ p: 2.5 }}>
         <Button
           onClick={onClose}
           variant="outlined"
           sx={{
-            borderColor: 'rgba(0,0,0,0.3)',
-            color: 'rgba(0,0,0,0.7)',
+            borderRadius: 2,
+            px: 3,
+            py: 1,
             fontWeight: 600,
+            textTransform: 'none',
+            transition: 'all 0.3s ease',
             '&:hover': {
-              borderColor: 'rgba(0,0,0,0.5)',
-              backgroundColor: 'rgba(0,0,0,0.04)',
+              transform: 'translateY(-2px)',
+              boxShadow: (theme) => `0 4px 12px ${theme.palette.primary.main}20`,
             },
           }}
         >

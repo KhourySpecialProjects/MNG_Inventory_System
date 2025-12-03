@@ -125,10 +125,32 @@ export function CreateTeamDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Create New Teamspace</DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: '0 24px 48px rgba(0,0,0,0.15)',
+        },
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          fontWeight: 700,
+          fontSize: '1.5rem',
+          pb: 1,
+          background: (theme) => `linear-gradient(135deg, 
+            ${theme.palette.primary.main}15 0%, 
+            ${theme.palette.secondary.main}15 100%)`,
+        }}
+      >
+        Create New Teamspace
+      </DialogTitle>
 
-      <DialogContent sx={{ pt: 2 }}>
+      <DialogContent sx={{ pt: 3, pb: 2 }}>
         <TextField
           fullWidth
           label="Teamspace Name"
@@ -136,7 +158,16 @@ export function CreateTeamDialog({
           onChange={(e) => setWorkspaceName(e.target.value)}
           error={errors.workspaceName}
           helperText={errors.workspaceName ? 'Required' : ''}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 2.5,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+              },
+            },
+          }}
         />
 
         <TextField
@@ -146,7 +177,16 @@ export function CreateTeamDialog({
           onChange={(e) => setUic(e.target.value)}
           error={errors.uic}
           helperText={errors.uic ? 'Required' : ''}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 2.5,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+              },
+            },
+          }}
         />
 
         <TextField
@@ -156,7 +196,16 @@ export function CreateTeamDialog({
           onChange={(e) => setContactName(e.target.value)}
           error={errors.contactName}
           helperText={errors.contactName ? 'Required' : ''}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 2.5,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+              },
+            },
+          }}
         />
 
         <TextField
@@ -166,21 +215,53 @@ export function CreateTeamDialog({
           onChange={(e) => setContactEmail(e.target.value)}
           error={errors.contactEmail}
           helperText={errors.contactEmail ? 'Required' : ''}
-          sx={{ mb: 2 }}
+          sx={{ 
+            mb: 1,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+              },
+            },
+          }}
         />
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+      <DialogActions sx={{ p: 2.5, gap: 1 }}>
+        <Button 
+          onClick={onClose} 
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            textTransform: 'none',
+            fontWeight: 600,
+          }}
+        >
           Cancel
         </Button>
         <Button
           onClick={handleCreate}
           variant="contained"
-          color="primary"
           disabled={loading || !allFilled}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            textTransform: 'none',
+            fontWeight: 600,
+            background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: (theme) => `0 6px 20px ${theme.palette.primary.main}40`,
+            },
+            '&:disabled': {
+              background: (theme) => theme.palette.action.disabledBackground,
+            },
+          }}
         >
-          Create
+          {loading ? 'Creating...' : 'Create'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -295,28 +376,60 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
   }, [open]);
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Invite Member</DialogTitle>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      fullWidth 
+      maxWidth="xs"
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: '0 24px 48px rgba(0,0,0,0.15)',
+        },
+      }}
+    >
+      <DialogTitle 
+        sx={{ 
+          fontWeight: 700,
+          fontSize: '1.5rem',
+          pb: 1,
+          background: (theme) => `linear-gradient(135deg, 
+            ${theme.palette.warning.main}15 0%, 
+            ${theme.palette.warning.light}15 100%)`,
+        }}
+      >
+        Invite Member
+      </DialogTitle>
 
-      <DialogContent sx={{ pt: 1 }}>
+      <DialogContent sx={{ pt: 2 }}>
         {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs
             value={inviteMode}
             onChange={(_, v) => setInviteMode(v)}
             textColor="inherit"
-            indicatorColor="warning"
             centered
+            sx={{
+              '& .MuiTabs-indicator': {
+                backgroundColor: (theme) => theme.palette.warning.main,
+              },
+              '& .MuiTab-root': {
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  color: (theme) => theme.palette.warning.main,
+                },
+              },
+            }}
           >
             <Tab
               label="Add to Teamspace"
               value="teamspace"
-              sx={{ fontWeight: 700, textTransform: 'none' }}
+              sx={{ fontWeight: 700, textTransform: 'none', fontSize: '0.95rem' }}
             />
             <Tab
               label="Invite to Platform"
               value="platform"
-              sx={{ fontWeight: 700, textTransform: 'none' }}
+              sx={{ fontWeight: 700, textTransform: 'none', fontSize: '0.95rem' }}
             />
           </Tabs>
         </Box>
@@ -409,8 +522,17 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
         )}
       </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
+      <DialogActions sx={{ p: 2.5, gap: 1 }}>
+        <Button 
+          onClick={onClose} 
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            textTransform: 'none',
+            fontWeight: 600,
+          }}
+        >
           Cancel
         </Button>
         <Button
@@ -418,8 +540,19 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
           variant="contained"
           color="warning"
           disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            textTransform: 'none',
+            fontWeight: 600,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: (theme) => `0 6px 20px ${theme.palette.warning.main}40`,
+            },
+          }}
         >
-          {inviteMode === 'platform' ? 'Invite' : 'Add'}
+          {loading ? 'Processing...' : (inviteMode === 'platform' ? 'Invite' : 'Add')}
         </Button>
       </DialogActions>
     </Dialog>

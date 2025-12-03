@@ -163,15 +163,18 @@ export default function TeamspacePage() {
 
       <Profile open={profileOpen} onClose={handleProfileClose} />
 
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
+      <Container 
+        maxWidth="lg" 
+        sx={{ 
+          py: { xs: 3, sm: 4, md: 6 },
+        }}
+      >
         <TeamsHeader
           onCreateTeam={() => setOpenCreate(true)}
           onInviteMember={() => setOpenInvite(true)}
         />
 
         <TeamsSearch value={search} onChange={setSearch} />
-
-        <Divider sx={{ mb: 3 }} />
 
         <EmptyState
           loading={loading}
@@ -245,7 +248,11 @@ export default function TeamspacePage() {
         onClose={closeSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={closeSnackbar} severity={snackbar.severity} variant="filled">
+        <Alert 
+          onClose={closeSnackbar} 
+          severity={snackbar.severity} 
+          variant="filled"
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
