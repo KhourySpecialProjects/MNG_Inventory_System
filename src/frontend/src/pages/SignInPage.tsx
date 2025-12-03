@@ -20,6 +20,8 @@ import { loginUser, me, refresh } from '../api/auth';
 import SignUpComponent from '../components/SignUpComponent';
 import EmailOtpCard from '../components/EmailOtpCard';
 
+import { useColorMode } from '../ThemeContext';
+
 export default function SignInPage() {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [identifier, setIdentifier] = useState('');
@@ -28,6 +30,14 @@ export default function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false); // 👁️ toggle state
+  const { mode, toggleTheme } = useColorMode();
+
+  // Force light mode on this page
+  useEffect(() => {
+    if (mode === 'dark') {
+      toggleTheme();
+    }
+  }, []);
 
   const [otpUI, setOtpUI] = useState<{
     visible: boolean;

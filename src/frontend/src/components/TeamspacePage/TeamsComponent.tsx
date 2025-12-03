@@ -57,6 +57,12 @@ export default function TeamIcon({
   function getColor(p: number) {
     const clamp = Math.max(0, Math.min(100, p));
 
+    // 100% = Green
+    if (clamp === 100) {
+      return theme.palette.success.main;
+    }
+
+    // Red to Yellow (0% to 50%)
     if (clamp <= 50) {
       const t = clamp / 50;
       const r = Math.round(211 + (251 - 211) * t);
@@ -65,10 +71,11 @@ export default function TeamIcon({
       return `rgb(${r}, ${g}, ${b})`;
     }
 
+    // Yellow to Light Green (50% to 99%)
     const t = (clamp - 50) / 50;
-    const r = Math.round(251 + (56 - 251) * t);
-    const g = Math.round(192 + (56 - 192) * t);
-    const b = Math.round(45 + (60 - 45) * t);
+    const r = Math.round(251 - (251 - 139) * t); // 251 → 139
+    const g = Math.round(192 - (192 - 195) * t); // 192 → 195
+    const b = Math.round(45 + (71 - 45) * t);    // 45 → 71
     return `rgb(${r}, ${g}, ${b})`;
   }
 

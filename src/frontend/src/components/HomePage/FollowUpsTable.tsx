@@ -1,4 +1,4 @@
-import { Paper, Typography, Box } from '@mui/material';
+import { Paper, Typography, Box, Fade } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -15,7 +15,6 @@ interface FollowUpsTableProps {
 
 export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
   const theme = useTheme();
-  const cardBorder = `1px solid ${theme.palette.divider}`;
   const navigate = useNavigate();
   const { teamId } = useParams();
 
@@ -26,30 +25,41 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
   };
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        bgcolor: theme.palette.background.paper,
-        border: cardBorder,
-      }}
-    >
-      <Typography variant="h6" fontWeight={800} mb={2}>
-        Follow-Ups
-      </Typography>
+    <Fade in timeout={700}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          bgcolor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h6" fontWeight={700} mb={2}>
+          Follow-Ups
+        </Typography>
       <Box
         component="table"
         sx={{
           width: '100%',
           borderCollapse: 'collapse',
           '& th, & td': {
-            padding: '6px 8px',
+            padding: '10px 12px',
             borderBottom: `1px solid ${theme.palette.divider}`,
             textAlign: 'left',
+            fontSize: '0.875rem',
           },
           '& th': {
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            fontWeight: 700,
+            bgcolor: alpha(theme.palette.primary.main, 0.04),
+            fontWeight: 600,
+            color: theme.palette.text.secondary,
+          },
+          '& tbody tr': {
+            cursor: 'pointer',
+            transition: 'background-color 0.2s ease',
+            '&:hover': {
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            },
           },
         }}
       >
@@ -68,12 +78,6 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
               <tr
                 key={item.itemId}
                 onClick={() => handleRowClick(item.itemId)}
-                style={{ cursor: 'pointer' }} // pointer cursor
-                // hover effect using inline sx with MUI `alpha` for subtle background
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = alpha(theme.palette.primary.main, 0.08))
-                }
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
               >
                 <td>{item.name}</td>
                 <td>{item.parentName ?? 'N/A'}</td>
@@ -84,13 +88,14 @@ export default function FollowUpsTable({ followUps }: FollowUpsTableProps) {
             ))
           ) : (
             <tr>
-              <td colSpan={5} style={{ textAlign: 'center' }}>
+              <td colSpan={5} style={{ textAlign: 'center', color: theme.palette.text.secondary }}>
                 No follow-ups
               </td>
             </tr>
           )}
         </tbody>
       </Box>
-    </Paper>
+      </Paper>
+    </Fade>
   );
 }

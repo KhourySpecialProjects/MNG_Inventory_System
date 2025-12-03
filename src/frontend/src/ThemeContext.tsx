@@ -2,7 +2,7 @@ import React, { createContext, useMemo, useState, useContext } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import lightTheme from './theme';
-import darkThemeOptions from './themeDark';
+import darkThemeOptions from './themeDark'
 
 interface ThemeContextType {
   toggleTheme: () => void;

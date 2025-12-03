@@ -33,10 +33,14 @@ export default function SearchBar({
       sx={{
         '& .MuiOutlinedInput-root': {
           bgcolor: theme.palette.background.default,
-          borderRadius: 3,
+          borderRadius: 2,
+          transition: 'all 0.2s ease',
           '& fieldset': {
-            borderRadius: 3
-          }
+            borderRadius: 2
+          },
+          '&:hover': {
+            boxShadow: `0 0 0 2px ${theme.palette.primary.main}20`,
+          },
         },
         '& .MuiInputBase-input': {
           fontSize: '0.9rem'

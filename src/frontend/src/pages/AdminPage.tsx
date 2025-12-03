@@ -18,7 +18,7 @@ export default function AdminPage() {
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
       <TopBar isLoggedIn onProfileClick={() => setProfileOpen(true)} />
 
-      <Box sx={{ m: 4 }}>
+      <Box sx={{ m: { xs: 2, sm: 3, md: 4 } }}>
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => navigate('/teams')}
@@ -26,17 +26,18 @@ export default function AdminPage() {
             textTransform: 'none',
             fontWeight: 600,
             color: theme.palette.text.primary,
-            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
+            transition: 'all 0.2s ease',
+            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.04) },
           }}
         >
-          Back
+          Back to Teams
         </Button>
       </Box>
       <Container maxWidth="lg" sx={{ pb: 4 }}>
         <Paper
-          elevation={2}
+          elevation={0}
           sx={{
-            borderRadius: 2,
+            borderRadius: 3,
             overflow: 'hidden',
             border: `1px solid ${theme.palette.divider}`,
             bgcolor: theme.palette.background.paper,
@@ -50,13 +51,19 @@ export default function AdminPage() {
               borderColor: 'divider',
               bgcolor: theme.palette.background.paper,
               px: 2,
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                transition: 'all 0.2s ease',
+              },
             }}
           >
             <Tab label="Roles" />
             <Tab label="User Management" />
           </Tabs>
 
-          <Box sx={{ p: 3 }}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {activeTab === 0 && <RoleManagementTab />}
             {activeTab === 1 && <UserRoleAssignmentTab />}
           </Box>

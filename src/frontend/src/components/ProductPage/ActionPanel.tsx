@@ -317,6 +317,13 @@ export default function ActionPanel({
                 fontSize: { xs: isCreateMode ? '0.875rem' : '0.65rem', sm: '0.75rem' },
                 px: { xs: isCreateMode ? 3 : 1, sm: 1.5 },
                 py: { xs: isCreateMode ? 1.25 : 0.5, sm: 0.75 },
+                borderRadius: 8,
+                textTransform: 'none',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                },
               }}
             >
               {isCreateMode ? 'CREATE' : 'Save'}
@@ -325,7 +332,7 @@ export default function ActionPanel({
             {!isCreateMode && (
               <Button
                 variant="contained"
-                color="error"
+                color="warning"
                 startIcon={<CancelIcon />}
                 onClick={() => {
                   setIsEditMode(false);
@@ -338,6 +345,13 @@ export default function ActionPanel({
                   fontSize: { xs: '0.65rem', sm: '0.75rem' },
                   px: { xs: 1, sm: 1.5 },
                   py: { xs: 0.5, sm: 0.75 },
+                  borderRadius: 8,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                  },
                 }}
               >
                 Cancel
@@ -359,6 +373,13 @@ export default function ActionPanel({
                   fontSize: { xs: '0.65rem', sm: '0.75rem' },
                   px: { xs: 1, sm: 1.5 },
                   py: { xs: 0.5, sm: 0.75 },
+                  borderRadius: 8,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                  },
                 }}
               >
                 DONE
@@ -375,6 +396,13 @@ export default function ActionPanel({
                 fontSize: { xs: '0.65rem', sm: '0.75rem' },
                 px: { xs: 1, sm: 1.5 },
                 py: { xs: 0.5, sm: 0.75 },
+                borderRadius: 8,
+                textTransform: 'none',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                },
               }}
             >
               Edit
@@ -390,6 +418,13 @@ export default function ActionPanel({
                 fontSize: { xs: '0.65rem', sm: '0.75rem' },
                 px: { xs: 1, sm: 1.5 },
                 py: { xs: 0.5, sm: 0.75 },
+                borderRadius: 8,
+                textTransform: 'none',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                },
               }}
             >
               Delete
@@ -407,13 +442,33 @@ export default function ActionPanel({
         <DialogContent dividers>
           <Typography>Are you sure you want to permanently delete this item?</Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button 
+            onClick={() => setDeleteOpen(false)}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 8,
+              px: 3,
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"
             variant="contained"
             disabled={deleting}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 8,
+              px: 3,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'scale(1.02)',
+              },
+            }}
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>

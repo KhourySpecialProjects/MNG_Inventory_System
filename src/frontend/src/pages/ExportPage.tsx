@@ -160,17 +160,19 @@ export default function ExportPage() {
         {!loading && !documentsCreated && !isGenerating && (
           <Fade in timeout={400}>
             <Paper
-              elevation={3}
+              elevation={0}
               sx={{
                 p: 4,
                 maxWidth: 600,
                 mx: 'auto',
                 textAlign: 'center',
                 mt: { xs: 6, md: 10 },
-                borderRadius: 4,
+                borderRadius: 3,
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               }}
             >
-              <Typography variant="h5" fontWeight={800} gutterBottom>
+              <Typography variant="h5" fontWeight={700} gutterBottom>
                 Create Inventory Documents
               </Typography>
 
@@ -178,7 +180,7 @@ export default function ExportPage() {
                 Generate your team's required inventory forms for export.
               </Typography>
 
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
                 Inventory Completion: {percentReviewed}%
               </Typography>
 
@@ -189,6 +191,10 @@ export default function ExportPage() {
                   height: 10,
                   borderRadius: 5,
                   mb: 4,
+                  bgcolor: theme.palette.grey[200],
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 5,
+                  },
                 }}
               />
 
@@ -197,13 +203,18 @@ export default function ExportPage() {
                 variant="contained"
                 size="large"
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: 8,
                   px: 4,
                   py: 1.5,
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  textTransform: 'none',
                   bgcolor: theme.palette.warning.main,
                   color: theme.palette.getContrastText(theme.palette.warning.main),
-                  '&:hover': { bgcolor: theme.palette.warning.dark },
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    bgcolor: theme.palette.warning.dark,
+                    transform: 'scale(1.02)',
+                  },
                 }}
               >
                 Create Documents

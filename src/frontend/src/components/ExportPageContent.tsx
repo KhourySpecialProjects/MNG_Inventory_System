@@ -197,7 +197,16 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
       />
 
       {/* Stats Panel - Category Specific Only */}
-      <Paper elevation={3} sx={{ width: '100%', maxWidth: 500, p: 3 }}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          width: '100%', 
+          maxWidth: 500, 
+          p: 3,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+        }}
+      >
         <Typography variant="h6" fontWeight={700} gutterBottom textAlign="center">
           {showingCompleted ? 'Reviewed Inventory Summary' : 'Damaged Items Summary'}
         </Typography>
@@ -244,16 +253,19 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
             disabled={!hasCSV}
             fullWidth
             sx={{
-              borderRadius: 2,
+              borderRadius: 8,
               px: 3,
               py: 1.5,
-              fontWeight: 700,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'all 0.2s ease',
               ...(hasCSV
                 ? {
                     bgcolor: theme.palette.success.main,
                     color: theme.palette.getContrastText(theme.palette.success.main),
                     '&:hover': {
                       bgcolor: theme.palette.success.dark,
+                      transform: 'scale(1.02)',
                     },
                   }
                 : {
@@ -274,16 +286,19 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
             disabled={!hasPDF}
             fullWidth
             sx={{
-              borderRadius: 2,
+              borderRadius: 8,
               px: 3,
               py: 1.5,
-              fontWeight: 700,
+              fontWeight: 600,
+              textTransform: 'none',
+              transition: 'all 0.2s ease',
               ...(hasPDF
                 ? {
                     bgcolor: theme.palette.warning.main,
                     color: theme.palette.getContrastText(theme.palette.warning.main),
                     '&:hover': {
                       bgcolor: theme.palette.warning.dark,
+                      transform: 'scale(1.02)',
                     },
                   }
                 : {

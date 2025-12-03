@@ -38,14 +38,19 @@ export default function RoleCard({
 
   return (
     <Card
+      elevation={0}
       sx={{
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: theme.palette.background.paper,
         border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2,
+        transition: 'all 0.3s ease',
         '&:hover': {
-          boxShadow: theme.shadows[4],
+          transform: 'translateY(-4px)',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+          borderColor: theme.palette.primary.main,
         },
       }}
     >
@@ -69,25 +74,37 @@ export default function RoleCard({
       </CardContent>
 
       <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
-        <Tooltip title={isDefault ? 'View permissions' : 'Edit role'}>
+        <Tooltip title={isDefault ? 'View permissions' : 'Edit role'} arrow>
           <span>
             <IconButton
               size="small"
               onClick={onEdit}
               color="primary"
-              disabled={isMyRole}          // <<< DISABLE EDIT
+              disabled={isMyRole}
+              sx={{
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                },
+              }}
             >
               {isDefault ? <VisibilityIcon fontSize="small" /> : <EditIcon fontSize="small" />}
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip title={isDefault ? 'Default roles cannot be deleted' : 'Delete role'}>
+        <Tooltip title={isDefault ? 'Default roles cannot be deleted' : 'Delete role'} arrow>
           <span>
             <IconButton
               size="small"
               onClick={onDelete}
               color="error"
-              disabled={isDefault || isMyRole}    // <<< DISABLE DELETE
+              disabled={isDefault || isMyRole}
+              sx={{
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.1)',
+                },
+              }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>

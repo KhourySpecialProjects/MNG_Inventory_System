@@ -30,8 +30,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [timeMode, setTimeMode] = useState<'hours' | 'days'>('hours');
-  const [selectedValue, setSelectedValue] = useState<number>(5); // default
+  const [timeMode, setTimeMode] = useState<'hours' | 'days'>('days');
+  const [selectedValue, setSelectedValue] = useState<number>(7); // default
   const [items, setItems] = useState<any[]>([]); // new state for raw items
 
   // pull data for dashboard components from DynamoDB
@@ -168,7 +168,7 @@ export default function HomePage() {
   const teamStats = dashboardData?.teamStats || [];
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: theme.palette.background.default }}>
       <TopBar isLoggedIn onProfileClick={() => setProfileOpen(true)} />
       <Box
         sx={{
@@ -177,7 +177,7 @@ export default function HomePage() {
           pb: { xs: 10, sm: 10, md: 4 },
         }}
       >
-        <Box mb={3}>
+        <Box mb={2}>
           <Button
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate('/teams')}
@@ -185,10 +185,11 @@ export default function HomePage() {
               textTransform: 'none',
               fontWeight: 600,
               color: theme.palette.text.primary,
-              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) },
+              transition: 'all 0.2s ease',
+              '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.04) },
             }}
           >
-            Back
+            Back to Teams
           </Button>
         </Box>
 
