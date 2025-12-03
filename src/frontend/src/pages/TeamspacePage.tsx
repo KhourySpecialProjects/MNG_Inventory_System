@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useMemo } from 'react';
 import { Box, Container, Divider, Snackbar, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';

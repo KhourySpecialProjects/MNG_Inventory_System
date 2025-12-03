@@ -38,7 +38,6 @@ export default function ProductReviewPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileImage] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -131,7 +130,6 @@ export default function ProductReviewPage() {
       >
         <TopBar
           isLoggedIn={true}
-          profileImage={profileImage}
           onProfileClick={() => setProfileOpen(true)}
         />
         <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
@@ -156,7 +154,6 @@ export default function ProductReviewPage() {
       >
         <TopBar
           isLoggedIn={true}
-          profileImage={profileImage}
           onProfileClick={() => setProfileOpen(true)}
         />
         <Box
@@ -192,7 +189,6 @@ export default function ProductReviewPage() {
     >
       <TopBar
         isLoggedIn={true}
-        profileImage={profileImage}
         onProfileClick={() => setProfileOpen(true)}
       />
 
@@ -200,7 +196,7 @@ export default function ProductReviewPage() {
         sx={{
           flex: 1,
           bgcolor: theme.palette.background.default,
-          pb: 10,
+          pb: { xs: 10, sm: 10, md: 4 },
         }}
       >
         <Box
@@ -213,7 +209,7 @@ export default function ProductReviewPage() {
             },
             mx: 'auto',
             pt: 3,
-            pb: 8,
+            pb: 3,
             px: 3,
             backgroundColor: theme.palette.background.paper,
             borderRadius: 3,

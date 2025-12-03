@@ -24,6 +24,32 @@ interface InventoryReviewedProps {
   onChangeValue: (value: number) => void;
 }
 
+// Custom Tooltip Component
+function CustomTooltip({ active, payload }: any) {
+  const theme = useTheme();
+  
+  if (active && payload && payload.length) {
+    return (
+      <Paper
+        elevation={3}
+        sx={{
+          p: 1.5,
+          bgcolor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+          {payload[0].payload.label}
+        </Typography>
+        <Typography variant="body2" color="primary">
+          Reviewed: {payload[0].value}
+        </Typography>
+      </Paper>
+    );
+  }
+  return null;
+}
+
 export default function InventoryReviewed({
   percentReviewed,
   items,
@@ -167,7 +193,7 @@ export default function InventoryReviewed({
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
               <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
               <Bar dataKey="reviewed" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

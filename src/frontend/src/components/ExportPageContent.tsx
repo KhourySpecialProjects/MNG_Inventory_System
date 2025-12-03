@@ -82,7 +82,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
   const showingCompleted = activeCategory === 'completed';
   const hasFile = showingCompleted ? hasCSV : hasPDF;
   const itemCount = showingCompleted ? completedItems.length : damagedItems.length;
-  const categoryLabel = showingCompleted ? 'Completed Items' : 'Broken Items';
+  const categoryLabel = showingCompleted ? 'Completed Items' : 'Damaged Items';
 
   console.log('[ExportPageContent] Debug:', {
     activeCategory,
@@ -199,7 +199,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
       {/* Stats Panel - Category Specific Only */}
       <Paper elevation={3} sx={{ width: '100%', maxWidth: 500, p: 3 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom textAlign="center">
-          {showingCompleted ? 'Completed Inventory Summary' : 'Broken Items Summary'}
+          {showingCompleted ? 'Reviewed Inventory Summary' : 'Damaged Items Summary'}
         </Typography>
         <Divider sx={{ mb: 2 }} />
         
@@ -262,7 +262,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
                   }),
             }}
           >
-            {hasCSV ? 'Download Completed Inventory CSV' : 'No Items in Completed Items'}
+            {hasCSV ? 'Download Reviewed Inventory CSV' : 'No Items in Reviewed Items'}
           </Button>
         )}
 
@@ -292,7 +292,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
                   }),
             }}
           >
-            {hasPDF ? 'Download DA Form 2404 (PDF)' : 'No Items in Broken Items'}
+            {hasPDF ? 'Download DA Form 2404 (PDF)' : 'No Items in Damaged Items'}
           </Button>
         )}
       </Box>

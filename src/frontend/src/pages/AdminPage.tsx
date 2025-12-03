@@ -3,6 +3,7 @@ import { Box, Container, Tabs, Tab, Paper, Button } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TopBar from '../components/TopBar';
+import Profile from '../components/Profile';
 import RoleManagementTab from '../components/admin/RoleManagementTab';
 import UserRoleAssignmentTab from '../components/admin/UserRoleAssignmentTab';
 import { useNavigate } from 'react-router-dom';
@@ -11,10 +12,11 @@ export default function AdminPage() {
   const theme = useTheme();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
-      <TopBar isLoggedIn={true} />
+      <TopBar isLoggedIn onProfileClick={() => setProfileOpen(true)} />
 
       <Box sx={{ m: 4 }}>
         <Button
@@ -60,6 +62,8 @@ export default function AdminPage() {
           </Box>
         </Paper>
       </Container>
+
+      <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
     </Box>
   );
 }

@@ -8,7 +8,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import TopBar from '../components/TopBar';
 import NavBar from '../components/NavBar';
 import Profile from '../components/Profile';
-
 import InventoryStatus from '../components/HomePage/InventoryStatus';
 import InventoryReviewed from '../components/HomePage/InventoryReviewed';
 import FollowUpsTable from '../components/HomePage/FollowUpsTable';
@@ -76,7 +75,10 @@ export default function HomePage() {
 
         // define dashboard constants
         const totals = { toReview: 0, completed: 0, shortages: 0, damaged: 0 };
-        const users: Record<string, { completed: number; shortages: number; damaged: number; name: string }> = {};
+        const users: Record<
+          string,
+          { completed: number; shortages: number; damaged: number; name: string }
+        > = {};
 
         const followUps: Array<{
           itemId: string;
@@ -109,7 +111,8 @@ export default function HomePage() {
             default:
               totals.toReview++;
           }
-          if (!users[reviewedBy]) users[reviewedBy] = { completed: 0, shortages: 0, damaged: 0, name: reviewedByName };
+          if (!users[reviewedBy])
+            users[reviewedBy] = { completed: 0, shortages: 0, damaged: 0, name: reviewedByName };
           if (status === 'completed') users[reviewedBy].completed++;
           if (status === 'shortages') users[reviewedBy].shortages++;
           if (status === 'damaged') users[reviewedBy].damaged++;
@@ -122,7 +125,7 @@ export default function HomePage() {
               status: item.status,
               parentName: item.parentName ?? 'N/A',
               updatedAt: item.updatedAt ?? '',
-              lastReviewedByName: reviewedByName, 
+              lastReviewedByName: reviewedByName,
             });
           }
         }
@@ -135,17 +138,17 @@ export default function HomePage() {
           totals,
           percentReviewed,
           teamStats: Object.entries(users)
-          .filter(([, data]) => {
-            // Only include users who have reviewed at least one item
-            return data.completed > 0 || data.shortages > 0 || data.damaged > 0;
-          })
-          .map(([userId, data]) => ({ 
-            userId,
-            name: data.name, 
-            completed: data.completed,
-            shortages: data.shortages,
-            damaged: data.damaged
-          })),
+            .filter(([, data]) => {
+              // Only include users who have reviewed at least one item
+              return data.completed > 0 || data.shortages > 0 || data.damaged > 0;
+            })
+            .map(([userId, data]) => ({
+              userId,
+              name: data.name,
+              completed: data.completed,
+              shortages: data.shortages,
+              damaged: data.damaged,
+            })),
           followUps,
         };
         setDashboardData(overview);
@@ -158,7 +161,7 @@ export default function HomePage() {
     };
 
     getDashboardData();
-  }, [teamId, timeMode, selectedValue]);
+  }, [teamId]);
 
   const totals = dashboardData?.totals || { toReview: 0, completed: 0, shortages: 0, damaged: 0 };
   const percentReviewed = dashboardData?.percentReviewed || 0;
@@ -167,7 +170,13 @@ export default function HomePage() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopBar isLoggedIn onProfileClick={() => setProfileOpen(true)} />
-      <Box sx={{ flex: 1, p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box
+        sx={{
+          flex: 1,
+          p: { xs: 2, sm: 3, md: 4 },
+          pb: { xs: 10, sm: 10, md: 4 },
+        }}
+      >
         <Box mb={3}>
           <Button
             startIcon={<ArrowBackIcon />}
@@ -197,7 +206,7 @@ export default function HomePage() {
                 <InventoryStatus teamName={teamName || teamId!} totals={totals} />
                 <InventoryReviewed
                   percentReviewed={percentReviewed}
-                  items={items.filter(item => {
+                  items={items.filter((item) => {
                     const status = (item.status ?? 'To Review').toLowerCase();
                     return status === 'completed' || status === 'shortages' || status === 'damaged';
                   })}
@@ -218,7 +227,7 @@ export default function HomePage() {
               <Stack spacing={3}>
                 <AddInventoryCard teamId={teamId!} />
                 <RestartInventoryProcess teamId={teamId!} />
-                
+
                 {/* Hide TeamActivityChart on mobile */}
                 <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                   <TeamActivityChart teamStats={teamStats} />

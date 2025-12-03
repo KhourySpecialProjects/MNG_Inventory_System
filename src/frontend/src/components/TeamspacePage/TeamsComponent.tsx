@@ -67,7 +67,7 @@ export default function TeamIcon({
 
     const t = (clamp - 50) / 50;
     const r = Math.round(251 + (56 - 251) * t);
-    const g = Math.round(192 + (142 - 192) * t);
+    const g = Math.round(192 + (56 - 192) * t);
     const b = Math.round(45 + (60 - 45) * t);
     return `rgb(${r}, ${g}, ${b})`;
   }
@@ -81,19 +81,18 @@ export default function TeamIcon({
     const el = containerRef.current;
     if (!el) return;
 
-  function updateScale() {
-    const el = containerRef.current;
-    if (!el) {
-      setScale(1);
-      return;
+    function updateScale() {
+      const el = containerRef.current;
+      if (!el) {
+        setScale(1);
+        return;
+      }
+
+      const { width } = el.getBoundingClientRect();
+      const target = 200;
+      const newScale = Math.min(Math.max(width / target, 0.9), 1.4);
+      setScale(newScale);
     }
-
-    const { width } = el.getBoundingClientRect();
-    const target = 200;
-    const newScale = Math.min(Math.max(width / target, 0.9), 1.4);
-    setScale(newScale);
-  }
-
 
     updateScale();
     window.addEventListener('resize', updateScale);
@@ -213,7 +212,6 @@ export default function TeamIcon({
                       fontSize: 'clamp(10px, 1.1vw, 13px)',
                       maxWidth: 200,
                     }}
-                    noWrap
                   >
                     {description || 'No description'}
                   </Typography>
