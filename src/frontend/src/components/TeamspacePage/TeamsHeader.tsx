@@ -20,12 +20,23 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
       justifyContent="space-between"
       alignItems={{ xs: 'flex-start', sm: 'center' }}
       gap={2}
-      mb={2.5}
+      sx={{ mb: 3 }}
     >
-      <Typography variant="h4" sx={{ fontWeight: 900, color: theme.palette.text.primary }}>
+      <Typography 
+        variant="h4" 
+        sx={{ 
+          fontWeight: 700, 
+          color: theme.palette.text.primary,
+        }}
+      >
         Teamspaces
       </Typography>
-      <Stack direction="row" spacing={1}>
+
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        spacing={1.5}
+        sx={{ width: { xs: '100%', sm: 'auto' } }}
+      >
         <Button
           variant="contained"
           color="warning"
@@ -33,10 +44,11 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           to="/admin"
           startIcon={<AdminPanelSettingsIcon />}
           sx={{ 
-            fontWeight: 900, 
+            fontWeight: 600, 
             textTransform: 'none',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-            px: { xs: 1.5, sm: 2 },
+            borderRadius: 2,
+            px: 2,
+            transition: 'all 0.2s ease',
           }}
         >
           Management
@@ -47,10 +59,11 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           onClick={onCreateTeam}
           startIcon={<AddIcon />}
           sx={{ 
-            fontWeight: 900, 
+            fontWeight: 600, 
             textTransform: 'none',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-            px: { xs: 1.5, sm: 2 },
+            borderRadius: 2,
+            px: 2,
+            transition: 'all 0.2s ease',
           }}
         >
           Create Team
@@ -61,10 +74,11 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           onClick={onInviteMember}
           startIcon={<GroupAddIcon />}
           sx={{ 
-            fontWeight: 900, 
+            fontWeight: 600, 
             textTransform: 'none',
-            fontSize: { xs: '0.75rem', sm: '0.875rem' },
-            px: { xs: 1.5, sm: 2 },
+            borderRadius: 2,
+            px: 2,
+            transition: 'all 0.2s ease',
           }}
         >
           Invite Member

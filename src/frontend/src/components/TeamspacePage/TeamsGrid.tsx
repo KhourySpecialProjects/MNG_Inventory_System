@@ -29,7 +29,9 @@ export default function TeamsGrid({
     <Grid
       container
       spacing={{ xs: 2, sm: 2.5, md: 3 }}
-      sx={{ px: { xs: 1.5, sm: 2, md: 3 } }}
+      sx={{ 
+        px: { xs: 1.5, sm: 2, md: 3 },
+      }}
     >
       {teams.map((team) => (
         <Grid

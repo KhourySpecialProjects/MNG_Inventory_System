@@ -145,10 +145,24 @@ export default function RoleManagementTab() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>
           Roles
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openCreateDialog}>
+        <Button 
+          variant="contained" 
+          startIcon={<AddIcon />} 
+          onClick={openCreateDialog}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 8,
+            px: 3,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
           Create Role
         </Button>
       </Box>
@@ -164,12 +178,13 @@ export default function RoleManagementTab() {
               <SearchIcon />
             </InputAdornment>
           ),
-          sx: {
-            bgcolor: theme.palette.background.paper,
-            borderRadius: 1,
+        }}
+        sx={{ 
+          mb: 3,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 2,
           },
         }}
-        sx={{ mb: 3 }}
       />
 
       {error && (

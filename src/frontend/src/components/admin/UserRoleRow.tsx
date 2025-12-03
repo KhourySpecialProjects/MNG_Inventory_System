@@ -99,12 +99,15 @@ export default function UserRoleRow({
           alignItems: 'center',
           justifyContent: 'space-between',
           p: 2,
-          mb: 1,
-          borderRadius: 1,
+          mb: 1.5,
+          borderRadius: 2,
           bgcolor: theme.palette.background.paper,
           border: `1px solid ${theme.palette.divider}`,
+          transition: 'all 0.2s ease',
           '&:hover': {
             bgcolor: theme.palette.action.hover,
+            transform: 'translateX(4px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           },
         }}
       >
@@ -127,6 +130,9 @@ export default function UserRoleRow({
                 onChange={(e) => handleChange(e.target.value)}
                 disabled={loading || user.userId === currentUserId}
                 displayEmpty
+                sx={{
+                  borderRadius: 2,
+                }}
               >
                 {/* DELETE USER OPTION - FIRST ITEM */}
                 <MenuItem value="__delete_user__" sx={{ color: 'error.main', fontWeight: 600 }}>
@@ -172,8 +178,17 @@ export default function UserRoleRow({
           )}
         </DialogContent>
 
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)} 
+            disabled={deleting}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 8,
+              px: 3,
+            }}
+          >
             Cancel
           </Button>
           <Button
@@ -181,6 +196,16 @@ export default function UserRoleRow({
             color="error"
             variant="contained"
             disabled={deleting}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 8,
+              px: 3,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'scale(1.02)',
+              },
+            }}
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>

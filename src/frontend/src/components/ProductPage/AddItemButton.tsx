@@ -31,6 +31,7 @@ export default function AddItemButton({ parentId, level = 0, teamId: teamIdProp 
 
   return (
     <Card
+      elevation={0}
       onClick={handleClick}
       sx={{
         p: 1.5,
@@ -38,8 +39,8 @@ export default function AddItemButton({ parentId, level = 0, teamId: teamIdProp 
         bgcolor: alpha(theme.palette.primary.main, 0.02),
         border: '2px dashed',
         borderColor: alpha(theme.palette.primary.main, 0.3),
-        borderRadius: 1,
-        transition: 'all 0.2s ease',
+        borderRadius: 2,
+        transition: 'all 0.3s ease',
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
@@ -48,6 +49,8 @@ export default function AddItemButton({ parentId, level = 0, teamId: teamIdProp 
         '&:hover': {
           bgcolor: alpha(theme.palette.primary.main, 0.08),
           borderColor: theme.palette.primary.main,
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         },
       }}
     >

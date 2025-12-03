@@ -57,6 +57,12 @@ export default function TeamIcon({
   function getColor(p: number) {
     const clamp = Math.max(0, Math.min(100, p));
 
+    // 100% = Green
+    if (clamp === 100) {
+      return theme.palette.success.main;
+    }
+
+    // Red to Yellow (0% to 50%)
     if (clamp <= 50) {
       const t = clamp / 50;
       const r = Math.round(211 + (251 - 211) * t);
@@ -65,10 +71,11 @@ export default function TeamIcon({
       return `rgb(${r}, ${g}, ${b})`;
     }
 
+    // Yellow to Light Green (50% to 99%)
     const t = (clamp - 50) / 50;
-    const r = Math.round(251 + (56 - 251) * t);
-    const g = Math.round(192 + (56 - 192) * t);
-    const b = Math.round(45 + (60 - 45) * t);
+    const r = Math.round(251 - (251 - 139) * t); // 251 → 139
+    const g = Math.round(192 - (192 - 195) * t); // 192 → 195
+    const b = Math.round(45 + (71 - 45) * t);    // 45 → 71
     return `rgb(${r}, ${g}, ${b})`;
   }
 
@@ -109,13 +116,13 @@ export default function TeamIcon({
           borderRadius: 3,
           bgcolor: theme.palette.background.paper,
           border: `1px solid ${borderColor}`,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-          transition: 'all 0.25s ease',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          transition: 'all 0.2s ease',
           cursor: 'pointer',
           '&:hover': {
             transform: 'translateY(-4px)',
-            borderColor: theme.palette.primary.main,
-            boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.25)}`,
+            borderColor: alpha(theme.palette.primary.main, 0.5),
+            boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.15)}`,
           },
           p: { xs: 1.2, sm: 2 },
           width: '100%',
@@ -132,14 +139,20 @@ export default function TeamIcon({
               }}
             >
               <Stack alignItems="center" spacing={1.8} sx={{ textAlign: 'center' }}>
-                <Box sx={{ position: 'relative', width: ringSize, height: ringSize }}>
+                <Box 
+                  sx={{ 
+                    position: 'relative', 
+                    width: ringSize, 
+                    height: ringSize,
+                  }}
+                >
                   <CircularProgress
                     variant="determinate"
                     value={100}
                     size={ringSize}
                     thickness={4}
                     sx={{
-                      color: alpha(theme.palette.text.primary, 0.15),
+                      color: alpha(theme.palette.text.primary, 0.1),
                       position: 'absolute',
                       top: 0,
                       left: 0,
@@ -172,9 +185,11 @@ export default function TeamIcon({
                     }}
                   >
                     <Typography
-                      fontSize="clamp(10px, 1.4vw, 18px)"
+                      fontSize="clamp(11px, 1.5vw, 18px)"
                       fontWeight={800}
-                      sx={{ color: theme.palette.text.primary }}
+                      sx={{ 
+                        color: theme.palette.text.primary,
+                      }}
                     >
                       {percent}%
                     </Typography>
@@ -185,15 +200,12 @@ export default function TeamIcon({
                   <Typography
                     variant="subtitle1"
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: theme.palette.text.primary,
-                      fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      width: '100%',
-                      maxWidth: { xs: '100%', sm: 180 },
+                      maxWidth: 180,
+                      fontSize: 'clamp(13px, 1.4vw, 17px)',
                     }}
+                    noWrap
                   >
                     {name}
                   </Typography>
@@ -204,12 +216,8 @@ export default function TeamIcon({
                     variant="body2"
                     sx={{
                       color: theme.palette.text.secondary,
-                      fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.9rem' },
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      width: '100%',
-                      maxWidth: { xs: '100%', sm: 200 },
+                      fontSize: 'clamp(10px, 1.1vw, 13px)',
+                      maxWidth: 200,
                     }}
                   >
                     {description || 'No description'}
@@ -225,10 +233,13 @@ export default function TeamIcon({
           onClick={handleMenu}
           sx={{
             position: 'absolute',
-            top: 10,
-            right: 10,
+            top: 8,
+            right: 8,
             color: theme.palette.text.secondary,
-            '&:hover': { color: theme.palette.primary.main },
+            transition: 'color 0.2s ease',
+            '&:hover': { 
+              color: theme.palette.primary.main,
+            },
           }}
         >
           <MoreVertIcon fontSize="small" />

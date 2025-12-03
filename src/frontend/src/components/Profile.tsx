@@ -153,11 +153,11 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
       TransitionComponent={Fade}
       PaperProps={{
         sx: {
-          borderRadius: 4,
+          borderRadius: 3,
           bgcolor: theme.palette.background.paper,
           color: theme.palette.text.primary,
           border: `1px solid ${theme.palette.divider}`,
-          boxShadow: 5,
+          boxShadow: '0 24px 48px rgba(0,0,0,0.15)',
         },
       }}
     >
@@ -171,10 +171,20 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
           bgcolor: theme.palette.background.default,
         }}
       >
-        <Typography variant="h6" fontWeight={800}>
+        <Typography variant="h6" fontWeight={700}>
           Profile
         </Typography>
-        <IconButton onClick={onClose}>
+        <IconButton 
+          onClick={onClose}
+          sx={{
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'rotate(90deg)',
+              bgcolor: (theme) => theme.palette.error.main + '15',
+              color: (theme) => theme.palette.error.main,
+            },
+          }}
+        >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -214,12 +224,14 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                           width: 110,
                           height: 110,
                           border: `3px solid ${theme.palette.primary.main}`,
+                          boxShadow: `0 4px 20px ${theme.palette.primary.main}30`,
+                          cursor: 'pointer',
                         }}
                       >
                         {!profileImage && <AccountCircleIcon sx={{ fontSize: 80 }} />}
                       </Avatar>
 
-                      <Tooltip title="Change picture">
+                      <Tooltip title="Change picture" arrow>
                         <Box
                           sx={{
                             position: 'absolute',
@@ -228,11 +240,18 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                             bgcolor: theme.palette.primary.main,
                             color: theme.palette.primary.contrastText,
                             borderRadius: '50%',
-                            width: 32,
-                            height: 32,
+                            width: 36,
+                            height: 36,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            cursor: 'pointer',
+                            boxShadow: `0 4px 12px ${theme.palette.primary.main}40`,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              transform: 'scale(1.1)',
+                              boxShadow: `0 6px 16px ${theme.palette.primary.main}50`,
+                            },
                           }}
                         >
                           <EditIcon fontSize="small" />
@@ -252,6 +271,15 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                 disabled={!editing}
                 onChange={(e) => setEditedName(e.target.value)}
                 fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: !editing ? 'none' : (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+                    },
+                  },
+                }}
               />
 
               <TextField
@@ -260,20 +288,49 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                 disabled={!editing}
                 onChange={(e) => setEditedUsername(e.target.value)}
                 fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      boxShadow: !editing ? 'none' : (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+                    },
+                  },
+                }}
               />
 
-              <TextField label="Role" value={authUser.role} disabled fullWidth />
+              <TextField 
+                label="Role" 
+                value={authUser.role} 
+                disabled 
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  },
+                }}
+              />
             </Stack>
           </DialogContent>
 
           {/* FOOTER */}
-          <DialogActions sx={{ px: 4, py: 2 }}>
+          <DialogActions sx={{ px: 4, py: 3, gap: 1.5 }}>
             {!editing ? (
               <Button
                 variant="contained"
                 color="primary"
                 startIcon={<EditIcon />}
                 onClick={() => setEditing(true)}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  px: 3,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                  },
+                }}
               >
                 Edit Profile
               </Button>
@@ -284,9 +341,17 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                   onClick={handleSave}
                   sx={{
                     ml: 'auto',
-                    bgcolor: '#2F7A32',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderRadius: 8,
+                    px: 3,
+                    bgcolor: theme.palette.success.main,
                     color: '#fff',
-                    '&:hover': { bgcolor: '#27682A' },
+                    transition: 'all 0.2s ease',
+                    '&:hover': { 
+                      bgcolor: theme.palette.success.dark,
+                      transform: 'scale(1.02)',
+                    },
                   }}
                 >
                   Save
@@ -298,6 +363,16 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                     setEditedName(authUser.name);
                     setEditedUsername(authUser.username);
                     setEditing(false);
+                  }}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderRadius: 8,
+                    px: 3,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      transform: 'scale(1.02)',
+                    },
                   }}
                 >
                   Cancel
@@ -312,6 +387,16 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
               color="error"
               startIcon={<LogoutIcon />}
               onClick={handleLogout}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 8,
+                px: 3,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                },
+              }}
             >
               Logout
             </Button>

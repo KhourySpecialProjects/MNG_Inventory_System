@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useMemo } from 'react';
-import { Alert, Box, CircularProgress, Container, Tab, Tabs, Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, Container, Tab, Tabs, Typography, Fade } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
@@ -228,104 +228,111 @@ export default function ReviewedPage() {
 
       <Box sx={{ flex: 1, width: '100%', bgcolor: theme.palette.background.default }}>
         {/* Tabs Header - Full Width */}
-        <Box
-          sx={{
-            bgcolor: theme.palette.background.paper,
-            borderBottom: 1,
-            borderColor: theme.palette.divider,
-          }}
-        >
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            aria-label="inventory tabs"
-            variant="fullWidth"
+        <Fade in timeout={400}>
+          <Box
             sx={{
-              '& .MuiTab-root': {
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                color: theme.palette.text.secondary,
-                minWidth: 'auto',
-              },
-              '& .Mui-selected': {
-                color: theme.palette.primary.main,
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: theme.palette.primary.main,
-                height: 3,
-              },
+              bgcolor: theme.palette.background.paper,
+              borderBottom: 1,
+              borderColor: theme.palette.divider,
             }}
           >
-            <Tab label={`Completed`} />
-            <Tab label={`Shortages`} />
-            <Tab label={`Damaged`} />
-          </Tabs>
-        </Box>
+            <Tabs
+              value={selectedTab}
+              onChange={handleTabChange}
+              aria-label="inventory tabs"
+              variant="fullWidth"
+              sx={{
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  color: theme.palette.text.secondary,
+                  minWidth: 'auto',
+                  transition: 'all 0.2s ease',
+                },
+                '& .Mui-selected': {
+                  color: theme.palette.primary.main,
+                },
+                '& .MuiTabs-indicator': {
+                  backgroundColor: theme.palette.primary.main,
+                  height: 3,
+                },
+              }}
+            >
+              <Tab label={`Completed`} />
+              <Tab label={`Shortages`} />
+              <Tab label={`Damaged`} />
+            </Tabs>
+          </Box>
+        </Fade>
 
         {/* Search Bar - Constrained Width */}
-        <Box
-          sx={{
-            bgcolor: theme.palette.background.paper,
-            borderBottom: 1,
-            borderColor: theme.palette.divider,
-            py: 1.5,
-          }}
-        >
-          <Container maxWidth="md">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          </Container>
-        </Box>
+        <Fade in timeout={500}>
+          <Box
+            sx={{
+              bgcolor: theme.palette.background.paper,
+              borderBottom: 1,
+              borderColor: theme.palette.divider,
+              py: 1.5,
+            }}
+          >
+            <Container maxWidth="md">
+              <SearchBar value={searchQuery} onChange={setSearchQuery} />
+            </Container>
+          </Box>
+        </Fade>
 
         {/* Tab Panels - Constrained Width */}
-        <Container maxWidth="md" disableGutters>
-          <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
-            <TabPanel value={selectedTab} index={0}>
-              {filteredCompleted.filteredItems.length > 0 ? (
-                <ItemListComponent
-                  items={filteredCompleted.filteredItems}
-                  initialExpandedItems={filteredCompleted.itemsToExpand}
-                />
-              ) : (
-                <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
-                  {searchQuery.trim() ? 'No items match your search.' : 'No completed items'}
-                </Typography>
+        <Fade in timeout={600}>
+          <Container maxWidth="md" disableGutters>
+            <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
               )}
-            </TabPanel>
 
-            <TabPanel value={selectedTab} index={1}>
-              {filteredShortages.filteredItems.length > 0 ? (
-                <ItemListComponent
-                  items={filteredShortages.filteredItems}
-                  initialExpandedItems={filteredShortages.itemsToExpand}
-                />
-              ) : (
-                <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
-                  {searchQuery.trim() ? 'No items match your search.' : 'No shortages reported'}
-                </Typography>
-              )}
-            </TabPanel>
+              <TabPanel value={selectedTab} index={0}>
+                {filteredCompleted.filteredItems.length > 0 ? (
+                  <ItemListComponent
+                    items={filteredCompleted.filteredItems}
+                    initialExpandedItems={filteredCompleted.itemsToExpand}
+                  />
+                ) : (
+                  <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
+                    {searchQuery.trim() ? 'No items match your search.' : 'No completed items'}
+                  </Typography>
+                )}
+              </TabPanel>
 
-            <TabPanel value={selectedTab} index={2}>
-              {filteredDamaged.filteredItems.length > 0 ? (
-                <ItemListComponent
-                  items={filteredDamaged.filteredItems}
-                  initialExpandedItems={filteredDamaged.itemsToExpand}
-                />
-              ) : (
-                <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
-                  {searchQuery.trim() ? 'No items match your search.' : 'No damaged items'}
-                </Typography>
-              )}
-            </TabPanel>
-          </Box>
-        </Container>
+              <TabPanel value={selectedTab} index={1}>
+                {filteredShortages.filteredItems.length > 0 ? (
+                  <ItemListComponent
+                    items={filteredShortages.filteredItems}
+                    initialExpandedItems={filteredShortages.itemsToExpand}
+                  />
+                ) : (
+                  <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
+                    {searchQuery.trim() ? 'No items match your search.' : 'No shortages reported'}
+                  </Typography>
+                )}
+              </TabPanel>
+
+              <TabPanel value={selectedTab} index={2}>
+                {filteredDamaged.filteredItems.length > 0 ? (
+                  <ItemListComponent
+                    items={filteredDamaged.filteredItems}
+                    initialExpandedItems={filteredDamaged.itemsToExpand}
+                  />
+                ) : (
+                  <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
+                    {searchQuery.trim() ? 'No items match your search.' : 'No damaged items'}
+                  </Typography>
+                )}
+              </TabPanel>
+            </Box>
+          </Container>
+        </Fade>
       </Box>
 
       <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />

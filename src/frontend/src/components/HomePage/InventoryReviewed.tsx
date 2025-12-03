@@ -10,6 +10,7 @@ import {
   Select,
   FormControl,
   InputLabel,
+  Fade,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -97,7 +98,16 @@ export default function InventoryReviewed({
   const reviewData = computeHistogram(items, timeMode, selectedValue);
 
   return (
-    <Paper elevation={0} sx={{ p: 3, bgcolor: theme.palette.background.paper, border: cardBorder }}>
+    <Fade in timeout={500}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          bgcolor: theme.palette.background.paper, 
+          border: cardBorder,
+          borderRadius: 2,
+        }}
+      >
       {/* --- TITLE + TIME CONTROLS ROW --- */}
       <Stack
         direction={{ xs: 'column', md: 'row' }}
@@ -106,14 +116,14 @@ export default function InventoryReviewed({
         spacing={{ xs: 2, md: 0 }}
         mb={2}
       >
-        <Typography variant="h6" fontWeight={800}>
+        <Typography variant="h6" fontWeight={700}>
           Inventory Reviewed
         </Typography>
 
         {/* Right-side Time Range Controls - Hide on mobile */}
         <Stack
           direction="row"
-          spacing={2}
+          spacing={1.5}
           alignItems="center"
           sx={{ display: { xs: 'none', md: 'flex' } }}
         >
@@ -121,6 +131,7 @@ export default function InventoryReviewed({
             color="primary"
             exclusive
             value={timeMode}
+            size="small"
             onChange={(e, val) => {
               if (!val) return;
 
@@ -135,11 +146,11 @@ export default function InventoryReviewed({
               }
             }}
           >
-            <ToggleButton value="hours">Hours</ToggleButton>
-            <ToggleButton value="days">Days</ToggleButton>
+            <ToggleButton value="hours" sx={{ textTransform: 'none', px: 2 }}>Hours</ToggleButton>
+            <ToggleButton value="days" sx={{ textTransform: 'none', px: 2 }}>Days</ToggleButton>
           </ToggleButtonGroup>
 
-          <FormControl size="small" sx={{ width: 120 }}>
+          <FormControl size="small" sx={{ width: 100 }}>
             <InputLabel>{timeMode === 'hours' ? 'Hours' : 'Days'}</InputLabel>
             <Select
               value={selectedValue}
@@ -179,26 +190,38 @@ export default function InventoryReviewed({
         <Box
           sx={{
             flex: 1,
-            minHeight: 180,
+            minHeight: 160,
             display: { xs: 'none', md: 'block' },
             width: '100%',
           }}
         >
-          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
             Reviews in Last {selectedValue} {timeMode}
           </Typography>
 
           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={reviewData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.palette.divider} />
+              <XAxis 
+                dataKey="label" 
+                tick={{ fontSize: 11, fill: theme.palette.text.secondary }} 
+                interval="preserveStartEnd"
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis 
+                tick={{ fontSize: 11, fill: theme.palette.text.secondary }} 
+                allowDecimals={false}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
               <Bar dataKey="reviewed" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Box>
       </Stack>
-    </Paper>
+      </Paper>
+    </Fade>
   );
 }

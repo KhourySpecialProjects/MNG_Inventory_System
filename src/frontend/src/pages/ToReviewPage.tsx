@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, CircularProgress, Container, Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, Container, Typography, Fade } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import TopBar from '../components/TopBar';
@@ -189,54 +189,58 @@ export default function ToReviewPage() {
           bgcolor: theme.palette.background.default
         }}
       >
-        <Box
-          sx={{
-            bgcolor: theme.palette.background.paper,
-            borderBottom: 1,
-            borderColor: theme.palette.divider,
-            py: 1.5
-          }}
-        >
-          <Container maxWidth="md">
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 550,
-                color: theme.palette.text.primary,
-                fontSize: { xs: '1.25rem', sm: '1.5rem' },
-                mb: 2
-              }}
-            >
-              Inventory To Review
-            </Typography>
+        <Fade in timeout={400}>
+          <Box
+            sx={{
+              bgcolor: theme.palette.background.paper,
+              borderBottom: 1,
+              borderColor: theme.palette.divider,
+              py: 1.5
+            }}
+          >
+            <Container maxWidth="md">
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  color: theme.palette.text.primary,
+                  fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                  mb: 2
+                }}
+              >
+                Inventory To Review
+              </Typography>
 
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-            />
-          </Container>
-        </Box>
-
-        <Container maxWidth="md" disableGutters>
-          <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
-            {error ? (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            ) : filteredItems.length === 0 ? (
-              <Alert severity="info">
-                {searchQuery.trim()
-                  ? 'No items match your search.'
-                  : 'No items to review. All items are complete!'}
-              </Alert>
-            ) : (
-              <ItemListComponent
-                items={filteredItems}
-                initialExpandedItems={itemsToExpand}
+              <SearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
               />
-            )}
+            </Container>
           </Box>
-        </Container>
+        </Fade>
+
+        <Fade in timeout={600}>
+          <Container maxWidth="md" disableGutters>
+            <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
+              {error ? (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              ) : filteredItems.length === 0 ? (
+                <Alert severity="info">
+                  {searchQuery.trim()
+                    ? 'No items match your search.'
+                    : 'No items to review. All items are complete!'}
+                </Alert>
+              ) : (
+                <ItemListComponent
+                  items={filteredItems}
+                  initialExpandedItems={itemsToExpand}
+                />
+              )}
+            </Box>
+          </Container>
+        </Fade>
       </Box>
 
       <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />

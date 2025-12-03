@@ -21,6 +21,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TopBar from '../components/TopBar';
+import { useColorMode } from '../ThemeContext';
 
 const features = [
   {
@@ -53,6 +54,14 @@ export default function HeroPage() {
   const theme = useTheme();
   const downSm = useMediaQuery(theme.breakpoints.down('sm'));
   const [accessOpen, setAccessOpen] = useState(false);
+  const { mode, toggleTheme } = useColorMode();
+
+  // Force light mode on this page
+  React.useEffect(() => {
+    if (mode === 'dark') {
+      toggleTheme();
+    }
+  }, []);
 
   // dynamic background and card border based on theme
   const heroBg = useMemo(

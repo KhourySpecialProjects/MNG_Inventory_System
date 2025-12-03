@@ -68,12 +68,18 @@ export default function RestartProcess({ teamId, onRestart }: RestartProcessCard
           bgcolor: theme.palette.background.paper,
           textAlign: 'center',
           border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
+            transform: 'translateY(-2px)',
+          },
         }}
       >
-        <Typography variant="h6" fontWeight={800} mb={2}>
+        <Typography variant="h6" fontWeight={700} mb={1.5}>
           Restart Inventory Process
         </Typography>
-        <Typography variant="body2" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Time to conduct inventory again?
         </Typography>
         <Button
@@ -81,9 +87,13 @@ export default function RestartProcess({ teamId, onRestart }: RestartProcessCard
           fullWidth
           color="error"
           sx={{
-            mt: 2,
-            fontWeight: 700,
+            fontWeight: 600,
+            borderRadius: 8,
             color: theme.palette.error.contrastText,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
           }}
           onClick={openWizard}
         >

@@ -92,7 +92,7 @@ export default function UserRoleAssignmentTab() {
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
           User Management
         </Typography>
         <TextField
@@ -106,9 +106,10 @@ export default function UserRoleAssignmentTab() {
                 <SearchIcon />
               </InputAdornment>
             ),
-            sx: {
-              bgcolor: theme.palette.background.paper,
-              borderRadius: 1,
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
             },
           }}
         />
