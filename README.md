@@ -67,6 +67,4 @@ Once these changes are done and deployed, the infrastructure will be fully confi
 1. **Tranfer items between teams**
    Currently, items can only be created or deleted within a specific team. If a user manages multiple teams and needs to move an item from one team to another, they must manually delete it from the original team and recreate it in the new one. Implementing a dedicated item transfer feature would streamline this process and improve usability.
 2. **Include E2E Testing**
-   For security fix the E2E testing
-3. **OPTIONAL: Make UI better**
-   Inlcude animations and make some components more consistent
+   For security include the E2E testing
