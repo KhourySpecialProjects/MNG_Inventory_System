@@ -160,10 +160,12 @@ def ddb_get_team(team_id):
 
     resp = ddb_client().get_item(
         TableName=TABLE_NAME,
-        Key={"PK": {"S": f"TEAM#{team_id}"}, "SK": {"S": "TEAM"}}
+        Key={"PK": {"S": f"TEAM#{team_id}"}, "SK": {"S": "METADATA"}},
+        ConsistentRead=True,
     )
     item = resp.get("Item")
     return {k: deser.deserialize(v) for k, v in item.items()} if item else {}
+
 
 def s3_put_pdf(bucket, key, body):
     kms = os.environ.get("KMS_KEY_ARN", "").strip()
@@ -188,7 +190,7 @@ def to_pdf_values(payload):
     return {
         "ORGANIZATION": payload.get("name") or "N/A",
         "NOMENCLATURE": (payload.get("actualName") or "").strip(),
-        "SERIAL_NUMBER": payload.get("serialNumber") or "N/A",
+        "SERIAL_NUMBER": payload.get("serialNumber") or payload.get("nsn") or "N/A",
         "DATE": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "REMARKS_LIST": reports,
     }
@@ -201,7 +203,7 @@ def _resp(code, body=None):
     }
 
 def lambda_handler(event, context):
-    # ✔ FIX: Direct invocation fallback
+  
     if isinstance(event, dict) and "teamId" in event:
         payload = event
         method = "POST"

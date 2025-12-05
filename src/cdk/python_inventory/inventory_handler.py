@@ -107,7 +107,7 @@ def fetch_inventory_from_dynamo(team_id, overrides):
     merged_overrides = {
         "fe": meta.get("fe"),
         "uic": meta.get("uic"),
-        "teamName": meta.get("name"),
+        "name": meta.get("name"),
     }
 
     if isinstance(overrides, dict):
@@ -223,8 +223,8 @@ def render_inventory_csv(data):
             name = node.get("name") or ""
             nsn = node.get(NSN_KEY) or ""  
             desc = node.get("description") or ""
-            auth_qty = node.get("authQuantity") or 0
-            oh_qty = node.get("ohQuantity") if node.get("ohQuantity") is not None else auth_qty
+            auth_qty = node.get("authQuantity")
+            oh_qty = node.get("ohQuantity") 
 
             writer.writerow([name, nsn, lv, desc, auth_qty, oh_qty])
 
