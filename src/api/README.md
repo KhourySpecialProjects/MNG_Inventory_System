@@ -79,14 +79,15 @@ Below are the current API methods and use cases. Methods are called using:
 
 #### Items
 
-| Router name     | Use case                                 | Params                                           | Returns                               |
-| --------------- | ---------------------------------------- | ------------------------------------------------ | ------------------------------------- |
-| **createItem**  | Create a new item or kit                 | `createItem({ teamId, name, nsn, userId, ... })` | `{ success, itemId?, item?, error? }` |
-| **getItems**    | Fetch all items for a team               | `getItems({ teamId, userId })`                   | `{ success, items?, error? }`         |
-| **getItem**     | Fetch one item by ID                     | `getItem({ teamId, itemId, userId })`            | `{ success, item?, error? }`          |
-| **updateItem**  | Update fields, status, image, kit fields | `updateItem({ teamId, itemId, userId, ... })`    | `{ success, item?, error? }`          |
-| **deleteItem**  | Delete an item + its S3 image            | `deleteItem({ teamId, itemId, userId })`         | `{ success, message?, error? }`       |
-| **uploadImage** | Upload or replace an image for an item   | `uploadImage({ teamId, nsn, imageBase64 })`      | `{ success, imageKey?, error? }`      |
+| Router name          | Use case                                        | Params                                           | Returns                               |
+| -------------------- | ----------------------------------------------- | ------------------------------------------------ | ------------------------------------- |
+| **createItem**       | Create a new item or kit                        | `createItem({ teamId, name, nsn, userId, ... })` | `{ success, itemId?, item?, error? }` |
+| **getItems**         | Fetch all items for a team                      | `getItems({ teamId, userId })`                   | `{ success, items?, error? }`         |
+| **getItem**          | Fetch one item by ID                            | `getItem({ teamId, itemId, userId })`            | `{ success, item?, error? }`          |
+| **updateItem**       | Update fields, status, image, kit fields        | `updateItem({ teamId, itemId, userId, ... })`    | `{ success, item?, error? }`          |
+| **deleteItem**       | Delete an item + its S3 image                   | `deleteItem({ teamId, itemId, userId })`         | `{ success, message?, error? }`       |
+| **uploadImage**      | Upload or replace an image for an item          | `uploadImage({ teamId, nsn, imageBase64 })`      | `{ success, imageKey?, error? }`      |
+| **getAllItemsByNSN** | Search items matching NSN across all user teams | `getAllItemsByNSN({ nsn, userId })`              | `{ success, items?, error? }`         |
 
 #### Resets
 

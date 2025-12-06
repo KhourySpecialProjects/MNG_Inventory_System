@@ -249,3 +249,17 @@ export async function uploadImage(teamId: string, nsn: string, imageBase64: stri
 
   return data?.imageKey ? { imageKey: data.imageKey } : (data ?? {});
 }
+
+/** GET ALL ITEMS BY NSN */
+export async function getAllItemsByNSN(nsn: string) {
+  const currentUser = await me();
+
+  const data = await trpcFetch(
+    `${TRPC}/getAllItemsByNSN?input=${encodeURIComponent(
+      JSON.stringify({ nsn, userId: currentUser.userId }),
+    )}`,
+    { method: 'GET' },
+  );
+
+  return data ?? {};
+}
