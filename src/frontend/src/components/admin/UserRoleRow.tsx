@@ -40,7 +40,7 @@ interface UserRoleRowProps {
 export default function UserRoleRow({
   user,
   roles,
-  currentUserId,  
+  currentUserId,
   onRoleChange,
   onUserDeleted,
 }: UserRoleRowProps) {
@@ -52,7 +52,7 @@ export default function UserRoleRow({
 
   const handleChange = async (selected: string) => {
     if (user.userId === currentUserId) {
-      setError("You cannot change your own role.");
+      setError('You cannot change your own role.');
       return;
     }
 
@@ -179,8 +179,8 @@ export default function UserRoleRow({
         </DialogContent>
 
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button 
-            onClick={() => setDeleteDialogOpen(false)} 
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
             disabled={deleting}
             sx={{
               textTransform: 'none',

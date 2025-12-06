@@ -77,9 +77,7 @@ async function getRole(roleId: string): Promise<RoleEntity | null> {
   return (res.Item as RoleEntity) ?? null;
 }
 
-export const DEFAULT_ROLES: Array<
-  Pick<RoleEntity, 'name' | 'description' | 'permissions'>
-> = [
+export const DEFAULT_ROLES: Array<Pick<RoleEntity, 'name' | 'description' | 'permissions'>> = [
   {
     name: 'Owner',
     description: 'Full administrative control over the system.',

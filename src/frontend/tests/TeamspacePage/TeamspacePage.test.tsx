@@ -47,7 +47,7 @@ function renderWithProviders(component: React.ReactElement) {
   return render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>{component}</ThemeProvider>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 }
 
@@ -83,9 +83,7 @@ describe('TeamspacePage', () => {
   });
 
   it('displays error message when teams fail to load', async () => {
-    vi.mocked(teamspaceApi.getTeamspace).mockRejectedValue(
-      new Error('Failed to load teams')
-    );
+    vi.mocked(teamspaceApi.getTeamspace).mockRejectedValue(new Error('Failed to load teams'));
 
     renderWithProviders(<TeamspacePage />);
 
@@ -119,9 +117,7 @@ describe('TeamspacePage', () => {
     const inviteButton = screen.getByRole('button', { name: /^invite member$/i });
     await user.click(inviteButton);
 
-    expect(
-      screen.getByRole('heading', { name: /invite member/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /invite member/i })).toBeInTheDocument();
   });
 
   it('filters teams based on search query', async () => {
@@ -152,9 +148,7 @@ describe('TeamspacePage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/missing name/i)).toBeInTheDocument();
-      expect(
-        screen.getByText(/please insert your name and username/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/please insert your name and username/i)).toBeInTheDocument();
     });
   });
 

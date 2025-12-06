@@ -76,7 +76,11 @@ export default function HeroPage() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* TopBar: Sign In + Request Access */}
-      <TopBar isLoggedIn={false} onRequestAccess={() => setAccessOpen(true)} showThemeToggle={false} />
+      <TopBar
+        isLoggedIn={false}
+        onRequestAccess={() => setAccessOpen(true)}
+        showThemeToggle={false}
+      />
 
       {/* Hero Section */}
       <Box sx={{ ...heroBg }}>

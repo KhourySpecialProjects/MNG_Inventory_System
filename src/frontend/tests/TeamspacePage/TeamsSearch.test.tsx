@@ -34,7 +34,7 @@ describe('TeamsSearch', () => {
     });
 
     const { rerender } = renderWithProviders(
-      <TeamsSearch value={currentValue} onChange={mockOnChange} />
+      <TeamsSearch value={currentValue} onChange={mockOnChange} />,
     );
 
     const input = screen.getByLabelText(/search teams/i);
@@ -44,28 +44,28 @@ describe('TeamsSearch', () => {
     rerender(
       <ThemeProvider theme={theme}>
         <TeamsSearch value={currentValue} onChange={mockOnChange} />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
 
     await user.type(input, 'l');
     rerender(
       <ThemeProvider theme={theme}>
         <TeamsSearch value={currentValue} onChange={mockOnChange} />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
 
     await user.type(input, 'p');
     rerender(
       <ThemeProvider theme={theme}>
         <TeamsSearch value={currentValue} onChange={mockOnChange} />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
 
     await user.type(input, 'h');
     rerender(
       <ThemeProvider theme={theme}>
         <TeamsSearch value={currentValue} onChange={mockOnChange} />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
 
     await user.type(input, 'a');
@@ -80,14 +80,12 @@ describe('TeamsSearch', () => {
 
   it('clears the search when value is empty', () => {
     const mockOnChange = vi.fn();
-    const { rerender } = renderWithProviders(
-      <TeamsSearch value="test" onChange={mockOnChange} />
-    );
+    const { rerender } = renderWithProviders(<TeamsSearch value="test" onChange={mockOnChange} />);
 
     rerender(
       <ThemeProvider theme={theme}>
         <TeamsSearch value="" onChange={mockOnChange} />
-      </ThemeProvider>
+      </ThemeProvider>,
     );
 
     const input = screen.getByLabelText(/search teams/i);

@@ -213,7 +213,7 @@ export async function deleteItem(teamId: string, itemId: string) {
 
     // Batch delete in parallel
     await Promise.all(
-      toDelete.map(id =>
+      toDelete.map((id) =>
         trpcFetch(`${TRPC}/deleteItem`, {
           method: 'POST',
           body: JSON.stringify({
@@ -221,8 +221,8 @@ export async function deleteItem(teamId: string, itemId: string) {
             itemId: id,
             userId: currentUser.userId,
           }),
-        })
-      )
+        }),
+      ),
     );
 
     return { success: true };
@@ -231,7 +231,6 @@ export async function deleteItem(teamId: string, itemId: string) {
     return { success: false, error: 'Failed to delete item and its contents' };
   }
 }
-
 
 /** UPLOAD IMAGE */
 export async function uploadImage(teamId: string, nsn: string, imageBase64: string) {

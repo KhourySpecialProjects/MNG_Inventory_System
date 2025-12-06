@@ -27,7 +27,7 @@ export type Context = {
 };
 
 /**
- *  Express Context 
+ *  Express Context
  * Used for local dev / testing.
  */
 export const createExpressContext = ({
@@ -56,7 +56,7 @@ export const createLambdaContext = async ({
 };
 
 /**
- *  TRPC Initialization 
+ *  TRPC Initialization
  */
 const t = initTRPC.context<Context>().create();
 
@@ -65,7 +65,7 @@ export const publicProcedure = t.procedure;
 export const mergeRouters = t.mergeRouters;
 
 /**
- *  Cognito Token Verification 
+ *  Cognito Token Verification
  * Used by protectedProcedure to validate user access tokens from cookies.
  */
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
@@ -78,7 +78,7 @@ const verifier = CognitoJwtVerifier.create({
 });
 
 /**
- *  Auth Middleware 
+ *  Auth Middleware
  * Extracts cookies, validates JWT, attaches user info to context.
  */
 const isAuthed = t.middleware(async ({ ctx, next }) => {
@@ -127,7 +127,7 @@ const isAuthed = t.middleware(async ({ ctx, next }) => {
 
 export const protectedProcedure = t.procedure.use(isAuthed);
 
-// Permission middleware factory 
+// Permission middleware factory
 export function requirePermission(requiredPermission: Permission) {
   return async ({ ctx, next }: { ctx: Context; next: any }) => {
     const user = ctx.user;

@@ -60,7 +60,9 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
   // Calculate category-specific stats
   const completedItems = items.filter((i) => {
     const status = (i.status ?? '').toLowerCase();
-    return ['completed', 'complete', 'missing', 'shortages', 'shortage', 'damaged'].includes(status);
+    return ['completed', 'complete', 'missing', 'shortages', 'shortage', 'damaged'].includes(
+      status,
+    );
   });
 
   const damagedItems = items.filter((i) => {
@@ -71,12 +73,14 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
   const totalItems = items.length;
 
   // Check which files are available - accept either csvContent OR url
-  const hasPDF = exportData.pdf2404?.ok === true && 
-                 !exportData.pdf2404?.message && 
-                 (exportData.pdf2404?.url || exportData.pdf2404?.downloadBase64);
-  
-  const hasCSV = exportData.csvInventory?.ok === true && 
-                 (exportData.csvInventory?.csvContent || exportData.csvInventory?.url);
+  const hasPDF =
+    exportData.pdf2404?.ok === true &&
+    !exportData.pdf2404?.message &&
+    (exportData.pdf2404?.url || exportData.pdf2404?.downloadBase64);
+
+  const hasCSV =
+    exportData.csvInventory?.ok === true &&
+    (exportData.csvInventory?.csvContent || exportData.csvInventory?.url);
 
   // Determine what to show based on active category
   const showingCompleted = activeCategory === 'completed';
@@ -94,17 +98,19 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
     csvHasContent: !!exportData.csvInventory?.csvContent,
     csvHasUrl: !!exportData.csvInventory?.url,
     pdfOk: exportData.pdf2404?.ok,
-    pdfMessage: exportData.pdf2404?.message
+    pdfMessage: exportData.pdf2404?.message,
   });
 
   // Download handlers - only call when explicitly clicked
   const handleDownloadCSV = async (e?: React.MouseEvent) => {
     if (!e) return; // Prevent auto-execution
-    
+
     try {
       if (exportData.csvInventory?.csvContent) {
         // Download from CSV content
-        const blob = new Blob([exportData.csvInventory.csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([exportData.csvInventory.csvContent], {
+          type: 'text/csv;charset=utf-8;',
+        });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
@@ -135,7 +141,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
 
   const handleDownloadPDF = async (e?: React.MouseEvent) => {
     if (!e) return; // Prevent auto-execution
-    
+
     try {
       if (exportData.pdf2404?.url || exportData.pdf2404?.s3Url) {
         const pdfUrl = exportData.pdf2404.url || exportData.pdf2404.s3Url;
@@ -191,17 +197,14 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
       </Typography>
 
       {/* Category Bar */}
-      <ExportCategoryBar 
-        activeCategory={activeCategory} 
-        onCategoryChange={onCategoryChange} 
-      />
+      <ExportCategoryBar activeCategory={activeCategory} onCategoryChange={onCategoryChange} />
 
       {/* Stats Panel - Category Specific Only */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          width: '100%', 
-          maxWidth: 500, 
+      <Paper
+        elevation={0}
+        sx={{
+          width: '100%',
+          maxWidth: 500,
           p: 3,
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: 2,
@@ -211,7 +214,7 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
           {showingCompleted ? 'Reviewed Inventory Summary' : 'Damaged Items Summary'}
         </Typography>
         <Divider sx={{ mb: 2 }} />
-        
+
         <List>
           <ListItem>
             <ListItemText
@@ -225,9 +228,9 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
             <ListItemText
               primary="Document Status"
               secondary={hasFile ? 'Ready to Download' : 'Not Generated'}
-              secondaryTypographyProps={{ 
+              secondaryTypographyProps={{
                 color: hasFile ? 'success.main' : 'text.disabled',
-                fontWeight: hasFile ? 600 : 400
+                fontWeight: hasFile ? 600 : 400,
               }}
               primaryTypographyProps={{ fontWeight: 600 }}
             />
@@ -313,7 +316,9 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
       </Box>
 
       <Typography variant="caption" color="text.secondary" sx={{ mt: 2 }}>
-        {hasFile ? 'Click above to download your file.' : 'Add items with the appropriate status to generate this report.'}
+        {hasFile
+          ? 'Click above to download your file.'
+          : 'Add items with the appropriate status to generate this report.'}
       </Typography>
     </Box>
   );

@@ -42,7 +42,11 @@ const verifier = CognitoJwtVerifier.create({
 
 // generates a temp password
 const generateTempPassword = (): string => {
-  return crypto.randomBytes(12).toString('base64').replace(/[^a-zA-Z]/g, '').slice(0, 16);
+  return crypto
+    .randomBytes(12)
+    .toString('base64')
+    .replace(/[^a-zA-Z]/g, '')
+    .slice(0, 16);
 };
 
 // handles invite user
@@ -434,7 +438,7 @@ export const authRouter = router({
         SK: 'METADATA',
         sub: userId,
         username,
-        name: "",
+        name: '',
         role: 'Owner',
         accountId,
         createdAt: now,
@@ -484,7 +488,7 @@ export const authRouter = router({
         });
       }
 
-      // Request New tokens from cognito 
+      // Request New tokens from cognito
       const cmd = new InitiateAuthCommand({
         ClientId: USER_POOL_CLIENT_ID,
         AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
@@ -540,7 +544,7 @@ export const authRouter = router({
 
       const userId = decoded.sub;
 
-      // Create or fix user records 
+      // Create or fix user records
       const record = await ensureUserRecord({ sub: userId });
 
       return {

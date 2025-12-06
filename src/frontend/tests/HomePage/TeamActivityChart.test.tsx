@@ -14,8 +14,23 @@ vi.mock('recharts', () => ({
       {children}
     </div>
   ),
-  Bar: ({ dataKey, stackId, fill, shape }: { dataKey: string; stackId?: string; fill: string; shape?: any }) => (
-    <div data-testid={`bar-${dataKey}`} data-stack-id={stackId} data-fill={fill} data-has-shape={!!shape} />
+  Bar: ({
+    dataKey,
+    stackId,
+    fill,
+    shape,
+  }: {
+    dataKey: string;
+    stackId?: string;
+    fill: string;
+    shape?: any;
+  }) => (
+    <div
+      data-testid={`bar-${dataKey}`}
+      data-stack-id={stackId}
+      data-fill={fill}
+      data-has-shape={!!shape}
+    />
   ),
   XAxis: ({ dataKey }: { dataKey: string }) => <div data-testid="x-axis" data-key={dataKey} />,
   YAxis: () => <div data-testid="y-axis" />,
@@ -120,7 +135,9 @@ describe('TeamActivityChart', () => {
     });
 
     it('handles single user stats', () => {
-      const singleUser: TeamStat[] = [{ userId: 'user-1', name: 'Alice', completed: 5, shortages: 1, damaged: 0 }];
+      const singleUser: TeamStat[] = [
+        { userId: 'user-1', name: 'Alice', completed: 5, shortages: 1, damaged: 0 },
+      ];
 
       const { container } = renderComponent(singleUser);
 
@@ -210,7 +227,9 @@ describe('TeamActivityChart', () => {
 
   describe('User Stats Values', () => {
     it('handles zero values', () => {
-      const zeroStats: TeamStat[] = [{ userId: 'user-1', name: 'Zero User', completed: 0, shortages: 0, damaged: 0 }];
+      const zeroStats: TeamStat[] = [
+        { userId: 'user-1', name: 'Zero User', completed: 0, shortages: 0, damaged: 0 },
+      ];
 
       const { container } = renderComponent(zeroStats);
 
@@ -306,7 +325,9 @@ describe('TeamActivityChart', () => {
     });
 
     it('handles empty name', () => {
-      const emptyStats: TeamStat[] = [{ userId: 'user-1', name: '', completed: 5, shortages: 1, damaged: 0 }];
+      const emptyStats: TeamStat[] = [
+        { userId: 'user-1', name: '', completed: 5, shortages: 1, damaged: 0 },
+      ];
 
       const { container } = renderComponent(emptyStats);
 
@@ -377,7 +398,9 @@ describe('TeamActivityChart', () => {
       const chart = container.querySelector('[data-testid="bar-chart"]');
       const data = JSON.parse(chart?.getAttribute('data-chart-data') || '[]');
 
-      expect(data[0].name).toBe('Very Long Name That Might Cause Layout Issues In The Chart Display Area');
+      expect(data[0].name).toBe(
+        'Very Long Name That Might Cause Layout Issues In The Chart Display Area',
+      );
     });
 
     it('handles many users', () => {

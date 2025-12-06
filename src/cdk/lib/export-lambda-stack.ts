@@ -7,13 +7,12 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as path from 'path';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 
-
 export interface ExportLambdaStackProps extends StackProps {
   stage: string;
   serviceName: string;
   ddbTable: dynamodb.ITable;
   uploadsBucket: s3.IBucket;
-  kmsKey: any; 
+  kmsKey: any;
   region?: string;
 }
 
@@ -31,7 +30,7 @@ export class ExportLambdaStack extends Stack {
     const commonEnv = {
       TABLE_NAME: ddbTable.tableName,
       UPLOADS_BUCKET: uploadsBucket.bucketName,
-      KMS_KEY_ARN: kmsKey.keyArn, 
+      KMS_KEY_ARN: kmsKey.keyArn,
       REGION: region,
       TEMPLATE_PATH: 'templates/2404-template.pdf',
     };
@@ -41,7 +40,6 @@ export class ExportLambdaStack extends Stack {
       compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
       description: 'PDF processing dependencies (pypdf, pillow, reportlab, etc)',
     });
-
 
     this.pdf2404Function = new lambda.Function(this, 'Export2404Handler', {
       functionName: `${service}-export-2404-handler-${stage}`,
@@ -78,7 +76,7 @@ export class ExportLambdaStack extends Stack {
         effect: iam.Effect.ALLOW,
         actions: ['s3:GetObject'],
         resources: [`${uploadsBucket.bucketArn}/templates/*`],
-      })
+      }),
     );
 
     new CfnOutput(this, 'Pdf2404FunctionArn', {

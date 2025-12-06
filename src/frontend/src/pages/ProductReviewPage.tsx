@@ -128,10 +128,7 @@ export default function ProductReviewPage() {
           bgcolor: theme.palette.background.default,
         }}
       >
-        <TopBar
-          isLoggedIn={true}
-          onProfileClick={() => setProfileOpen(true)}
-        />
+        <TopBar isLoggedIn={true} onProfileClick={() => setProfileOpen(true)} />
         <Box display="flex" justifyContent="center" alignItems="center" flex={1}>
           <CircularProgress />
         </Box>
@@ -152,10 +149,7 @@ export default function ProductReviewPage() {
           bgcolor: theme.palette.background.default,
         }}
       >
-        <TopBar
-          isLoggedIn={true}
-          onProfileClick={() => setProfileOpen(true)}
-        />
+        <TopBar isLoggedIn={true} onProfileClick={() => setProfileOpen(true)} />
         <Box
           sx={{
             width: {
@@ -187,10 +181,7 @@ export default function ProductReviewPage() {
         flexDirection: 'column',
       }}
     >
-      <TopBar
-        isLoggedIn={true}
-        onProfileClick={() => setProfileOpen(true)}
-      />
+      <TopBar isLoggedIn={true} onProfileClick={() => setProfileOpen(true)} />
 
       <Box
         sx={{

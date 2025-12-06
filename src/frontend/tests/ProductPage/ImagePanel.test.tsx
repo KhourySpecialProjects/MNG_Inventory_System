@@ -129,7 +129,9 @@ describe('ImagePanel', () => {
 
       fireEvent.change(input, { target: { files: [largeFile] } });
 
-      expect(await screen.findByText('Image is too large. Please select an image smaller than 3MB.')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Image is too large. Please select an image smaller than 3MB.'),
+      ).toBeInTheDocument();
       expect(mockSetSelectedImageFile).not.toHaveBeenCalled();
     });
 

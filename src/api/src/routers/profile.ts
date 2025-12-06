@@ -4,12 +4,7 @@ import { router, protectedProcedure } from './trpc';
 import { TRPCError } from '@trpc/server';
 import { loadConfig } from '../process';
 import { doc } from '../aws';
-import {
-  GetCommand,
-  PutCommand,
-  UpdateCommand,
-  QueryCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
@@ -45,8 +40,7 @@ async function ensureUniqueUsername(base: string): Promise<string> {
 export const profileRouter = router({
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     const userCtx = ctx.user;
-    if (!userCtx)
-      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No session' });
+    if (!userCtx) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No session' });
 
     const userId = userCtx.userId;
     console.log(`[Profile] getProfile start userId=${userId}`);

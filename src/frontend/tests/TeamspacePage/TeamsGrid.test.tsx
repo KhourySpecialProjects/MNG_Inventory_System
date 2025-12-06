@@ -10,7 +10,7 @@ function renderWithProviders(component: React.ReactElement) {
   return render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>{component}</ThemeProvider>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 }
 
@@ -54,9 +54,7 @@ describe('TeamsGrid', () => {
       onViewMembers: vi.fn(),
     };
 
-    const { container } = renderWithProviders(
-      <TeamsGrid teams={[]} {...mockCallbacks} />
-    );
+    const { container } = renderWithProviders(<TeamsGrid teams={[]} {...mockCallbacks} />);
 
     const grid = container.querySelector('.MuiGrid-container');
     expect(grid?.children.length).toBe(0);
@@ -92,9 +90,7 @@ describe('TeamsGrid', () => {
       onViewMembers: vi.fn(),
     };
 
-    renderWithProviders(
-      <TeamsGrid teams={teamsWithoutDescription} {...mockCallbacks} />
-    );
+    renderWithProviders(<TeamsGrid teams={teamsWithoutDescription} {...mockCallbacks} />);
 
     expect(screen.getByText('Gamma Team')).toBeInTheDocument();
     expect(screen.getByText('No description')).toBeInTheDocument();

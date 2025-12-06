@@ -20,13 +20,7 @@ jest.mock('aws-jwt-verify', () => ({
 jest.mock('../src/helpers/teamspaceHelpers', () => ({
   getUserPermissions: jest.fn(async () => ({
     roleName: 'OWNER',
-    permissions: [
-      'item.create',
-      'item.view',
-      'item.update',
-      'item.delete',
-      'item.reset',
-    ],
+    permissions: ['item.create', 'item.view', 'item.update', 'item.delete', 'item.reset'],
   })),
   checkPermission: jest.fn(async () => ({ allowed: true })),
 }));
@@ -100,15 +94,12 @@ describe('Items Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .post('/trpc/createItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          name: 'New Item',
-          nsn: '1234-56-789-0123',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/createItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        name: 'New Item',
+        nsn: '1234-56-789-0123',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({
@@ -127,15 +118,12 @@ describe('Items Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .post('/trpc/createItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          name: 'Duplicate Item',
-          nsn: '1234-56-789-0123',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/createItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        name: 'Duplicate Item',
+        nsn: '1234-56-789-0123',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(409);
       expect(JSON.stringify(res.body)).toContain('already exists');
@@ -155,18 +143,16 @@ describe('Items Router', () => {
         return {};
       });
 
-      const base64Image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const base64Image =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-      const res = await request(app)
-        .post('/trpc/createItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          name: 'Item With Image',
-          nsn: '9999-99-999-9999',
-          userId: 'test-user-id',
-          imageBase64: base64Image,
-        });
+      const res = await request(app).post('/trpc/createItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        name: 'Item With Image',
+        nsn: '9999-99-999-9999',
+        userId: 'test-user-id',
+        imageBase64: base64Image,
+      });
 
       expect(res.status).toBe(200);
       expect(s3SendSpy).toHaveBeenCalled();
@@ -190,18 +176,15 @@ describe('Items Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .post('/trpc/createItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          name: 'Kit Item',
-          nsn: '5555-55-555-5555',
-          userId: 'test-user-id',
-          isKit: true,
-          liin: 'LIIN123',
-          endItemNiin: 'NIIN456',
-        });
+      const res = await request(app).post('/trpc/createItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        name: 'Kit Item',
+        nsn: '5555-55-555-5555',
+        userId: 'test-user-id',
+        isKit: true,
+        liin: 'LIIN123',
+        endItemNiin: 'NIIN456',
+      });
 
       expect(res.status).toBe(200);
     });
@@ -337,16 +320,13 @@ describe('Items Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .post('/trpc/updateItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          itemId: 'item456',
-          userId: 'test-user-id',
-          name: 'Updated Name',
-          status: 'Reviewed',
-        });
+      const res = await request(app).post('/trpc/updateItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        itemId: 'item456',
+        userId: 'test-user-id',
+        name: 'Updated Name',
+        status: 'Reviewed',
+      });
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({
@@ -368,15 +348,12 @@ describe('Items Router', () => {
 
       const base64Image = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
 
-      const res = await request(app)
-        .post('/trpc/updateItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          itemId: 'item456',
-          userId: 'test-user-id',
-          imageBase64: base64Image,
-        });
+      const res = await request(app).post('/trpc/updateItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        itemId: 'item456',
+        userId: 'test-user-id',
+        imageBase64: base64Image,
+      });
 
       expect(res.status).toBe(200);
       expect(s3SendSpy).toHaveBeenCalled();
@@ -400,15 +377,12 @@ describe('Items Router', () => {
         return {};
       });
 
-      await request(app)
-        .post('/trpc/updateItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          itemId: 'item456',
-          userId: 'test-user-id',
-          status: 'Reviewed',
-        });
+      await request(app).post('/trpc/updateItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        itemId: 'item456',
+        userId: 'test-user-id',
+        status: 'Reviewed',
+      });
 
       expect(dynamoSendSpy).toHaveBeenCalled();
     });
@@ -426,14 +400,11 @@ describe('Items Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .post('/trpc/deleteItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          itemId: 'item456',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/deleteItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        itemId: 'item456',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({
@@ -455,14 +426,11 @@ describe('Items Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .post('/trpc/deleteItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          itemId: 'item456',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/deleteItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        itemId: 'item456',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(200);
       expect(s3SendSpy).toHaveBeenCalled();
@@ -471,14 +439,11 @@ describe('Items Router', () => {
     it('returns error when item not found', async () => {
       dynamoSendSpy.mockResolvedValue({ Item: null });
 
-      const res = await request(app)
-        .post('/trpc/deleteItem')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          itemId: 'nonexistent',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/deleteItem').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        itemId: 'nonexistent',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({
@@ -492,14 +457,11 @@ describe('Items Router', () => {
     it('uploads image to S3 successfully', async () => {
       const base64Image = 'data:image/png;base64,iVBORw0KGgo=';
 
-      const res = await request(app)
-        .post('/trpc/uploadImage')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          nsn: '1234-56-789-0123',
-          imageBase64: base64Image,
-        });
+      const res = await request(app).post('/trpc/uploadImage').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        nsn: '1234-56-789-0123',
+        imageBase64: base64Image,
+      });
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({
@@ -512,14 +474,11 @@ describe('Items Router', () => {
     it('handles S3 upload failure', async () => {
       s3SendSpy.mockRejectedValue(new Error('S3 upload failed'));
 
-      const res = await request(app)
-        .post('/trpc/uploadImage')
-        .set('Cookie', validAuthCookie)
-        .send({
-          teamId: 'team123',
-          nsn: '1234-56-789-0123',
-          imageBase64: 'data:image/png;base64,abc123',
-        });
+      const res = await request(app).post('/trpc/uploadImage').set('Cookie', validAuthCookie).send({
+        teamId: 'team123',
+        nsn: '1234-56-789-0123',
+        imageBase64: 'data:image/png;base64,abc123',
+      });
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({

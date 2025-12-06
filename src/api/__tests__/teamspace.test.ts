@@ -164,15 +164,13 @@ describe('Teamspace Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/createTeamspace')
-        .send({
-          name: 'Test Team',
-          description: 'Location',
-          uic: 'UIC',
-          fe: 'FE',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/createTeamspace').send({
+        name: 'Test Team',
+        description: 'Location',
+        uic: 'UIC',
+        fe: 'FE',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(401);
     });
@@ -183,7 +181,7 @@ describe('Teamspace Router', () => {
       dynamoSendSpy.mockImplementation(async (command: MockableCommand) => {
         if (isCommandNamed(command, 'QueryCommand')) {
           const input = command.input as { IndexName?: string; KeyConditionExpression?: string };
-          
+
           if (input.IndexName === 'GSI_UserTeams') {
             return { Items: [mockMember] };
           }
@@ -401,13 +399,11 @@ describe('Teamspace Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/addUserTeamspace')
-        .send({
-          userId: 'test-user-id',
-          memberUsername: 'johndoe',
-          inviteWorkspaceId: 'team123',
-        });
+      const res = await request(app).post('/trpc/addUserTeamspace').send({
+        userId: 'test-user-id',
+        memberUsername: 'johndoe',
+        inviteWorkspaceId: 'team123',
+      });
 
       expect(res.status).toBe(401);
     });
@@ -468,13 +464,11 @@ describe('Teamspace Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/removeUserTeamspace')
-        .send({
-          userId: 'test-user-id',
-          memberUsername: 'johndoe',
-          inviteWorkspaceId: 'team123',
-        });
+      const res = await request(app).post('/trpc/removeUserTeamspace').send({
+        userId: 'test-user-id',
+        memberUsername: 'johndoe',
+        inviteWorkspaceId: 'team123',
+      });
 
       expect(res.status).toBe(401);
     });
@@ -504,10 +498,7 @@ describe('Teamspace Router', () => {
       s3SendSpy.mockImplementation(async (command: MockableCommand) => {
         if (isCommandNamed(command, 'ListObjectsV2Command')) {
           return {
-            Contents: [
-              { Key: 'items/team123/img1.png' },
-              { Key: 'items/team123/img2.png' },
-            ],
+            Contents: [{ Key: 'items/team123/img1.png' }, { Key: 'items/team123/img2.png' }],
           };
         }
         if (isCommandNamed(command, 'DeleteObjectsCommand')) {
@@ -534,12 +525,10 @@ describe('Teamspace Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/deleteTeamspace')
-        .send({
-          inviteWorkspaceId: 'team123',
-          userId: 'test-user-id',
-        });
+      const res = await request(app).post('/trpc/deleteTeamspace').send({
+        inviteWorkspaceId: 'team123',
+        userId: 'test-user-id',
+      });
 
       expect(res.status).toBe(401);
     });
@@ -560,27 +549,21 @@ describe('Teamspace Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .get('/trpc/getAllUsers')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getAllUsers').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.success).toBe(true);
       expect(res.body?.result?.data?.users[0]).toMatchObject({
         userId: 'user456',
         username: 'johndoe',
-        teams: expect.arrayContaining([
-          expect.objectContaining({ teamId: 'team123' }),
-        ]),
+        teams: expect.arrayContaining([expect.objectContaining({ teamId: 'team123' })]),
       });
     });
 
     it('returns empty array when no users exist', async () => {
       dynamoSendSpy.mockResolvedValue({ Items: [] });
 
-      const res = await request(app)
-        .get('/trpc/getAllUsers')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getAllUsers').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({

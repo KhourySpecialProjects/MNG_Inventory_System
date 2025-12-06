@@ -236,11 +236,10 @@ def lambda_handler(event, context):
 
     damaged = []
     for itm in items:
-        rep = itm.get("damageReports")
-        if isinstance(rep, list) and rep:
+        status = (itm.get("status") or "").strip().lower()
+        if status == "damaged":
             damaged.append(itm)
-        elif isinstance(rep, str) and rep.strip():
-            damaged.append(itm)
+
 
     if not damaged:
         return _resp(200, {"ok": True, "message": "No damaged items"})

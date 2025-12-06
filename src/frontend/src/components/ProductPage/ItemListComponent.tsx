@@ -26,14 +26,14 @@ interface ItemListComponentProps {
 
 export default function ItemListComponent({
   items = [],
-  initialExpandedItems
+  initialExpandedItems,
 }: ItemListComponentProps) {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
   const theme = useTheme();
 
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(
-    initialExpandedItems || new Set()
+    initialExpandedItems || new Set(),
   );
 
   useEffect(() => {
@@ -141,8 +141,8 @@ export default function ItemListComponent({
           '&:hover': {
             backgroundColor: alpha(theme.palette.primary.main, 0.08),
             borderColor: theme.palette.primary.main,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`
-          }
+            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+          },
         }}
       >
         <Box
@@ -154,13 +154,13 @@ export default function ItemListComponent({
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: alpha(theme.palette.primary.main, 0.1),
-            border: `2px dashed ${alpha(theme.palette.primary.main, 0.3)}`
+            border: `2px dashed ${alpha(theme.palette.primary.main, 0.3)}`,
           }}
         >
           <AddIcon
             sx={{
               fontSize: { xs: 40, sm: 48 },
-              color: theme.palette.primary.main
+              color: theme.palette.primary.main,
             }}
           />
         </Box>
@@ -170,7 +170,7 @@ export default function ItemListComponent({
           sx={{
             fontWeight: 600,
             fontSize: { xs: '1rem', sm: '1.1rem' },
-            color: theme.palette.primary.main
+            color: theme.palette.primary.main,
           }}
         >
           Add New Item
@@ -211,7 +211,7 @@ export default function ItemListComponent({
             boxShadow: 'none',
             minHeight: { xs: 96, sm: 112 },
             ...(level > 0 && {
-              borderLeft: `3px solid ${theme.palette.primary.main}`
+              borderLeft: `3px solid ${theme.palette.primary.main}`,
             }),
             '&:hover': {
               backgroundColor: alpha(theme.palette.primary.main, 0.04),
@@ -219,9 +219,9 @@ export default function ItemListComponent({
               boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.1)}`,
               cursor: 'pointer',
               '& .item-image': {
-                transform: 'scale(1.05)'
-              }
-            }
+                transform: 'scale(1.05)',
+              },
+            },
           }}
         >
           {/* IMAGE */}
@@ -232,7 +232,7 @@ export default function ItemListComponent({
               borderRadius: 1.5,
               overflow: 'hidden',
               flexShrink: 0,
-              boxShadow: `0 2px 8px ${alpha('#000', 0.1)}`
+              boxShadow: `0 2px 8px ${alpha('#000', 0.1)}`,
             }}
           >
             <CardMedia
@@ -244,7 +244,7 @@ export default function ItemListComponent({
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transition: 'transform 0.2s ease'
+                transition: 'transform 0.2s ease',
               }}
             />
           </Box>
@@ -257,7 +257,7 @@ export default function ItemListComponent({
                 fontWeight: 600,
                 fontSize: { xs: '1rem', sm: '1.1rem' },
                 color: theme.palette.text.primary,
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
               }}
             >
               {item.productName}
@@ -268,7 +268,7 @@ export default function ItemListComponent({
               sx={{
                 fontSize: { xs: '0.85rem', sm: '0.9rem' },
                 color: theme.palette.text.secondary,
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
               }}
             >
               {item.actualName}
@@ -279,7 +279,7 @@ export default function ItemListComponent({
               sx={{
                 fontSize: { xs: '0.8rem', sm: '0.85rem' },
                 color: theme.palette.text.secondary,
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
               }}
             >
               {item.subtitle}
@@ -296,7 +296,7 @@ export default function ItemListComponent({
               flexShrink: 0,
               height: '100%',
               gridColumn: { xs: '1 / 3', sm: '3' },
-              gridRow: { xs: '2', sm: '1' }
+              gridRow: { xs: '2', sm: '1' },
             }}
           >
             {/* DESKTOP DATE + COUNT */}
@@ -305,7 +305,7 @@ export default function ItemListComponent({
                 display: { xs: 'none', sm: 'flex' },
                 flexDirection: 'column',
                 alignItems: 'flex-end',
-                gap: 0.5
+                gap: 0.5,
               }}
             >
               <Typography
@@ -313,7 +313,7 @@ export default function ItemListComponent({
                   fontSize: '0.8rem',
                   color: theme.palette.text.secondary,
                   fontWeight: 500,
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {item.date}
@@ -331,7 +331,7 @@ export default function ItemListComponent({
                     backgroundColor: alpha(theme.palette.primary.main, 0.1),
                     color: theme.palette.primary.main,
                     fontSize: '0.75rem',
-                    fontWeight: 600
+                    fontWeight: 600,
                   }}
                 >
                   📦 {totalChildCount} {totalChildCount === 1 ? 'item' : 'items'}
@@ -347,7 +347,7 @@ export default function ItemListComponent({
                 gap: 1,
                 flexWrap: 'wrap',
                 justifyContent: 'flex-end',
-                width: '100%'
+                width: '100%',
               }}
             >
               {/* MOBILE DATE + ITEM COUNT */}
@@ -356,7 +356,7 @@ export default function ItemListComponent({
                   display: { xs: 'flex', sm: 'none' },
                   alignItems: 'center',
                   gap: 1,
-                  marginRight: 'auto'
+                  marginRight: 'auto',
                 }}
               >
                 <Typography
@@ -364,7 +364,7 @@ export default function ItemListComponent({
                     fontSize: '0.75rem',
                     color: theme.palette.text.secondary,
                     fontWeight: 500,
-                    whiteSpace: 'nowrap'
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {item.date}
@@ -382,7 +382,7 @@ export default function ItemListComponent({
                       backgroundColor: alpha(theme.palette.primary.main, 0.1),
                       color: theme.palette.primary.main,
                       fontSize: '0.7rem',
-                      fontWeight: 600
+                      fontWeight: 600,
                     }}
                   >
                     📦 {totalChildCount} {totalChildCount === 1 ? 'item' : 'items'}
@@ -404,7 +404,7 @@ export default function ItemListComponent({
                   color: isKit ? theme.palette.info.main : theme.palette.success.main,
                   textTransform: 'uppercase',
                   letterSpacing: '0.3px',
-                  flexShrink: 0
+                  flexShrink: 0,
                 }}
               >
                 {isKit ? 'Kit' : 'Item'}
@@ -423,7 +423,7 @@ export default function ItemListComponent({
                     color: statusColors.text,
                     textTransform: 'uppercase',
                     letterSpacing: '0.3px',
-                    flexShrink: 0
+                    flexShrink: 0,
                   }}
                 >
                   {shownStatus}
@@ -441,11 +441,15 @@ export default function ItemListComponent({
                     flexShrink: 0,
                     '&:hover': {
                       color: theme.palette.primary.main,
-                      backgroundColor: alpha(theme.palette.primary.main, 0.1)
-                    }
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                    },
                   }}
                 >
-                  {isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                  {isExpanded ? (
+                    <ExpandLessIcon fontSize="small" />
+                  ) : (
+                    <ExpandMoreIcon fontSize="small" />
+                  )}
                 </IconButton>
               )}
             </Box>

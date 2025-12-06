@@ -125,10 +125,10 @@ export function CreateTeamDialog({
   }
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
       maxWidth="xs"
       PaperProps={{
         sx: {
@@ -137,8 +137,8 @@ export function CreateTeamDialog({
         },
       }}
     >
-      <DialogTitle 
-        sx={{ 
+      <DialogTitle
+        sx={{
           fontWeight: 700,
           fontSize: '1.5rem',
           pb: 1,
@@ -158,7 +158,7 @@ export function CreateTeamDialog({
           onChange={(e) => setWorkspaceName(e.target.value)}
           error={errors.workspaceName}
           helperText={errors.workspaceName ? 'Required' : ''}
-          sx={{ 
+          sx={{
             mb: 2.5,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
@@ -177,7 +177,7 @@ export function CreateTeamDialog({
           onChange={(e) => setUic(e.target.value)}
           error={errors.uic}
           helperText={errors.uic ? 'Required' : ''}
-          sx={{ 
+          sx={{
             mb: 2.5,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
@@ -196,7 +196,7 @@ export function CreateTeamDialog({
           onChange={(e) => setContactName(e.target.value)}
           error={errors.contactName}
           helperText={errors.contactName ? 'Required' : ''}
-          sx={{ 
+          sx={{
             mb: 2.5,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
@@ -215,7 +215,7 @@ export function CreateTeamDialog({
           onChange={(e) => setContactEmail(e.target.value)}
           error={errors.contactEmail}
           helperText={errors.contactEmail ? 'Required' : ''}
-          sx={{ 
+          sx={{
             mb: 1,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
@@ -229,8 +229,8 @@ export function CreateTeamDialog({
       </DialogContent>
 
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
-        <Button 
-          onClick={onClose} 
+        <Button
+          onClick={onClose}
           disabled={loading}
           sx={{
             borderRadius: 2,
@@ -250,7 +250,8 @@ export function CreateTeamDialog({
             px: 3,
             textTransform: 'none',
             fontWeight: 600,
-            background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
             transition: 'all 0.3s ease',
             '&:hover': {
               transform: 'translateY(-2px)',
@@ -376,10 +377,10 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
   }, [open]);
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
       maxWidth="xs"
       PaperProps={{
         sx: {
@@ -388,8 +389,8 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
         },
       }}
     >
-      <DialogTitle 
-        sx={{ 
+      <DialogTitle
+        sx={{
           fontWeight: 700,
           fontSize: '1.5rem',
           pb: 1,
@@ -523,8 +524,8 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
       </DialogContent>
 
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
-        <Button 
-          onClick={onClose} 
+        <Button
+          onClick={onClose}
           disabled={loading}
           sx={{
             borderRadius: 2,
@@ -552,7 +553,7 @@ export function InviteDialog({ open, onClose, teams, onRefresh, showSnackbar }: 
             },
           }}
         >
-          {loading ? 'Processing...' : (inviteMode === 'platform' ? 'Invite' : 'Add')}
+          {loading ? 'Processing...' : inviteMode === 'platform' ? 'Invite' : 'Add'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -771,7 +772,9 @@ export function DeleteTeamDialog({
     } catch (err) {
       console.error('❌ handleDelete error:', err);
       const errorMessage =
-        err instanceof Error ? err.message : 'An unexpected error occurred while deleting teamspace.';
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred while deleting teamspace.';
       showSnackbar(errorMessage, 'error');
     } finally {
       setLoading(false);

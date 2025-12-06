@@ -16,7 +16,7 @@ These are the currently implemented router pathways in the /API pathway.
 - Home: Returns top-level system summaries and simple status information.
 - Process: Handles long-running or multi-step backend processes.
 - TRPC: Helpers for intializing TPRC routers. Documentation for tPRC can be found [here](https://trpc.io/docs/server/routers).
-- Export: Fetches all the information in team DynamoDB and automates it to a CSV or PDF ouput. 
+- Export: Fetches all the information in team DynamoDB and automates it to a CSV or PDF ouput.
 
 ### Usage of current pathways
 
@@ -26,14 +26,14 @@ Below are the current API methods and use cases. Methods are called using:
 
 #### Auth
 
-| Router name        | Use case                                                         | Params                                                                                    | Returns                                                                                           |                                    |          |
-| ------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------- | -------- |
-| inviteUser         | Invite a user via Cognito and send custom SES email with temp pw | inviteUser({ email: "[user@example.com](mailto:user@example.com)" })                      | `{ success: true, userEmail, message }`                                                           |                                    |          |
-| signIn             | Sign in with email/password, handle challenges, set cookies      | signIn({ email: "[user@example.com](mailto:user@example.com)", password: "password123" }) | Challenge → `{ success: false, challengeName, session }`<br>Success → `{ success: true, tokens }` |                                    |          |
-| respondToChallenge | Complete NEW_PASSWORD_REQUIRED or MFA challenge                  | respondToChallenge({ challengeName, session, newPassword?, mfaCode?, email })             | Challenge → `{ success: false, challengeName, session }`<br>Success → `{ success: true, tokens }` |                                    |          |
-| me                 | Inspect auth cookies and return current user info                | me()                                                                                      | `{ authenticated: false }` or `{ authenticated: true, userId, username, role, accountId }`        |                                    |          |
-| refresh            | Refresh access/id tokens using refresh cookie                    | refresh()                                                                                 | `{ refreshed: false }` or `{ refreshed: true, userId, username, accountId }`                      |                                    |          |
-| logout             | Clear auth cookies and end session                               | logout()                                                                                  | `{ success: true, message: "Signed out" }`                                                        | 
+| Router name        | Use case                                                         | Params                                                                                    | Returns                                                                                           |     |     |
+| ------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --- | --- |
+| inviteUser         | Invite a user via Cognito and send custom SES email with temp pw | inviteUser({ email: "[user@example.com](mailto:user@example.com)" })                      | `{ success: true, userEmail, message }`                                                           |     |     |
+| signIn             | Sign in with email/password, handle challenges, set cookies      | signIn({ email: "[user@example.com](mailto:user@example.com)", password: "password123" }) | Challenge → `{ success: false, challengeName, session }`<br>Success → `{ success: true, tokens }` |     |     |
+| respondToChallenge | Complete NEW_PASSWORD_REQUIRED or MFA challenge                  | respondToChallenge({ challengeName, session, newPassword?, mfaCode?, email })             | Challenge → `{ success: false, challengeName, session }`<br>Success → `{ success: true, tokens }` |     |     |
+| me                 | Inspect auth cookies and return current user info                | me()                                                                                      | `{ authenticated: false }` or `{ authenticated: true, userId, username, role, accountId }`        |     |     |
+| refresh            | Refresh access/id tokens using refresh cookie                    | refresh()                                                                                 | `{ refreshed: false }` or `{ refreshed: true, userId, username, accountId }`                      |     |     |
+| logout             | Clear auth cookies and end session                               | logout()                                                                                  | `{ success: true, message: "Signed out" }`                                                        |
 
 #### S3
 
@@ -45,7 +45,7 @@ Below are the current API methods and use cases. Methods are called using:
 | deleteObject | Delete an S3 object by key                                           | deleteObject({ key })                         | `{ success: true }`                 |
 | listImages   | List images under a computed prefix for the team/scope/item          | listImages({ scope, serialNumber, limit })    | `{ images: string[] }`              |
 
-#### Teamspace 
+#### Teamspace
 
 | Router name             | Use case                                          | Params                                                               | Returns                               |
 | ----------------------- | ------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------- |
@@ -100,7 +100,6 @@ Below are the current API methods and use cases. Methods are called using:
 | Router name   | Use case                                                           | Params                  | Returns                                        |
 | ------------- | ------------------------------------------------------------------ | ----------------------- | ---------------------------------------------- |
 | **getExport** | Run Python export scripts (2404 + inventory) and return CSV output | `getExport({ teamId })` | `{ success, csv2404?, csvInventory?, error? }` |
-
 
 #### Process
 

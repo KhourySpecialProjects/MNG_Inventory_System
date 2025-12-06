@@ -11,13 +11,15 @@ export default function NavBar() {
   const location = useLocation();
   const { teamId } = useParams<{ teamId: string }>();
 
-  const currentValue =
-    location.pathname.includes(`/teams/home/${teamId}`) ? 'home' :
-    location.pathname.includes(`/teams/to-review/${teamId}`) ? 'toReview' :
-    location.pathname.includes(`/teams/reviewed/${teamId}`) ? 'reviewed' :
-    location.pathname.includes(`/teams/export/${teamId}`) ? 'export' :
-    '';
-
+  const currentValue = location.pathname.includes(`/teams/home/${teamId}`)
+    ? 'home'
+    : location.pathname.includes(`/teams/to-review/${teamId}`)
+      ? 'toReview'
+      : location.pathname.includes(`/teams/reviewed/${teamId}`)
+        ? 'reviewed'
+        : location.pathname.includes(`/teams/export/${teamId}`)
+          ? 'export'
+          : '';
 
   const handleChange = (event: React.SyntheticEvent, newValue: string) => {
     if (!teamId) {

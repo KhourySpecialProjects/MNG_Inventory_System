@@ -101,94 +101,94 @@ export const teamspaceRouter = router({
         return { success: false, error: err.message || 'Failed to create teamspace.' };
       }
     }),
-/** GET TEAMSPACES */
-getTeamspace: permissionedProcedure('team.view')
-  .input(z.object({ userId: z.string().min(1) }))
-  .query(async ({ input }) => {
-    try {
-      // 1. Get memberships
-      const q = await doc.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: 'GSI_UserTeams',
-          KeyConditionExpression: 'GSI1PK = :uid',
-          ExpressionAttributeValues: { ':uid': `USER#${input.userId}` },
-        }),
-      );
+  /** GET TEAMSPACES */
+  getTeamspace: permissionedProcedure('team.view')
+    .input(z.object({ userId: z.string().min(1) }))
+    .query(async ({ input }) => {
+      try {
+        // 1. Get memberships
+        const q = await doc.send(
+          new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: 'GSI_UserTeams',
+            KeyConditionExpression: 'GSI1PK = :uid',
+            ExpressionAttributeValues: { ':uid': `USER#${input.userId}` },
+          }),
+        );
 
-      const memberships = q.Items ?? [];
-      if (!memberships.length) return { success: true, teams: [] };
+        const memberships = q.Items ?? [];
+        if (!memberships.length) return { success: true, teams: [] };
 
-      // 2. Fetch team metadata + compute status %
-      const teams = await Promise.all(
-        memberships.map(async (m) => {
-          const teamId = m.teamId;
+        // 2. Fetch team metadata + compute status %
+        const teams = await Promise.all(
+          memberships.map(async (m) => {
+            const teamId = m.teamId;
 
-          // --- Fetch team metadata ---
-          const metaRes = await doc.send(
-            new GetCommand({
-              TableName: TABLE_NAME,
-              Key: { PK: `TEAM#${teamId}`, SK: 'METADATA' },
-            }),
-          );
+            // --- Fetch team metadata ---
+            const metaRes = await doc.send(
+              new GetCommand({
+                TableName: TABLE_NAME,
+                Key: { PK: `TEAM#${teamId}`, SK: 'METADATA' },
+              }),
+            );
 
-          const team = metaRes.Item;
-          if (!team) return null;
+            const team = metaRes.Item;
+            if (!team) return null;
 
-          // --- Fetch all tasks (items) ---
-          const itemsRes = await doc.send(
-            new QueryCommand({
-              TableName: TABLE_NAME,
-              KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-              ExpressionAttributeValues: {
-                ':pk': `TEAM#${teamId}`,
-                ':sk': 'ITEM#',
+            // --- Fetch all tasks (items) ---
+            const itemsRes = await doc.send(
+              new QueryCommand({
+                TableName: TABLE_NAME,
+                KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+                ExpressionAttributeValues: {
+                  ':pk': `TEAM#${teamId}`,
+                  ':sk': 'ITEM#',
+                },
+              }),
+            );
+
+            const items = itemsRes.Items ?? [];
+
+            // --- Count statuses (MATCH EXACT STRINGS USED IN itemsRouter) ---
+            let toReview = 0;
+            let completed = 0;
+            let shortages = 0;
+            let damaged = 0;
+
+            for (const item of items) {
+              const s = (item.status ?? '').toLowerCase();
+
+              if (s === 'to review') toReview++;
+              else if (s === 'completed') completed++;
+              else if (s === 'shortages') shortages++;
+              else if (s === 'damaged') damaged++;
+            }
+
+            const total = items.length || 1;
+
+            // percent done = Completed / total
+            const reviewed = completed + shortages + damaged;
+            const percent = Math.round((reviewed / total) * 100);
+
+            return {
+              ...team,
+              percent,
+              totals: {
+                toReview,
+                completed,
+                shortages,
+                damaged,
               },
-            }),
-          );
+            };
+          }),
+        );
 
-          const items = itemsRes.Items ?? [];
-
-          // --- Count statuses (MATCH EXACT STRINGS USED IN itemsRouter) ---
-          let toReview = 0;
-          let completed = 0;
-          let shortages = 0;
-          let damaged = 0;
-
-          for (const item of items) {
-            const s = (item.status ?? "").toLowerCase();
-
-            if (s === "to review") toReview++;
-            else if (s === "completed") completed++;
-            else if (s === "shortages") shortages++;
-            else if (s === "damaged") damaged++;
-          }
-
-          const total = items.length || 1;
-
-          // percent done = Completed / total
-          const reviewed = completed + shortages + damaged;
-          const percent = Math.round((reviewed / total) * 100);
-
-          return {
-            ...team,
-            percent,
-            totals: {
-              toReview,
-              completed,
-              shortages,
-              damaged,
-            },
-          };
-        }),
-      );
-
-      return { success: true, teams: teams.filter(Boolean) };
-    } catch (err: any) {
-      console.error("❌ getTeamspace error:", err);
-      return { success: false, error: err.message || "Failed to fetch teams." };
-    }
-  }),
+        return { success: true, teams: teams.filter(Boolean) };
+      } catch (err: any) {
+        console.error('❌ getTeamspace error:', err);
+        return { success: false, error: err.message || 'Failed to fetch teams.' };
+      }
+    }),
 
   /** GET SINGLE TEAM BY ID */
   getTeamById: publicProcedure
@@ -285,52 +285,52 @@ getTeamspace: permissionedProcedure('team.view')
       }
     }),
   /** REMOVE USER FROM TEAMSPACE */
-removeUserTeamspace: permissionedProcedure('team.remove_member')
-  .input(
-    z.object({
-      userId: z.string().min(1),
-      memberUsername: z.string().min(1),
-      inviteWorkspaceId: z.string().min(1),
-    }),
-  )
-  .mutation(async ({ input }) => {
-    try {
-      const q = await doc.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: 'GSI_UsersByUsername',
-          KeyConditionExpression: 'username = :u',
-          ExpressionAttributeValues: { ':u': input.memberUsername.trim() },
-          Limit: 1,
-        }),
-      );
+  removeUserTeamspace: permissionedProcedure('team.remove_member')
+    .input(
+      z.object({
+        userId: z.string().min(1),
+        memberUsername: z.string().min(1),
+        inviteWorkspaceId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const q = await doc.send(
+          new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: 'GSI_UsersByUsername',
+            KeyConditionExpression: 'username = :u',
+            ExpressionAttributeValues: { ':u': input.memberUsername.trim() },
+            Limit: 1,
+          }),
+        );
 
-      const target = q.Items?.[0];
-      if (!target) {
-        return { success: false, error: 'User not found by username.' };
+        const target = q.Items?.[0];
+        if (!target) {
+          return { success: false, error: 'User not found by username.' };
+        }
+
+        const userIdToRemove = target.sub;
+
+        await doc.send(
+          new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: {
+              PK: `TEAM#${input.inviteWorkspaceId}`,
+              SK: `MEMBER#${userIdToRemove}`,
+            },
+          }),
+        );
+
+        return { success: true, removed: target.username };
+      } catch (err: any) {
+        console.error('❌ removeUserTeamspace error:', err);
+        return {
+          success: false,
+          error: err.message || 'Failed to remove member.',
+        };
       }
-
-      const userIdToRemove = target.sub;
-
-      await doc.send(
-        new DeleteCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TEAM#${input.inviteWorkspaceId}`,
-            SK: `MEMBER#${userIdToRemove}`,
-          },
-        }),
-      );
-
-      return { success: true, removed: target.username };
-    } catch (err: any) {
-      console.error('❌ removeUserTeamspace error:', err);
-      return {
-        success: false,
-        error: err.message || 'Failed to remove member.',
-      };
-    }
-  }),
+    }),
   /** DELETE TEAMSPACE */
   deleteTeamspace: permissionedProcedure('team.delete')
     .input(
@@ -494,7 +494,7 @@ removeUserTeamspace: permissionedProcedure('team.remove_member')
           members.map(async (m) => {
             const userId = m.userId;
 
-            // Fetch full USER metadata 
+            // Fetch full USER metadata
             const userRes = await doc.send(
               new GetCommand({
                 TableName: TABLE_NAME,
@@ -525,8 +525,8 @@ removeUserTeamspace: permissionedProcedure('team.remove_member')
               userId,
               username: user.username ?? '',
               name: user.name ?? '',
-              roleName: globalRoleName,         
-              roleId,                            
+              roleName: globalRoleName,
+              roleId,
               permissions: roleData.permissions ?? [],
               joinedAt: m.joinedAt,
             };
@@ -542,5 +542,4 @@ removeUserTeamspace: permissionedProcedure('team.remove_member')
         };
       }
     }),
-
 });

@@ -136,7 +136,12 @@ describe('ActionPanel', () => {
       const changedOHProps = {
         ...baseProps,
         product: { ...baseProps.product, status: 'Shortages', ohQuantity: 2 },
-        editedProduct: { ...baseProps.editedProduct, status: 'Shortages', ohQuantity: 1, authQuantity: 3 },
+        editedProduct: {
+          ...baseProps.editedProduct,
+          status: 'Shortages',
+          ohQuantity: 1,
+          authQuantity: 3,
+        },
       };
 
       renderWithRouter(<ActionPanel {...changedOHProps} />);
@@ -148,7 +153,12 @@ describe('ActionPanel', () => {
       const invalidOHProps = {
         ...baseProps,
         product: { ...baseProps.product, status: 'To Review' },
-        editedProduct: { ...baseProps.editedProduct, status: 'Shortages', ohQuantity: 5, authQuantity: 3 },
+        editedProduct: {
+          ...baseProps.editedProduct,
+          status: 'Shortages',
+          ohQuantity: 5,
+          authQuantity: 3,
+        },
       };
 
       renderWithRouter(<ActionPanel {...invalidOHProps} />);
@@ -254,15 +264,15 @@ describe('ActionPanel', () => {
   });
 
   describe('Create Mode', () => {
-    const createModeProps = { 
-      ...baseProps, 
-      isCreateMode: true, 
-      isEditMode: true, 
+    const createModeProps = {
+      ...baseProps,
+      isCreateMode: true,
+      isEditMode: true,
       itemId: 'new',
       editedProduct: {
         ...baseProps.editedProduct,
         parent: 'kit-123',
-      }
+      },
     };
 
     it('renders CREATE button in create mode', () => {
@@ -280,8 +290,8 @@ describe('ActionPanel', () => {
     });
 
     it('shows error dialog when required fields missing', async () => {
-      const propsNoFields = { 
-        ...createModeProps, 
+      const propsNoFields = {
+        ...createModeProps,
         editedProduct: {
           productName: '',
           actualName: '',
@@ -291,7 +301,7 @@ describe('ActionPanel', () => {
           authQuantity: 1,
           isKit: false,
           parent: 'kit-123',
-        }
+        },
       };
 
       renderWithRouter(<ActionPanel {...propsNoFields} />);
@@ -299,7 +309,9 @@ describe('ActionPanel', () => {
       const createButtons = screen.getAllByRole('button', { name: /^CREATE$/i });
       fireEvent.click(createButtons[0]);
 
-      expect(await screen.findByText('Please fill in all required fields correctly')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Please fill in all required fields correctly'),
+      ).toBeInTheDocument();
       expect(mockSetFieldErrors).toHaveBeenCalled();
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
@@ -312,7 +324,9 @@ describe('ActionPanel', () => {
       const createButtons = screen.getAllByRole('button', { name: /^CREATE$/i });
       fireEvent.click(createButtons[0]);
 
-      expect(await screen.findByText('Please add an image before creating the item')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Please add an image before creating the item'),
+      ).toBeInTheDocument();
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
 
@@ -331,7 +345,9 @@ describe('ActionPanel', () => {
       const createButtons = screen.getAllByRole('button', { name: /^CREATE$/i });
       fireEvent.click(createButtons[0]);
 
-      expect(await screen.findByText('Authorized Quantity must be greater than or equal to OH Quantity')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Authorized Quantity must be greater than or equal to OH Quantity'),
+      ).toBeInTheDocument();
       expect(vi.mocked(itemsAPI.createItem)).not.toHaveBeenCalled();
     });
 
@@ -599,7 +615,7 @@ describe('ActionPanel', () => {
         editedProduct: {
           ...baseProps.editedProduct,
           parent: 'kit-123',
-        }
+        },
       };
 
       renderWithRouter(<ActionPanel {...createProps} />);
@@ -669,7 +685,7 @@ describe('ActionPanel', () => {
           expect.objectContaining({
             productName: true,
             nsn: true,
-          })
+          }),
         );
       });
     });

@@ -169,7 +169,7 @@ export default function ItemDetailsForm({
       <Grid container spacing={2}>
         {itemType === 'item' && (
           <Grid size={{ xs: 12, sm: 6 }}>
-            {(isEditMode || isCreateMode) ? (
+            {isEditMode || isCreateMode ? (
               <TextField
                 label="Authorized Quantity"
                 type="text"
@@ -193,7 +193,7 @@ export default function ItemDetailsForm({
         )}
 
         <Grid size={{ xs: 12, sm: itemType === 'item' ? 6 : 12 }}>
-          {(isEditMode || isCreateMode) ? (
+          {isEditMode || isCreateMode ? (
             <Autocomplete
               options={[
                 { itemId: 'NO_KIT', name: 'No Kit', actualName: '' },

@@ -232,7 +232,7 @@ describe('ItemDetailsForm', () => {
 
       const autocomplete = screen.getByRole('combobox');
       expect(autocomplete).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Select parent kit or \'No Kit\'')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Select parent kit or 'No Kit'")).toBeInTheDocument();
     });
   });
 
@@ -317,7 +317,6 @@ describe('ItemDetailsForm', () => {
   });
 
   describe('Always Editable Fields', () => {
-
     it('shows notes field in view mode when notes is always editable', () => {
       render(
         <ItemDetailsForm

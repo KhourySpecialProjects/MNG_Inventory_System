@@ -11,7 +11,6 @@ import { SesStack } from '../lib/ses-stack';
 import { S3UploadsStack } from '../lib/s3-stack';
 import { ExportLambdaStack } from '../lib/export-lambda-stack';
 
-
 const app = new cdk.App();
 
 // Stage config passed in from resolveStage()
@@ -217,7 +216,7 @@ const web = new WebStack(app, `MngWeb-${cfg.name}`, {
 });
 
 // pass web URL to API for email links, etc.
-const webUrl = "https://d305dnjd1krpyr.cloudfront.net";
+const webUrl = 'https://d305dnjd1krpyr.cloudfront.net';
 api.apiFn.addEnvironment('WEB_URL', webUrl);
 
 // Create uploads bucket
@@ -234,20 +233,22 @@ const exportLambdas = new ExportLambdaStack(app, `MngLambdaExport-${cfg.name}`, 
   serviceName: 'mng',
   ddbTable: dynamo.table,
   uploadsBucket: uploads.bucket,
-  kmsKey: uploads.key,  
+  kmsKey: uploads.key,
   region,
 });
 
 uploads.grantApiAccess(exportLambdas.pdf2404Function.role!);
 uploads.grantApiAccess(exportLambdas.inventoryFunction.role!);
 
-
 // Grant API Lambda permission to invoke export functions
 exportLambdas.grantInvoke(api.apiFn);
 
 // Pass function names to API Lambda via environment variables
 api.apiFn.addEnvironment('EXPORT_2404_FUNCTION_NAME', exportLambdas.pdf2404Function.functionName);
-api.apiFn.addEnvironment('EXPORT_INVENTORY_FUNCTION_NAME', exportLambdas.inventoryFunction.functionName);
+api.apiFn.addEnvironment(
+  'EXPORT_INVENTORY_FUNCTION_NAME',
+  exportLambdas.inventoryFunction.functionName,
+);
 
 // Grant API Lambda full access to uploads bucket + KMS key
 uploads.grantApiAccess(api.apiFn.role!);

@@ -168,7 +168,14 @@ export default function HomePage() {
   const teamStats = dashboardData?.teamStats || [];
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: theme.palette.background.default }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: theme.palette.background.default,
+      }}
+    >
       <TopBar isLoggedIn onProfileClick={() => setProfileOpen(true)} />
       <Box
         sx={{

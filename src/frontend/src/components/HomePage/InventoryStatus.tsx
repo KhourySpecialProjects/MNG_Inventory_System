@@ -34,11 +34,11 @@ export default function InventoryStatus({ teamName, totals }: InventoryStatusPro
 
   return (
     <Fade in timeout={400}>
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 3, 
-          bgcolor: theme.palette.background.paper, 
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          bgcolor: theme.palette.background.paper,
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: 2,
         }}

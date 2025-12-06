@@ -121,7 +121,7 @@ export const itemsRouter = router({
           }
           return false;
         });
-        
+
         if (duplicate) {
           const field = input.isKit ? 'End Item NIIN' : 'NSN';
           const value = input.isKit ? input.endItemNiin : input.nsn;

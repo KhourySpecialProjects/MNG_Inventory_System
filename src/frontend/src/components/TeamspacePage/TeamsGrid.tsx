@@ -6,9 +6,8 @@ export interface Team {
   teamId: string;
   GSI_NAME: string;
   description?: string;
-  percent?: number; 
+  percent?: number;
 }
-
 
 interface TeamsGridProps {
   teams: Team[];
@@ -29,15 +28,12 @@ export default function TeamsGrid({
     <Grid
       container
       spacing={{ xs: 2, sm: 2.5, md: 3 }}
-      sx={{ 
+      sx={{
         px: { xs: 1.5, sm: 2, md: 3 },
       }}
     >
       {teams.map((team) => (
-        <Grid
-          key={team.teamId}
-          size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}
-        >
+        <Grid key={team.teamId} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
           <Box
             sx={{
               width: '100%',
@@ -54,7 +50,7 @@ export default function TeamsGrid({
               id={team.teamId}
               name={team.GSI_NAME}
               description={team.description}
-              percent={team.percent ?? 0}    
+              percent={team.percent ?? 0}
               onInvite={onInvite}
               onRemove={() => onRemove(team.teamId, team.GSI_NAME)}
               onDelete={() => onDelete(team.teamId, team.GSI_NAME)}

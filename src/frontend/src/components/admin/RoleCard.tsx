@@ -20,7 +20,7 @@ interface RoleCardProps {
   description?: string;
   permissions: Permission[];
   isDefault?: boolean;
-  isMyRole?: boolean;   
+  isMyRole?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }

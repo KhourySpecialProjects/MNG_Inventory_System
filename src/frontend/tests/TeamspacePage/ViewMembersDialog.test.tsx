@@ -71,7 +71,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -101,7 +101,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -121,13 +121,13 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
       expect(screen.getByText('Admin')).toBeInTheDocument();
     });
-    
+
     expect(screen.getByText('Member')).toBeInTheDocument();
   });
 
@@ -140,7 +140,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -148,9 +148,7 @@ describe('ViewMembersDialog', () => {
       expect(screen.getByText('@jane')).toBeInTheDocument();
     });
 
-    const searchInput = screen.getByPlaceholderText(
-      /search by name, username, or role/i
-    );
+    const searchInput = screen.getByPlaceholderText(/search by name, username, or role/i);
     await user.type(searchInput, 'john');
 
     await waitFor(() => {
@@ -168,7 +166,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -176,9 +174,7 @@ describe('ViewMembersDialog', () => {
       expect(screen.getByText('@jane')).toBeInTheDocument();
     });
 
-    const searchInput = screen.getByPlaceholderText(
-      /search by name, username, or role/i
-    );
+    const searchInput = screen.getByPlaceholderText(/search by name, username, or role/i);
     await user.type(searchInput, 'Admin');
 
     await waitFor(() => {
@@ -210,7 +206,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -228,9 +224,7 @@ describe('ViewMembersDialog', () => {
 
   it('shows error when member removal fails', async () => {
     const user = userEvent.setup();
-    (teamspaceApi.removeUserTeamspace as any).mockRejectedValue(
-      new Error('Failed to remove')
-    );
+    (teamspaceApi.removeUserTeamspace as any).mockRejectedValue(new Error('Failed to remove'));
 
     renderWithProviders(
       <ViewMembersDialog
@@ -239,7 +233,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -250,10 +244,7 @@ describe('ViewMembersDialog', () => {
     await user.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        'Failed to remove member',
-        'error'
-      );
+      expect(mockShowSnackbar).toHaveBeenCalledWith('Failed to remove member', 'error');
     });
   });
 
@@ -266,7 +257,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -288,7 +279,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -304,9 +295,7 @@ describe('ViewMembersDialog', () => {
   });
 
   it('shows error snackbar when loading members fails', async () => {
-    (teamspaceApi.getTeamMembers as any).mockRejectedValue(
-      new Error('Failed to load')
-    );
+    (teamspaceApi.getTeamMembers as any).mockRejectedValue(new Error('Failed to load'));
 
     renderWithProviders(
       <ViewMembersDialog
@@ -315,14 +304,11 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        'Failed to load members',
-        'error'
-      );
+      expect(mockShowSnackbar).toHaveBeenCalledWith('Failed to load members', 'error');
     });
   });
 
@@ -356,7 +342,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -376,7 +362,7 @@ describe('ViewMembersDialog', () => {
         teamId="1"
         teamName="Team Alpha"
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     expect(teamspaceApi.getTeamMembers).not.toHaveBeenCalled();

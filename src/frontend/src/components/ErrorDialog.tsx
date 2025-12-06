@@ -22,12 +22,7 @@ export default function ErrorDialog({ open, title = 'Error', message, onClose }:
   const theme = useTheme();
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-    >
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <ErrorOutlineIcon sx={{ color: theme.palette.error.main }} />
@@ -40,13 +35,7 @@ export default function ErrorDialog({ open, title = 'Error', message, onClose }:
         <Typography>{message}</Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button 
-          onClick={onClose} 
-          variant="contained" 
-          color="primary"
-          fullWidth
-          sx={{ py: 1 }}
-        >
+        <Button onClick={onClose} variant="contained" color="primary" fullWidth sx={{ py: 1 }}>
           OK
         </Button>
       </DialogActions>

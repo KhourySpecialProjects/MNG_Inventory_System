@@ -174,7 +174,7 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
         <Typography variant="h6" fontWeight={700}>
           Profile
         </Typography>
-        <IconButton 
+        <IconButton
           onClick={onClose}
           sx={{
             transition: 'all 0.2s ease',
@@ -276,7 +276,9 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                     borderRadius: 2,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      boxShadow: !editing ? 'none' : (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+                      boxShadow: !editing
+                        ? 'none'
+                        : (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
                     },
                   },
                 }}
@@ -293,16 +295,18 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                     borderRadius: 2,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      boxShadow: !editing ? 'none' : (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
+                      boxShadow: !editing
+                        ? 'none'
+                        : (theme) => `0 0 0 2px ${theme.palette.primary.main}20`,
                     },
                   },
                 }}
               />
 
-              <TextField 
-                label="Role" 
-                value={authUser.role} 
-                disabled 
+              <TextField
+                label="Role"
+                value={authUser.role}
+                disabled
                 fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
@@ -348,7 +352,7 @@ const Profile: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClo
                     bgcolor: theme.palette.success.main,
                     color: '#fff',
                     transition: 'all 0.2s ease',
-                    '&:hover': { 
+                    '&:hover': {
                       bgcolor: theme.palette.success.dark,
                       transform: 'scale(1.02)',
                     },

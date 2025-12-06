@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useMemo } from 'react';
-import { Alert, Box, CircularProgress, Container, Tab, Tabs, Typography, Fade } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Container,
+  Tab,
+  Tabs,
+  Typography,
+  Fade,
+} from '@mui/material';
 import { useParams } from 'react-router-dom';
 import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
@@ -185,17 +194,17 @@ export default function ReviewedPage() {
   // Apply search to each category
   const filteredCompleted = useMemo(
     () => filterItemsBySearch(completedItems, searchQuery),
-    [completedItems, searchQuery]
+    [completedItems, searchQuery],
   );
 
   const filteredShortages = useMemo(
     () => filterItemsBySearch(shortagesItems, searchQuery),
-    [shortagesItems, searchQuery]
+    [shortagesItems, searchQuery],
   );
 
   const filteredDamaged = useMemo(
     () => filterItemsBySearch(damagedItems, searchQuery),
-    [damagedItems, searchQuery]
+    [damagedItems, searchQuery],
   );
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -221,10 +230,7 @@ export default function ReviewedPage() {
         bgcolor: theme.palette.background.default,
       }}
     >
-      <TopBar
-        isLoggedIn={true}
-        onProfileClick={() => setProfileOpen(true)}
-      />
+      <TopBar isLoggedIn={true} onProfileClick={() => setProfileOpen(true)} />
 
       <Box sx={{ flex: 1, width: '100%', bgcolor: theme.palette.background.default }}>
         {/* Tabs Header - Full Width */}
@@ -285,7 +291,7 @@ export default function ReviewedPage() {
         {/* Tab Panels - Constrained Width */}
         <Fade in timeout={600}>
           <Container maxWidth="md" disableGutters>
-            <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
+            <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 } }}>
               {error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {error}
@@ -299,7 +305,9 @@ export default function ReviewedPage() {
                     initialExpandedItems={filteredCompleted.itemsToExpand}
                   />
                 ) : (
-                  <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
+                  <Typography
+                    sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}
+                  >
                     {searchQuery.trim() ? 'No items match your search.' : 'No completed items'}
                   </Typography>
                 )}
@@ -312,7 +320,9 @@ export default function ReviewedPage() {
                     initialExpandedItems={filteredShortages.itemsToExpand}
                   />
                 ) : (
-                  <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
+                  <Typography
+                    sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}
+                  >
                     {searchQuery.trim() ? 'No items match your search.' : 'No shortages reported'}
                   </Typography>
                 )}
@@ -325,7 +335,9 @@ export default function ReviewedPage() {
                     initialExpandedItems={filteredDamaged.itemsToExpand}
                   />
                 ) : (
-                  <Typography sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}>
+                  <Typography
+                    sx={{ textAlign: 'center', color: theme.palette.text.disabled, py: 4 }}
+                  >
                     {searchQuery.trim() ? 'No items match your search.' : 'No damaged items'}
                   </Typography>
                 )}
