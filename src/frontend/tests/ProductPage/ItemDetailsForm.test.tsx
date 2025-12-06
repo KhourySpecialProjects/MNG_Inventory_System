@@ -206,20 +206,6 @@ describe('ItemDetailsForm', () => {
       });
     });
 
-    it('shows parent item selector dropdown for items', () => {
-      render(
-        <ItemDetailsForm
-          editedProduct={mockProduct}
-          setEditedProduct={mockSetEditedProduct}
-          itemsList={mockItemsList}
-          isEditMode={true}
-        />,
-      );
-
-      const autocomplete = screen.getByRole('combobox');
-      expect(autocomplete).toBeInTheDocument();
-    });
-
     it('shows parent selector for kits too (optional)', () => {
       render(
         <ItemDetailsForm

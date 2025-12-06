@@ -510,6 +510,85 @@ export const itemsRouter = router({
         return { success: false, error: err.message };
       }
     }),
+
+  getAllItemsByNSN: protectedProcedure
+    .input(
+      z.object({
+        nsn: z.string(),
+        userId: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      try {
+        // Get all teams the user has access to
+        const userTeamsResult = await doc.send(
+          new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: 'GSI_UserTeams',
+            KeyConditionExpression: 'GSI1PK = :gsi1pk',
+            ExpressionAttributeValues: {
+              ':gsi1pk': `USER#${input.userId}`,
+            },
+          }),
+        );
+
+        const teamIds = (userTeamsResult.Items ?? [])
+          .filter((item: any) => item.Type === 'TeamMember')
+          .map((item: any) => item.teamId);
+
+        // Search for items with matching NSN across all teams
+        const allItems: any[] = [];
+        
+        for (const teamId of teamIds) {
+          const result = await doc.send(
+            new QueryCommand({
+              TableName: TABLE_NAME,
+              KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+              ExpressionAttributeValues: {
+                ':pk': `TEAM#${teamId}`,
+                ':sk': 'ITEM#',
+              },
+            }),
+          );
+
+          const items = (result.Items ?? []).filter((item: any) => {
+            if (!item.nsn || item.isKit) return false;
+            return item.nsn.toLowerCase().includes(input.nsn.toLowerCase());
+          });
+
+          // Get team name
+          const teamMetaRes = await doc.send(
+            new GetCommand({
+              TableName: TABLE_NAME,
+              Key: {
+                PK: `TEAM#${teamId}`,
+                SK: 'METADATA',
+              },
+            }),
+          );
+          const teamName = teamMetaRes.Item?.GSI_NAME ?? teamMetaRes.Item?.name ?? teamId;
+
+          // Add presigned URLs for images and team name
+          const itemsWithImages = await Promise.all(
+            items.map(async (item: any) => {
+              const imageLink = await getPresignedUrl(item.imageKey);
+              return {
+                ...item,
+                teamId,
+                teamName,
+                imageLink,
+              };
+            })
+          );
+
+          allItems.push(...itemsWithImages);
+        }
+
+        return { success: true, items: allItems };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }),
 });
 
 export type ItemsRouter = typeof itemsRouter;

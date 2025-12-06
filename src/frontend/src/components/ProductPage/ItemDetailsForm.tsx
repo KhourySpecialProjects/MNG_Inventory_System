@@ -13,6 +13,7 @@ import {
   ToggleButtonGroup,
   Alert,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -22,6 +23,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CategoryIcon from '@mui/icons-material/Category';
 import DamageReportsSection from '../DamageReportsSection';
+import { getAllItemsByNSN } from '../../api/items';
 
 interface ItemDetailsFormProps {
   editedProduct: any;
@@ -33,6 +35,9 @@ interface ItemDetailsFormProps {
   damageReports?: string[];
   setDamageReports?: (r: string[]) => void;
   errors?: Record<string, boolean>;
+  teamId?: string;
+  setImagePreview?: (url: string) => void;
+  setSelectedImageFile?: (file: File | null) => void;
 }
 
 export default function ItemDetailsForm({
@@ -45,10 +50,16 @@ export default function ItemDetailsForm({
   damageReports = [],
   setDamageReports,
   errors = {},
+  teamId,
+  setImagePreview,
+  setSelectedImageFile,
 }: ItemDetailsFormProps) {
   const [itemType, setItemType] = React.useState<'item' | 'kit'>(
     editedProduct?.isKit ? 'kit' : 'item',
   );
+  const [nsnOptions, setNsnOptions] = React.useState<any[]>([]);
+  const [nsnLoading, setNsnLoading] = React.useState(false);
+  const [nsnInputValue, setNsnInputValue] = React.useState('');
   // const [parentError, setParentError] = React.useState(false);
 
   if (!editedProduct) {
@@ -91,6 +102,39 @@ export default function ItemDetailsForm({
     { value: 'Damaged', label: 'Damaged', icon: <ReportProblemIcon />, color: '#f44336' },
     { value: 'Shortages', label: 'Shortages', icon: <WarningIcon />, color: '#ff9800' },
   ];
+
+  // Fetch NSN suggestions when user types
+  React.useEffect(() => {
+    const fetchNSNSuggestions = async () => {
+      if (nsnInputValue.length >= 2) {
+        setNsnLoading(true);
+        try {
+          const result = await getAllItemsByNSN(nsnInputValue);
+          
+          if (result.success && result.items) {
+            // Filter out items from the current team
+            const filteredItems = result.items.filter((item: any) => {
+              const itemTeamId = item.teamId || item.PK?.replace('TEAM#', '');
+              return itemTeamId !== teamId;
+            });
+            setNsnOptions(filteredItems);
+          } else {
+            setNsnOptions([]);
+          }
+        } catch (error) {
+          console.error('Error fetching NSN suggestions:', error);
+          setNsnOptions([]);
+        } finally {
+          setNsnLoading(false);
+        }
+      } else {
+        setNsnOptions([]);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchNSNSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [nsnInputValue, teamId]);
 
   // React.useEffect(() => {
   //   if (isCreateMode && itemType === 'item' && !editedProduct.parent) {
@@ -376,15 +420,96 @@ export default function ItemDetailsForm({
           <Grid size={{ xs: 12, sm: 6 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
               {isEditMode ? (
-                <TextField
-                  label="National Serial Number"
-                  size="small"
+                <Autocomplete
+                  freeSolo
                   fullWidth
-                  value={editedProduct.nsn || ''}
-                  onChange={(e) => handleChange('nsn', e.target.value)}
-                  required
-                  error={errors.nsn}
-                  helperText={errors.nsn ? 'NSN is required and must be unique' : ''}
+                  options={nsnOptions}
+                  loading={nsnLoading}
+                  inputValue={nsnInputValue}
+                  onInputChange={(_e, newValue) => {
+                    setNsnInputValue(newValue);
+                    handleChange('nsn', newValue);
+                  }}
+                  getOptionLabel={(option: any) => {
+                    if (typeof option === 'string') return option;
+                    return option.nsn || '';
+                  }}
+                  getOptionKey={(option: any) => {
+                    if (typeof option === 'string') return option;
+                    return option.itemId || option.SK || `${option.nsn}-${option.teamId}`;
+                  }}
+                  isOptionEqualToValue={(option: any, value: any) => {
+                    if (typeof option === 'string' || typeof value === 'string') {
+                      return option === value;
+                    }
+                    return option.itemId === value.itemId || option.nsn === value.nsn;
+                  }}
+                  renderOption={(props, option: any) => {
+                    const { key, ...otherProps } = props;
+                    return (
+                      <Box component="li" key={key} {...otherProps}>
+                        <Stack spacing={0.5} sx={{ width: '100%' }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {option.nsn}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {option.name || option.actualName} • Team: {option.teamName || 'Unknown'}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    );
+                  }}
+                  onChange={async (_e, value) => {
+                    if (value && typeof value === 'object') {
+                      // Fill all fields from the selected item (except kit/parent)
+                      setEditedProduct({
+                        ...editedProduct,
+                        nsn: value.nsn || '',
+                        productName: value.name || value.productName || '',
+                        actualName: value.actualName || '',
+                        description: value.description || '',
+                        serialNumber: value.serialNumber || '',
+                        authQuantity: value.authQuantity || 1,
+                        ohQuantity: value.ohQuantity || 1,
+                      });
+                      setNsnInputValue(value.nsn || '');
+
+                      // Fetch and set the image if available
+                      if (value.imageLink && setImagePreview && setSelectedImageFile) {
+                        try {
+                          setImagePreview(value.imageLink);
+                          
+                          // Fetch the image and convert to File object
+                          const response = await fetch(value.imageLink);
+                          const blob = await response.blob();
+                          const fileName = `${value.nsn || 'item'}.jpg`;
+                          const file = new File([blob], fileName, { type: blob.type });
+                          setSelectedImageFile(file);
+                        } catch (error) {
+                          console.error('Error fetching image:', error);
+                        }
+                      }
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="National Serial Number"
+                      size="small"
+                      required
+                      error={errors.nsn}
+                      helperText={errors.nsn ? 'NSN is required and must be unique' : ''}
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {nsnLoading ? <CircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )}
                 />
               ) : (
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -396,7 +521,7 @@ export default function ItemDetailsForm({
                   </Typography>
                 </Box>
               )}
-              {editedProduct.nsn && (
+              {editedProduct.nsn && !isEditMode && (
                 <Tooltip title="Copy">
                   <IconButton size="small" onClick={() => copyToClipboard(editedProduct.nsn)}>
                     <ContentCopyIcon fontSize="small" />
