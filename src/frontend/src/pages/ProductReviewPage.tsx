@@ -305,6 +305,9 @@ export default function ProductReviewPage() {
                 damageReports={damageReports}
                 setDamageReports={setDamageReports}
                 errors={fieldErrors}
+                teamId={teamId}
+                setImagePreview={setImagePreview}
+                setSelectedImageFile={setSelectedImageFile}
               />
 
               {editedProduct && (
