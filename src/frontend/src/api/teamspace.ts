@@ -1,3 +1,7 @@
+/**
+ * Teamspace API: Teamspace management for organizing users into collaborative groups.
+ * Handles teamspace creation, member management, and workspace-level user operations.
+ */
 import { trpcFetch } from './utils';
 
 const TRPC = '/trpc';

@@ -1,3 +1,8 @@
+/**
+ * Interactive table displaying items requiring follow-up action.
+ * Shows items with damage reports or shortages, with click-through navigation to item details.
+ * Features hover effects and responsive design for tracking review progress.
+ */
 import { Paper, Typography, Box, Fade } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useNavigate, useParams } from 'react-router-dom';

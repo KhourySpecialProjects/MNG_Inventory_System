@@ -1,3 +1,8 @@
+/**
+ * Unit tests for InventoryReviewed component.
+ * Tests progress display, time mode toggling, histogram data computation, and value selection.
+ * Verifies correct bucketing of review activity by hours/days and chart rendering.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

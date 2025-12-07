@@ -1,3 +1,8 @@
+/**
+ * Unit tests for Teamspace page.
+ * Tests team loading, search filtering, dialog interactions, and missing name workflow.
+ * Verifies user profile validation, team display, and navigation to admin page.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';

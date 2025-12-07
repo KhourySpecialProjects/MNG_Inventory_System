@@ -1,3 +1,8 @@
+/**
+ * Image upload and preview component with HEIC/HEIF conversion support.
+ * Handles file validation (type, size limits), converts HEIC to JPEG, and displays preview.
+ * Provides upload/change functionality with visual feedback for required images.
+ */
 import React, { useRef, useState } from 'react';
 import { Box, Button, CardMedia, Stack, Typography } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';

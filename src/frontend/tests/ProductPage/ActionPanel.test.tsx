@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ActionPanel component.
+ * Tests create/edit/delete functionality, validation logic, and status cascade to children.
+ * Verifies DONE button logic, damage reports, quantity constraints, and navigation flows.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';

@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ChildrenTree component.
+ * Tests hierarchical tree rendering, expand/collapse functionality, and navigation.
+ * Verifies child item display, status badges, indentation levels, and deep nesting support.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';

@@ -1,6 +1,9 @@
-// components/TeamsGrid.tsx
+/**
+ * Responsive grid layout for team cards with consistent aspect ratios.
+ * Manages team card spacing and delegates actions (invite, remove, delete, view) to parent.
+ */
 import { Grid, Box } from '@mui/material';
-import TeamIcon from './TeamsComponent';
+import TeamIcon from './TeamIcon';
 
 export interface Team {
   teamId: string;

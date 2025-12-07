@@ -1,4 +1,7 @@
-// components/TeamsSearch.tsx
+/**
+ * Search bar component for filtering teams by name or description.
+ * Features clear button for quick search reset.
+ */
 import { Stack, TextField, InputAdornment, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';

@@ -1,3 +1,7 @@
+/**
+ * API utilities: Core HTTP wrapper for tRPC communication with automatic credential handling.
+ * Provides standardized error handling and response parsing for all tRPC endpoint calls.
+ */
 export async function trpcFetch(url: string, options: RequestInit = {}) {
   const res = await fetch(url, {
     ...options,

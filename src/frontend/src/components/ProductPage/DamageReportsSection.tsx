@@ -1,3 +1,8 @@
+/**
+ * Damage reports management section for items with "Damaged" status.
+ * Allows adding, viewing, and removing damage report descriptions with inline editing.
+ * Displays warning-styled cards for each report entry.
+ */
 import React, { useState } from 'react';
 import {
   Box,

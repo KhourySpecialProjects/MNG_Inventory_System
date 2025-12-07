@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Role creation and editing form dialog with permission selection.
+ * Supports create/edit/view modes with validation for required fields and permission selection.
+ * Uses PermissionCheckboxGroup for granular permission management across all categories.
+ */
+import { useState, useEffect } from 'react';
 import {
   Box,
   TextField,

@@ -1,3 +1,8 @@
+/**
+ * To Review page displaying items requiring inventory review.
+ * Shows hierarchical item lists filtered by "To Review" status with search functionality.
+ * Automatically expands kits containing items needing review when searching.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Box, CircularProgress, Container, Typography, Fade } from '@mui/material';

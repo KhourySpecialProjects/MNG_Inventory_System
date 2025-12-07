@@ -1,3 +1,8 @@
+/**
+ * Status overview card displaying inventory counts by status category.
+ * Shows at-a-glance metrics for To Review, Completed, Shortages, and Damaged items.
+ * Features animated count-up effects and color-coded status indicators.
+ */
 import { Paper, Typography, Grid, Card, Fade } from '@mui/material';
 import { useTheme, keyframes } from '@mui/material/styles';
 

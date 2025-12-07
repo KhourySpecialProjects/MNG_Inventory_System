@@ -1,3 +1,8 @@
+/**
+ * Root application component defining routing structure and theme provider.
+ * Configures all application routes including authentication, team management, and inventory pages.
+ * Wraps entire app with ThemeContextProvider for light/dark mode support.
+ */
 import { CssBaseline } from '@mui/material';
 import HeroPage from './pages/HeroPage';
 import SignInPage from './pages/SignInPage';
@@ -7,7 +12,7 @@ import HomePage from './pages/HomePage';
 import TeamsPage from './pages/TeamspacePage';
 import ExportPage from './pages/ExportPage';
 import AdminPage from './pages/AdminPage';
-import ThemeContextProvider from './ThemeContext';
+import ThemeContextProvider from './ThemeContextProvider';
 import ToReviewPage from './pages/ToReviewPage';
 import ReviewedPage from './pages/ReviewedPage';
 

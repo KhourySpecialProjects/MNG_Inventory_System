@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ItemListComponent component.
+ * Tests hierarchical item list rendering, expand/collapse, navigation, and status display.
+ * Verifies child filtering, kit badges, nested children, and empty state handling.
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';

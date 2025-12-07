@@ -1,3 +1,7 @@
+/**
+ * Profile API: User profile management including names, usernames, and profile images.
+ * Handles profile updates, image uploads to S3, and profile data retrieval.
+ */
 import { trpcFetch } from './utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

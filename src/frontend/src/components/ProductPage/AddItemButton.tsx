@@ -1,4 +1,7 @@
-import React from 'react';
+/**
+ * Reusable button component for adding child items to kits.
+ * Navigates to item creation form with parent context for hierarchical inventory structure.
+ */
 import { Box, Card, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate, useParams } from 'react-router-dom';

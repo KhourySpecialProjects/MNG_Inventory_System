@@ -1,3 +1,8 @@
+/**
+ * Main export page content displaying document download options.
+ * Shows category-specific stats and download buttons for CSV inventory and PDF DA 2404 forms.
+ * Handles file download from both base64 content and presigned S3 URLs.
+ */
 import React from 'react';
 import {
   Box,
@@ -49,7 +54,6 @@ export interface ExportPageContentProps {
 
 const ExportPageContent: React.FC<ExportPageContentProps> = ({
   items,
-  percentReviewed,
   activeCategory,
   onCategoryChange,
   teamId,
@@ -70,8 +74,6 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
     return status === 'damaged';
   });
 
-  const totalItems = items.length;
-
   // Check which files are available - accept either csvContent OR url
   const hasPDF =
     exportData.pdf2404?.ok === true &&
@@ -86,7 +88,6 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
   const showingCompleted = activeCategory === 'completed';
   const hasFile = showingCompleted ? hasCSV : hasPDF;
   const itemCount = showingCompleted ? completedItems.length : damagedItems.length;
-  const categoryLabel = showingCompleted ? 'Completed Items' : 'Damaged Items';
 
   console.log('[ExportPageContent] Debug:', {
     activeCategory,
@@ -178,9 +179,6 @@ const ExportPageContent: React.FC<ExportPageContentProps> = ({
       console.error('Failed to download PDF:', error);
     }
   };
-
-  // Capitalize first letter for button text
-  const categoryDisplay = activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1);
 
   return (
     <Box

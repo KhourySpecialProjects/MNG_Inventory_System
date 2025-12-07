@@ -1,3 +1,8 @@
+/**
+ * Landing page for unauthenticated users with military-themed branding.
+ * Displays product features, security information, and access request workflow.
+ * Forces light mode and provides sign-in navigation.
+ */
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useMemo } from 'react';
 import {
@@ -21,7 +26,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import TopBar from '../components/TopBar';
-import { useColorMode } from '../ThemeContext';
+import { useColorMode } from '../ThemeContextProvider';
 
 const features = [
   {

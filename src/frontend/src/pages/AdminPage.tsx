@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+/**
+ * Admin dashboard page for role-based access control (RBAC) management.
+ * Provides tabbed interface for role management and user role assignment.
+ * Restricted to users with appropriate admin permissions.
+ */
+import { useState } from 'react';
 import { Box, Container, Tabs, Tab, Paper, Button } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

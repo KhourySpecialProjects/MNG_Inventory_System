@@ -1,3 +1,8 @@
+/**
+ * Unit tests for TeamActivityChart component.
+ * Tests stacked bar chart rendering, data transformation, and theme integration.
+ * Verifies correct visualization of team member activity with completed/shortage/damaged metrics.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';

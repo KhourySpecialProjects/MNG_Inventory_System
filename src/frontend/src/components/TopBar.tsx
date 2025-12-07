@@ -1,4 +1,8 @@
-import React from 'react';
+/**
+ * Global application top bar with branding, navigation, and user controls.
+ * Features theme toggle, profile access, and authentication state management.
+ * Responsive design with conditional rendering based on login status.
+ */
 import { AppBar, Toolbar, Stack, Typography, IconButton, Button, Avatar } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -7,7 +11,7 @@ import SecurityIcon from '@mui/icons-material/Security';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import { useColorMode } from '../ThemeContext';
+import { useColorMode } from '../ThemeContextProvider';
 
 interface TopBarProps {
   isLoggedIn: boolean;

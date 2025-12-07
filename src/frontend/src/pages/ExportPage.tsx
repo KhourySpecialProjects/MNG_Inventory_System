@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Export page for generating and downloading inventory documents.
+ * Creates CSV inventory reports and DA Form 2404 PDFs with progress tracking.
+ * Features category switching between completed/reviewed and damaged items.
+ */
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -13,7 +18,7 @@ import {
 import { useParams } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import NavBar from '../components/NavBar';
-import ExportPageContent from '../components/ExportPageContent';
+import ExportPageContent from '../components/ExportPage/ExportPageContent';
 import Profile from '../components/Profile';
 import { getItems } from '../api/items';
 import { generateExportDocuments } from '../api/download';

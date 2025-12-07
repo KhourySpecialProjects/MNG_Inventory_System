@@ -1,3 +1,7 @@
+/**
+ * Home API: Team data retrieval and bulk inventory operations.
+ * Provides team information lookup and soft reset functionality to clear all item statuses for a team.
+ */
 import { trpcFetch } from './utils';
 
 const TRPC_URL = '/trpc';

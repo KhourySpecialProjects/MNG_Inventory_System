@@ -1,4 +1,7 @@
-// components/TeamsHeader.tsx
+/**
+ * Header component with teamspace management actions.
+ * Provides navigation to admin panel and actions for creating teams and inviting members.
+ */
 import { Stack, Typography, Button } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';

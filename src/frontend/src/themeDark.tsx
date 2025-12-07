@@ -1,3 +1,8 @@
+/**
+ * Dark mode theme configuration for Material-UI.
+ * Mirrors light theme structure with inverted colors and adjusted contrast ratios.
+ * Uses softer primary colors (#8C9EFF) for reduced eye strain in dark environments.
+ */
 import { createTheme } from '@mui/material/styles';
 
 const darkTheme = createTheme({

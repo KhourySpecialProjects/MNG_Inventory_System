@@ -1,3 +1,8 @@
+/**
+ * Authentication page handling login, new password setup, and OTP verification.
+ * Supports NEW_PASSWORD_REQUIRED challenge flow and multi-factor authentication.
+ * Forces light mode and manages session validation with automatic redirect.
+ */
 import { useEffect, useState } from 'react';
 import {
   Box,
@@ -17,10 +22,10 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useNavigate } from 'react-router-dom';
 
 import { loginUser, me, refresh } from '../api/auth';
-import SignUpComponent from '../components/SignUpComponent';
-import EmailOtpCard from '../components/EmailOtpCard';
+import SignUpComponent from '../components/auth/SignUpComponent';
+import EmailOtpCard from '../components/auth/EmailOtpCard';
 
-import { useColorMode } from '../ThemeContext';
+import { useColorMode } from '../ThemeContextProvider';
 
 export default function SignInPage() {
   const [isSigningUp, setIsSigningUp] = useState(false);

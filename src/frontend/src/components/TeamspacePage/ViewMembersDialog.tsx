@@ -1,3 +1,9 @@
+/**
+ * Team members management dialog with search and removal functionality.
+ * Displays member list with roles, avatars, and inline removal actions.
+ * Features animated member entries and real-time search filtering.
+*/
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import {

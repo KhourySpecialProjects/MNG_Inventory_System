@@ -1,4 +1,8 @@
-// src/frontend/tests/TeamspacesPage/TeamspaceDialogs.test.tsx
+/**
+ * Unit tests for TeamspaceDialogs components.
+ * Tests CreateTeam, Invite, RemoveMember, DeleteTeam, and MissingName dialogs.
+ * Verifies form validation, API integration, user search, and error handling workflows.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

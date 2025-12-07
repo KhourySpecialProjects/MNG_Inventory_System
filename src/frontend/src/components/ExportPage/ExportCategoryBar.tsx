@@ -1,4 +1,7 @@
-import React from 'react';
+/**
+ * Category toggle bar for switching between export document types.
+ * Allows selection between "Reviewed Inventory" (CSV) and "Damaged Items" (PDF) views.
+ */
 import { Box, Button, useTheme } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BuildIcon from '@mui/icons-material/Build';

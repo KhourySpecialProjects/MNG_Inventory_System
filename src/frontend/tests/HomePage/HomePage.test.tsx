@@ -1,3 +1,8 @@
+/**
+ * Unit tests for Home page.
+ * Tests dashboard data loading, stat calculations, widget rendering, and user interactions.
+ * Verifies correct aggregation of inventory status and team member activity metrics.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';

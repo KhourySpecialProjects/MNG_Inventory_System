@@ -1,5 +1,11 @@
+/**
+ * Teamspace management page displaying all user's teams in a responsive grid.
+ * Features team creation, member management, search functionality, and progress indicators.
+ * Includes dialogs for create, invite, remove, delete, and view members operations.
+ * Enforces user profile completion before allowing team access.
+ */
 import { useEffect, useState, useMemo } from 'react';
-import { Box, Container, Divider, Snackbar, Alert } from '@mui/material';
+import { Box, Container, Snackbar, Alert } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
@@ -54,7 +60,7 @@ export default function TeamspacePage() {
   const [deleteWorkspaceId, setDeleteWorkspaceId] = useState('');
   const [deleteWorkspaceName, setDeleteWorkspaceName] = useState('');
 
-  // 🔥 NEW: View members dialog state
+  // View members dialog state
   const [openViewMembers, setOpenViewMembers] = useState(false);
   const [viewTeamId, setViewTeamId] = useState('');
   const [viewTeamName, setViewTeamName] = useState('');

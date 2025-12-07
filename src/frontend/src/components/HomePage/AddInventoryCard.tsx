@@ -1,3 +1,7 @@
+/**
+ * Quick action card for adding new inventory items.
+ * Provides a call-to-action button linking to the item creation form.
+ */
 import { Paper, Typography, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';

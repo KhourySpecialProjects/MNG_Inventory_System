@@ -1,3 +1,8 @@
+/**
+ * Dashboard widget showing inventory review progress with visual analytics.
+ * Displays circular progress indicator and time-based histogram of review activity.
+ * Supports toggling between hourly and daily views with customizable time ranges (desktop only for chart).
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Paper,

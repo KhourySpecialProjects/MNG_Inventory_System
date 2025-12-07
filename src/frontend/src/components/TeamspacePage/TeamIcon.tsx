@@ -1,3 +1,8 @@
+/**
+ * Team card component displaying completion progress with circular indicator.
+ * Features context menu for team management (invite, remove, delete, view members).
+ * Uses dynamic color gradient (red→yellow→green) based on inventory completion percentage.
+ */
 import {
   Card,
   CardActionArea,

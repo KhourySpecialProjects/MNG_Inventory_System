@@ -1,3 +1,8 @@
+/**
+ * Unit tests for FollowUpsTable component.
+ * Tests table rendering, navigation on row click, date formatting, and hover effects.
+ * Verifies handling of missing data fields and proper display of damage/shortage items.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';

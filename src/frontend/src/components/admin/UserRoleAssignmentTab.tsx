@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+/**
+ * User management dashboard for assigning roles and managing users.
+ * Provides searchable list of users with inline role assignment dropdowns and user deletion.
+ * Uses UserRoleRow for individual user management with optimistic UI updates.
+ */
+import { useState, useEffect, useMemo } from 'react';
 import { Box, TextField, Typography, CircularProgress, Alert, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import UserRoleRow from './UserRoleRow';
 import * as adminApi from '../../api/admin';
-import { useTheme } from '@mui/material/styles';
 import { me } from '../../api/auth';
 
 interface User {
@@ -19,7 +23,6 @@ interface Role {
 }
 
 export default function UserRoleAssignmentTab() {
-  const theme = useTheme();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);

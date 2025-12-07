@@ -1,4 +1,8 @@
-// src/frontend/tests/TeamspacesPage/EmptyState.test.tsx
+/**
+ * Unit tests for EmptyState component.
+ * Tests loading, error, and empty state rendering with proper prioritization.
+ * Verifies conditional display logic for teams list empty states.
+ */
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

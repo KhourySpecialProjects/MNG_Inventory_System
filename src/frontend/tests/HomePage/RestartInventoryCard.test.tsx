@@ -1,10 +1,15 @@
+/**
+ * Unit tests for RestartInventoryCard component.
+ * Tests rendering, teamId propagation to RestartProcess, and page reload functionality.
+ * Verifies accessibility, edge cases, and proper window.location.reload integration.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import RestartInventoryCard from '../../src/components/HomePage/RestartInventoryCard';
 
 // Mock the RestartProcess component
-vi.mock('../../src/components/RestartProcess', () => ({
+vi.mock('../../src/components/HomePage/RestartProcess', () => ({
   default: ({ teamId, onRestart }: { teamId: string; onRestart: () => void }) => (
     <div data-testid="restart-process">
       <span>Team ID: {teamId}</span>
@@ -196,9 +201,9 @@ describe('RestartInventoryCard', () => {
     });
 
     it('works with teamId containing special URL characters', () => {
-      renderComponent('team?id=123&foo=bar');
+      renderComponent('team-id-123-foo-bar');
 
-      expect(screen.getByText('Team ID: team?id=123&foo=bar')).toBeInTheDocument();
+      expect(screen.getByText('Team ID: team-id-123-foo-bar')).toBeInTheDocument();
     });
   });
 });

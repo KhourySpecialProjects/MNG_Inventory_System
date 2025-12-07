@@ -1,10 +1,15 @@
+/**
+ * Unit tests for Reviewed page.
+ * Tests tabbed view rendering (Completed/Shortages/Damaged), status filtering, and hierarchy building.
+ * Verifies search functionality, empty states, and proper item categorization across tabs.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import ReviewedPage from '../src/pages/ReviewedPage';
-import * as itemsAPI from '../src/api/items';
+import ReviewedPage from '../../src/pages/ReviewedPage';
+import * as itemsAPI from '../../src/api/items';
 
-vi.mock('../src/api/items');
+vi.mock('../../src/api/items');
 
 const renderWithRouter = (teamId = 'test-team-123') => {
   window.history.pushState({}, '', `/teams/${teamId}/reviewed`);

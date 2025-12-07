@@ -1,3 +1,8 @@
+/**
+ * Unit tests for TeamsGrid component.
+ * Tests grid layout rendering, team card display, and callback propagation.
+ * Verifies handling of teams with missing descriptions and empty team arrays.
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
