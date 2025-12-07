@@ -73,9 +73,7 @@ describe('Profile Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .get('/trpc/getProfile')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getProfile').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data).toMatchObject({
@@ -111,9 +109,7 @@ describe('Profile Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .get('/trpc/getProfile')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getProfile').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(userCreated).toBe(true);
@@ -137,9 +133,7 @@ describe('Profile Router', () => {
         return {};
       });
 
-      const res = await request(app)
-        .get('/trpc/getProfile')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getProfile').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.team).toBe('No Team Assigned');
@@ -154,9 +148,7 @@ describe('Profile Router', () => {
     it('handles DynamoDB errors gracefully', async () => {
       dynamoSendSpy.mockRejectedValue(new Error('DynamoDB unavailable'));
 
-      const res = await request(app)
-        .get('/trpc/getProfile')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getProfile').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(500);
       expect(JSON.stringify(res.body)).toContain('Failed to fetch profile');
@@ -360,12 +352,10 @@ describe('Profile Router', () => {
     });
 
     it('returns 401 without auth cookie', async () => {
-      const res = await request(app)
-        .post('/trpc/updateProfile')
-        .send({
-          userId: 'test-user-id',
-          name: 'New Name',
-        });
+      const res = await request(app).post('/trpc/updateProfile').send({
+        userId: 'test-user-id',
+        name: 'New Name',
+      });
 
       expect(res.status).toBe(401);
     });

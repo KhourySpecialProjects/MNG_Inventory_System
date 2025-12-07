@@ -75,7 +75,7 @@ export default function TeamIcon({
     const t = (clamp - 50) / 50;
     const r = Math.round(251 - (251 - 139) * t); // 251 → 139
     const g = Math.round(192 - (192 - 195) * t); // 192 → 195
-    const b = Math.round(45 + (71 - 45) * t);    // 45 → 71
+    const b = Math.round(45 + (71 - 45) * t); // 45 → 71
     return `rgb(${r}, ${g}, ${b})`;
   }
 
@@ -139,10 +139,10 @@ export default function TeamIcon({
               }}
             >
               <Stack alignItems="center" spacing={1.8} sx={{ textAlign: 'center' }}>
-                <Box 
-                  sx={{ 
-                    position: 'relative', 
-                    width: ringSize, 
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: ringSize,
                     height: ringSize,
                   }}
                 >
@@ -187,7 +187,7 @@ export default function TeamIcon({
                     <Typography
                       fontSize="clamp(11px, 1.5vw, 18px)"
                       fontWeight={800}
-                      sx={{ 
+                      sx={{
                         color: theme.palette.text.primary,
                       }}
                     >
@@ -237,7 +237,7 @@ export default function TeamIcon({
             right: 8,
             color: theme.palette.text.secondary,
             transition: 'color 0.2s ease',
-            '&:hover': { 
+            '&:hover': {
               color: theme.palette.primary.main,
             },
           }}
@@ -253,17 +253,50 @@ export default function TeamIcon({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <MenuItem onClick={() => { handleClose(); handleOpenTeam(); }}>Open</MenuItem>
-        <MenuItem onClick={() => { handleClose(); onViewMembers?.(id, name); }}>View Members</MenuItem>
-        <MenuItem onClick={() => { handleClose(); onInvite?.(name); }}>Invite Member</MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            handleOpenTeam();
+          }}
+        >
+          Open
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            onViewMembers?.(id, name);
+          }}
+        >
+          View Members
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            onInvite?.(name);
+          }}
+        >
+          Invite Member
+        </MenuItem>
 
         <Divider />
 
-        <MenuItem sx={{ color: 'error.main' }} onClick={() => { handleClose(); onRemove?.(name); }}>
+        <MenuItem
+          sx={{ color: 'error.main' }}
+          onClick={() => {
+            handleClose();
+            onRemove?.(name);
+          }}
+        >
           Remove Member
         </MenuItem>
 
-        <MenuItem sx={{ color: 'error.main' }} onClick={() => { handleClose(); onDelete?.(name); }}>
+        <MenuItem
+          sx={{ color: 'error.main' }}
+          onClick={() => {
+            handleClose();
+            onDelete?.(name);
+          }}
+        >
           Delete Teamspace
         </MenuItem>
       </Menu>

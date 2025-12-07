@@ -55,7 +55,8 @@ beforeEach(() => {
 const validAuthCookie = 'auth_access=valid-token';
 
 // Valid base64 PNG (1x1 pixel)
-const validPngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+const validPngDataUrl =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 const validJpegDataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//';
 
 describe('S3 Router', () => {
@@ -142,12 +143,10 @@ describe('S3 Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/uploadProfileImage')
-        .send({
-          userId: 'user123',
-          dataUrl: validPngDataUrl,
-        });
+      const res = await request(app).post('/trpc/uploadProfileImage').send({
+        userId: 'user123',
+        dataUrl: validPngDataUrl,
+      });
 
       expect(res.status).toBe(401);
     });

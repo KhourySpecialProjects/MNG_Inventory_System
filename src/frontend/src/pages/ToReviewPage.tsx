@@ -55,12 +55,12 @@ export default function ToReviewPage() {
                 date: new Date(item.createdAt).toLocaleDateString('en-US', {
                   month: '2-digit',
                   day: '2-digit',
-                  year: '2-digit'
+                  year: '2-digit',
                 }),
                 parent: item.parent,
                 status: item.status,
                 isKit: item.isKit,
-                children: []
+                children: [],
               };
             });
 
@@ -91,7 +91,7 @@ export default function ToReviewPage() {
 
           // Filter to only roots that have "To Review" somewhere in their tree
           const incompleteItems = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, 'To Review')
+            hasStatusInTree(item, 'To Review'),
           );
 
           setItems(incompleteItems);
@@ -144,7 +144,7 @@ export default function ToReviewPage() {
 
         return {
           ...item,
-          children: filteredChildren.length > 0 ? filteredChildren : item.children
+          children: filteredChildren.length > 0 ? filteredChildren : item.children,
         };
       }
 
@@ -174,19 +174,16 @@ export default function ToReviewPage() {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: theme.palette.background.default
+        bgcolor: theme.palette.background.default,
       }}
     >
-      <TopBar
-        isLoggedIn={true}
-        onProfileClick={() => setProfileOpen(true)}
-      />
+      <TopBar isLoggedIn={true} onProfileClick={() => setProfileOpen(true)} />
 
       <Box
         sx={{
           flex: 1,
           width: '100%',
-          bgcolor: theme.palette.background.default
+          bgcolor: theme.palette.background.default,
         }}
       >
         <Fade in timeout={400}>
@@ -195,7 +192,7 @@ export default function ToReviewPage() {
               bgcolor: theme.palette.background.paper,
               borderBottom: 1,
               borderColor: theme.palette.divider,
-              py: 1.5
+              py: 1.5,
             }}
           >
             <Container maxWidth="md">
@@ -205,23 +202,20 @@ export default function ToReviewPage() {
                   fontWeight: 700,
                   color: theme.palette.text.primary,
                   fontSize: { xs: '1.25rem', sm: '1.5rem' },
-                  mb: 2
+                  mb: 2,
                 }}
               >
                 Inventory To Review
               </Typography>
 
-              <SearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-              />
+              <SearchBar value={searchQuery} onChange={setSearchQuery} />
             </Container>
           </Box>
         </Fade>
 
         <Fade in timeout={600}>
           <Container maxWidth="md" disableGutters>
-            <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 }}}>
+            <Box sx={{ p: 2, pb: { xs: 10, sm: 10, md: 4 } }}>
               {error ? (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {error}
@@ -233,10 +227,7 @@ export default function ToReviewPage() {
                     : 'No items to review. All items are complete!'}
                 </Alert>
               ) : (
-                <ItemListComponent
-                  items={filteredItems}
-                  initialExpandedItems={itemsToExpand}
-                />
+                <ItemListComponent items={filteredItems} initialExpandedItems={itemsToExpand} />
               )}
             </Box>
           </Container>

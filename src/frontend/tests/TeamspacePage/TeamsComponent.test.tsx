@@ -11,7 +11,7 @@ function renderWithProviders(component: React.ReactElement) {
   return render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>{component}</ThemeProvider>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 }
 
@@ -63,9 +63,7 @@ describe('TeamIcon', () => {
   it('calls onViewMembers when View Members is clicked', async () => {
     const user = userEvent.setup();
     const mockOnViewMembers = vi.fn();
-    renderWithProviders(
-      <TeamIcon {...defaultProps} onViewMembers={mockOnViewMembers} />
-    );
+    renderWithProviders(<TeamIcon {...defaultProps} onViewMembers={mockOnViewMembers} />);
 
     const moreButton = screen.getByRole('button', { name: '' });
     await user.click(moreButton);
@@ -82,7 +80,7 @@ describe('TeamIcon', () => {
 
     const nameElement = screen.getByText(longName);
     const styles = window.getComputedStyle(nameElement);
-    
+
     expect(styles.overflow).toBe('hidden');
     expect(styles.textOverflow).toBe('ellipsis');
     expect(styles.whiteSpace).toBe('nowrap');

@@ -24,7 +24,7 @@ export default function ImagePanel({
   const [errorMessage, setErrorMessage] = useState('');
 
   const handlePick = () => fileRef.current?.click();
-  
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -32,7 +32,7 @@ export default function ImagePanel({
     // Check file type (accept images and HEIC/HEIF)
     const isImage = f.type.startsWith('image/');
     const isHEIC = f.name.toLowerCase().endsWith('.heic') || f.name.toLowerCase().endsWith('.heif');
-    
+
     if (!isImage && !isHEIC) {
       setErrorMessage('Please select a valid image file');
       return;
@@ -56,10 +56,14 @@ export default function ImagePanel({
           toType: 'image/jpeg',
           quality: 0.9,
         });
-        
+
         // heic2any might return an array of blobs, get the first one
         const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-        fileToProcess = new File([blob], f.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+        fileToProcess = new File(
+          [blob],
+          f.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'),
+          { type: 'image/jpeg' },
+        );
       }
 
       // Process the file
@@ -108,7 +112,14 @@ export default function ImagePanel({
             }}
           />
         ) : (
-          <Box display="flex" alignItems="center" justifyContent="center" height="100%" width="100%" p={3}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            height="100%"
+            width="100%"
+            p={3}
+          >
             <Stack alignItems="center" spacing={2}>
               <ImageNotSupportedIcon
                 sx={{
@@ -116,9 +127,9 @@ export default function ImagePanel({
                   color: theme.palette.text.disabled,
                 }}
               />
-              <Typography 
-                variant="h6" 
-                color="text.secondary" 
+              <Typography
+                variant="h6"
+                color="text.secondary"
                 sx={{ fontSize: { xs: '0.9rem', sm: '1.1rem' }, fontWeight: 600 }}
               >
                 No image available
@@ -142,18 +153,18 @@ export default function ImagePanel({
                   </Button>
                   {isCreateMode && (
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                      <WarningAmberIcon 
-                        sx={{ 
-                          fontSize: 20, 
-                          color: theme.palette.error.main 
-                        }} 
+                      <WarningAmberIcon
+                        sx={{
+                          fontSize: 20,
+                          color: theme.palette.error.main,
+                        }}
                       />
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
+                      <Typography
+                        variant="caption"
+                        sx={{
                           color: theme.palette.error.main,
                           fontWeight: 600,
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
                         }}
                       >
                         Image required
@@ -186,7 +197,7 @@ export default function ImagePanel({
           </Button>
         </Stack>
       )}
-      
+
       <input
         ref={fileRef}
         type="file"

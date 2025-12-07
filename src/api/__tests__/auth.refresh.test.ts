@@ -134,9 +134,7 @@ describe('Auth Router - refresh', () => {
       return {};
     });
 
-    const res = await request(app)
-      .post('/trpc/refresh')
-      .set('Cookie', 'auth_refresh=valid-token');
+    const res = await request(app).post('/trpc/refresh').set('Cookie', 'auth_refresh=valid-token');
 
     expect(res.status).toBe(500);
     expect(JSON.stringify(res.body)).toContain('Token refresh failed');
@@ -150,9 +148,7 @@ describe('Auth Router - refresh', () => {
       return {};
     });
 
-    await request(app)
-      .post('/trpc/refresh')
-      .set('Cookie', 'auth_refresh=valid-refresh-token');
+    await request(app).post('/trpc/refresh').set('Cookie', 'auth_refresh=valid-refresh-token');
 
     expect(cognitoSendSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -206,9 +202,7 @@ describe('Auth Router - refresh', () => {
       AuthenticationResult: authResult(),
     });
 
-    const res = await request(app)
-      .post('/trpc/refresh')
-      .set('Cookie', 'auth_refresh=valid-token');
+    const res = await request(app).post('/trpc/refresh').set('Cookie', 'auth_refresh=valid-token');
 
     const data = res.body?.result?.data;
     expect(data).toMatchObject({
@@ -228,9 +222,7 @@ describe('Auth Router - refresh', () => {
       AuthenticationResult: null,
     });
 
-    const res = await request(app)
-      .post('/trpc/refresh')
-      .set('Cookie', 'auth_refresh=valid-token');
+    const res = await request(app).post('/trpc/refresh').set('Cookie', 'auth_refresh=valid-token');
 
     expect(res.status).toBe(401);
     expect(JSON.stringify(res.body)).toContain('Token refresh failed');

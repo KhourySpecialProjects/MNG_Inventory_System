@@ -22,7 +22,7 @@ import RoleCard from './RoleCard';
 import RoleForm, { RoleFormData } from './RoleForm';
 import { Permission } from './PermissionCheckboxGroup';
 import * as adminApi from '../../api/admin';
-import { me } from "../../api/auth";
+import { me } from '../../api/auth';
 
 interface Role {
   roleId: string;
@@ -52,7 +52,7 @@ export default function RoleManagementTab() {
     (async () => {
       try {
         const auth = await me();
-        setCurrentUserRole(auth.role); 
+        setCurrentUserRole(auth.role);
       } catch {}
     })();
   }, []);
@@ -148,9 +148,9 @@ export default function RoleManagementTab() {
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
           Roles
         </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
           onClick={openCreateDialog}
           sx={{
             textTransform: 'none',
@@ -179,7 +179,7 @@ export default function RoleManagementTab() {
             </InputAdornment>
           ),
         }}
-        sx={{ 
+        sx={{
           mb: 3,
           '& .MuiOutlinedInput-root': {
             borderRadius: 2,
@@ -201,7 +201,7 @@ export default function RoleManagementTab() {
               description={role.description}
               permissions={role.permissions}
               isDefault={DEFAULT_ROLES.includes(role.name)}
-              isMyRole={role.name === currentUserRole}    
+              isMyRole={role.name === currentUserRole}
               onEdit={() => openEditDialog(role)}
               onDelete={() => openDeleteDialog(role)}
             />

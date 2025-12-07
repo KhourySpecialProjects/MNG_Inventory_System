@@ -34,10 +34,7 @@ export default function TeamsSearch({ value, onChange }: TeamsSearchProps) {
           ),
           endAdornment: value && (
             <InputAdornment position="end">
-              <IconButton
-                size="small"
-                onClick={() => onChange('')}
-              >
+              <IconButton size="small" onClick={() => onChange('')}>
                 <ClearIcon fontSize="small" />
               </IconButton>
             </InputAdornment>

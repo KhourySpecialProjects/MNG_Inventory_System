@@ -9,7 +9,7 @@ export const downloadCSV = (csvContent: string, filename: string) => {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
@@ -25,7 +25,7 @@ export const downloadCSV = (csvContent: string, filename: string) => {
 export const downloadPDF = async (pdfData: string, filename: string, isBase64: boolean = false) => {
   try {
     let blob: Blob;
-    
+
     if (isBase64) {
       // Convert base64 to blob
       const binaryString = atob(pdfData);
@@ -39,7 +39,7 @@ export const downloadPDF = async (pdfData: string, filename: string, isBase64: b
       const response = await fetch(pdfData);
       blob = await response.blob();
     }
-    
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

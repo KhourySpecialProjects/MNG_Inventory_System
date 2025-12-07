@@ -88,7 +88,12 @@ def fetch_inventory_from_dynamo(team_id, overrides):
                  for item in resp.get("Items", []) ]
 
    
-    items = [row for row in raw_rows if row.get("itemId")]
+    items = [
+    row
+    for row in raw_rows
+    if row.get("itemId")
+    and (row.get("status") or "").strip() != "To Review"]
+
 
     
     meta_resp = ddb().get_item(

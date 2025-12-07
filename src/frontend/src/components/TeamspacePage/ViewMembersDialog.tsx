@@ -95,10 +95,10 @@ export default function ViewMembersDialog({
   });
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      fullWidth 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
       maxWidth="sm"
       TransitionProps={{
         timeout: 400,
@@ -125,8 +125,8 @@ export default function ViewMembersDialog({
         }}
       >
         <Stack direction="row" spacing={1.5} alignItems="center">
-          <Avatar 
-            sx={{ 
+          <Avatar
+            sx={{
               bgcolor: (theme) => theme.palette.primary.main,
               width: 36,
               height: 36,
@@ -142,7 +142,7 @@ export default function ViewMembersDialog({
             </Typography>
           </Box>
         </Stack>
-        <IconButton 
+        <IconButton
           onClick={onClose}
           sx={{
             transition: 'all 0.2s ease',
@@ -163,7 +163,7 @@ export default function ViewMembersDialog({
           placeholder="Search by name, username, or role..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ 
+          sx={{
             mb: 3,
             '& .MuiOutlinedInput-root': {
               borderRadius: 2,
@@ -217,10 +217,10 @@ export default function ViewMembersDialog({
               }}
             >
               <Stack direction="row" spacing={2} alignItems="center">
-                <Avatar 
-                  sx={{ 
-                    width: 44, 
-                    height: 44, 
+                <Avatar
+                  sx={{
+                    width: 44,
+                    height: 44,
                     fontWeight: 700,
                     bgcolor: (theme) => theme.palette.primary.main,
                     boxShadow: (theme) => `0 4px 12px ${theme.palette.primary.main}30`,
@@ -240,10 +240,10 @@ export default function ViewMembersDialog({
               </Stack>
 
               <Stack direction="row" spacing={1} alignItems="center">
-                <Select 
-                  size="small" 
-                  value={m.roleName} 
-                  sx={{ 
+                <Select
+                  size="small"
+                  value={m.roleName}
+                  sx={{
                     minWidth: 130,
                     borderRadius: 1.5,
                     '& .MuiOutlinedInput-notchedOutline': {
@@ -254,8 +254,8 @@ export default function ViewMembersDialog({
                   <MenuItem value={m.roleName}>{m.roleName}</MenuItem>
                 </Select>
 
-                <IconButton 
-                  color="error" 
+                <IconButton
+                  color="error"
                   onClick={() => handleRemove(m.username)}
                   sx={{
                     transition: 'all 0.2s ease',

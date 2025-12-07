@@ -123,9 +123,8 @@ export default function RestartProcess({ teamId, onRestart }: RestartProcessCard
             </Typography>
           ) : (
             <Typography>
-              ⚠️ Final confirmation: This action will move all items to "To Review" 
-              and clear out all dashboard components related to reviewed items. This
-              cannot be undone.
+              ⚠️ Final confirmation: This action will move all items to "To Review" and clear out
+              all dashboard components related to reviewed items. This cannot be undone.
             </Typography>
           )}
           {error && (

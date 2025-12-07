@@ -118,7 +118,7 @@ export default function ExportPage() {
     try {
       // Call the generation utility (waits for backend to finish, but does NOT download)
       const result = await generateExportDocuments(teamId);
-      
+
       // Store the export data to pass to ExportPageContent
       setExportData({
         pdf2404: result.pdf2404,
@@ -144,7 +144,11 @@ export default function ExportPage() {
       <Box sx={{ px: { xs: 2, md: 4 }, pt: { xs: 3, md: 5 }, pb: 10 }}>
         {/* ERROR ALERT */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3, maxWidth: 600, mx: 'auto' }} onClose={() => setError(null)}>
+          <Alert
+            severity="error"
+            sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}
+            onClose={() => setError(null)}
+          >
             {error}
           </Alert>
         )}
@@ -211,7 +215,7 @@ export default function ExportPage() {
                   bgcolor: theme.palette.warning.main,
                   color: theme.palette.getContrastText(theme.palette.warning.main),
                   transition: 'all 0.2s ease',
-                  '&:hover': { 
+                  '&:hover': {
                     bgcolor: theme.palette.warning.dark,
                     transform: 'scale(1.02)',
                   },
@@ -239,7 +243,11 @@ export default function ExportPage() {
               <Typography variant="h6" fontWeight={700} gutterBottom>
                 Generating your documents...
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center', maxWidth: 400 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 1, textAlign: 'center', maxWidth: 400 }}
+              >
                 Please wait while we:
               </Typography>
               <Box component="ul" sx={{ mt: 2, textAlign: 'left', color: 'text.secondary' }}>

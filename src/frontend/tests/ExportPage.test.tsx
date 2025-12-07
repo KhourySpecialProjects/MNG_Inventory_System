@@ -31,11 +31,11 @@ vi.mock('../src/components/NavBar', () => ({
 }));
 
 vi.mock('../src/components/ExportCategoryBar', () => ({
-  default: ({ 
-    activeCategory, 
-    onCategoryChange 
-  }: { 
-    activeCategory: string; 
+  default: ({
+    activeCategory,
+    onCategoryChange,
+  }: {
+    activeCategory: string;
     onCategoryChange: (cat: string) => void;
   }) => (
     <div data-testid="export-category-bar">
@@ -184,14 +184,21 @@ describe('ExportPage', () => {
 
     it('shows generating state when create button clicked', async () => {
       const user = userEvent.setup();
-      
+
       // Mock to delay so we can see the loading state
       mockGenerateExportDocuments.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({
-          success: true,
-          pdf2404: { ok: true },
-          csvInventory: { ok: true, csvContent: 'data' },
-        }), 100))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  success: true,
+                  pdf2404: { ok: true },
+                  csvInventory: { ok: true, csvContent: 'data' },
+                }),
+              100,
+            ),
+          ),
       );
 
       renderWithProviders(<ExportPage />);

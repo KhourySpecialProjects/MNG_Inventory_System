@@ -443,7 +443,7 @@ export default function ActionPanel({
           <Typography>Are you sure you want to permanently delete this item?</Typography>
         </DialogContent>
         <DialogActions sx={{ p: 2.5, gap: 1 }}>
-          <Button 
+          <Button
             onClick={() => setDeleteOpen(false)}
             sx={{
               textTransform: 'none',

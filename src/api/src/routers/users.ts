@@ -86,9 +86,7 @@ export const usersRouter = router({
         }),
       );
 
-      console.log(
-        `[DynamoDB] Updated USER#${input.userId} role -> ${input.roleName}`
-      );
+      console.log(`[DynamoDB] Updated USER#${input.userId} role -> ${input.roleName}`);
 
       return { success: true, roleName: input.roleName };
     }),
@@ -171,7 +169,7 @@ export const usersRouter = router({
       );
 
       console.log(
-        `[DynamoDB] Found ${userTeams.Items?.length ?? 0} team relations for USER#${userId}`
+        `[DynamoDB] Found ${userTeams.Items?.length ?? 0} team relations for USER#${userId}`,
       );
 
       // Delete user+team relations

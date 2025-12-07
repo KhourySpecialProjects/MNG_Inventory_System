@@ -10,10 +10,10 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
-                                    value,
-                                    onChange,
-                                    placeholder = 'Search items...'
-                                  }: SearchBarProps) {
+  value,
+  onChange,
+  placeholder = 'Search items...',
+}: SearchBarProps) {
   const theme = useTheme();
 
   return (
@@ -28,7 +28,7 @@ export default function SearchBar({
           <InputAdornment position="start">
             <SearchIcon sx={{ color: theme.palette.text.secondary }} />
           </InputAdornment>
-        )
+        ),
       }}
       sx={{
         '& .MuiOutlinedInput-root': {
@@ -36,15 +36,15 @@ export default function SearchBar({
           borderRadius: 2,
           transition: 'all 0.2s ease',
           '& fieldset': {
-            borderRadius: 2
+            borderRadius: 2,
           },
           '&:hover': {
             boxShadow: `0 0 0 2px ${theme.palette.primary.main}20`,
           },
         },
         '& .MuiInputBase-input': {
-          fontSize: '0.9rem'
-        }
+          fontSize: '0.9rem',
+        },
       }}
     />
   );

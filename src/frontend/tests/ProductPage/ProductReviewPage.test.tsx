@@ -23,7 +23,6 @@ const renderWithParams = (itemId = '1', teamId = 'team-123') => {
   );
 };
 
-
 describe('ProductReviewPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();

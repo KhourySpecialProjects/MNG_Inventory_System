@@ -11,7 +11,7 @@ function renderWithProviders(component: React.ReactElement) {
   return render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>{component}</ThemeProvider>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 }
 
@@ -21,10 +21,7 @@ describe('TeamsHeader', () => {
     const mockOnInviteMember = vi.fn();
 
     renderWithProviders(
-      <TeamsHeader
-        onCreateTeam={mockOnCreateTeam}
-        onInviteMember={mockOnInviteMember}
-      />
+      <TeamsHeader onCreateTeam={mockOnCreateTeam} onInviteMember={mockOnInviteMember} />,
     );
 
     expect(screen.getByText('Teamspaces')).toBeInTheDocument();
@@ -39,10 +36,7 @@ describe('TeamsHeader', () => {
     const mockOnInviteMember = vi.fn();
 
     renderWithProviders(
-      <TeamsHeader
-        onCreateTeam={mockOnCreateTeam}
-        onInviteMember={mockOnInviteMember}
-      />
+      <TeamsHeader onCreateTeam={mockOnCreateTeam} onInviteMember={mockOnInviteMember} />,
     );
 
     const createButton = screen.getByRole('button', { name: /create team/i });
@@ -57,10 +51,7 @@ describe('TeamsHeader', () => {
     const mockOnInviteMember = vi.fn();
 
     renderWithProviders(
-      <TeamsHeader
-        onCreateTeam={mockOnCreateTeam}
-        onInviteMember={mockOnInviteMember}
-      />
+      <TeamsHeader onCreateTeam={mockOnCreateTeam} onInviteMember={mockOnInviteMember} />,
     );
 
     const inviteButton = screen.getByRole('button', { name: /invite member/i });
@@ -74,10 +65,7 @@ describe('TeamsHeader', () => {
     const mockOnInviteMember = vi.fn();
 
     renderWithProviders(
-      <TeamsHeader
-        onCreateTeam={mockOnCreateTeam}
-        onInviteMember={mockOnInviteMember}
-      />
+      <TeamsHeader onCreateTeam={mockOnCreateTeam} onInviteMember={mockOnInviteMember} />,
     );
 
     const managementLink = screen.getByRole('link', { name: /management/i });

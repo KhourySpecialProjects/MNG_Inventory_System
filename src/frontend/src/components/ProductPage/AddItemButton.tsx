@@ -10,7 +10,11 @@ interface AddItemButtonProps {
   teamId?: string; // Optional teamId prop
 }
 
-export default function AddItemButton({ parentId, level = 0, teamId: teamIdProp }: AddItemButtonProps) {
+export default function AddItemButton({
+  parentId,
+  level = 0,
+  teamId: teamIdProp,
+}: AddItemButtonProps) {
   const navigate = useNavigate();
   const { teamId: teamIdParam } = useParams<{ teamId: string }>();
   const theme = useTheme();

@@ -22,18 +22,18 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
       gap={2}
       sx={{ mb: 3 }}
     >
-      <Typography 
-        variant="h4" 
-        sx={{ 
-          fontWeight: 700, 
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
           color: theme.palette.text.primary,
         }}
       >
         Teamspaces
       </Typography>
 
-      <Stack 
-        direction={{ xs: 'column', sm: 'row' }} 
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
         spacing={1.5}
         sx={{ width: { xs: '100%', sm: 'auto' } }}
       >
@@ -43,8 +43,8 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           component={RouterLink}
           to="/admin"
           startIcon={<AdminPanelSettingsIcon />}
-          sx={{ 
-            fontWeight: 600, 
+          sx={{
+            fontWeight: 600,
             textTransform: 'none',
             borderRadius: 2,
             px: 2,
@@ -58,8 +58,8 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           color="warning"
           onClick={onCreateTeam}
           startIcon={<AddIcon />}
-          sx={{ 
-            fontWeight: 600, 
+          sx={{
+            fontWeight: 600,
             textTransform: 'none',
             borderRadius: 2,
             px: 2,
@@ -73,8 +73,8 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           color="warning"
           onClick={onInviteMember}
           startIcon={<GroupAddIcon />}
-          sx={{ 
-            fontWeight: 600, 
+          sx={{
+            fontWeight: 600,
             textTransform: 'none',
             borderRadius: 2,
             px: 2,

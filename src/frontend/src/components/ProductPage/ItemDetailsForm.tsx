@@ -110,7 +110,7 @@ export default function ItemDetailsForm({
         setNsnLoading(true);
         try {
           const result = await getAllItemsByNSN(nsnInputValue);
-          
+
           if (result.success && result.items) {
             // Filter out items from the current team
             const filteredItems = result.items.filter((item: any) => {
@@ -213,7 +213,7 @@ export default function ItemDetailsForm({
       <Grid container spacing={2}>
         {itemType === 'item' && (
           <Grid size={{ xs: 12, sm: 6 }}>
-            {(isEditMode || isCreateMode) ? (
+            {isEditMode || isCreateMode ? (
               <TextField
                 label="Authorized Quantity"
                 type="text"
@@ -237,7 +237,7 @@ export default function ItemDetailsForm({
         )}
 
         <Grid size={{ xs: 12, sm: itemType === 'item' ? 6 : 12 }}>
-          {(isEditMode || isCreateMode) ? (
+          {isEditMode || isCreateMode ? (
             <Autocomplete
               options={[
                 { itemId: 'NO_KIT', name: 'No Kit', actualName: '' },
@@ -453,7 +453,8 @@ export default function ItemDetailsForm({
                             {option.nsn}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {option.name || option.actualName} • Team: {option.teamName || 'Unknown'}
+                            {option.name || option.actualName} • Team:{' '}
+                            {option.teamName || 'Unknown'}
                           </Typography>
                         </Stack>
                       </Box>
@@ -478,7 +479,7 @@ export default function ItemDetailsForm({
                       if (value.imageLink && setImagePreview && setSelectedImageFile) {
                         try {
                           setImagePreview(value.imageLink);
-                          
+
                           // Fetch the image and convert to File object
                           const response = await fetch(value.imageLink);
                           const blob = await response.blob();

@@ -77,9 +77,7 @@ describe('Users Router', () => {
         Items: [mockUser, { ...mockUser, sub: 'user456', username: 'janedoe' }],
       });
 
-      const res = await request(app)
-        .get('/trpc/listUsersWithRoles')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/listUsersWithRoles').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.users).toHaveLength(2);
@@ -94,9 +92,7 @@ describe('Users Router', () => {
     it('returns empty array when no users', async () => {
       dynamoSendSpy.mockResolvedValue({ Items: [] });
 
-      const res = await request(app)
-        .get('/trpc/listUsersWithRoles')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/listUsersWithRoles').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.users).toEqual([]);
@@ -107,9 +103,7 @@ describe('Users Router', () => {
         Items: [{ PK: 'USER#user123', SK: 'METADATA', sub: 'user123' }],
       });
 
-      const res = await request(app)
-        .get('/trpc/listUsersWithRoles')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/listUsersWithRoles').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.users[0]).toMatchObject({
@@ -277,9 +271,7 @@ describe('Users Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/deleteUser')
-        .send({ userId: 'user123' });
+      const res = await request(app).post('/trpc/deleteUser').send({ userId: 'user123' });
       expect(res.status).toBe(401);
     });
   });

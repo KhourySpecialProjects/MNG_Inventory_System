@@ -16,7 +16,6 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 const DEFAULT_SAMESITE = (IS_PROD ? 'none' : 'lax') as 'none' | 'lax' | 'strict';
 const DEFAULT_SECURE = IS_PROD;
 
-
 // ===========================================================
 //                           Types
 // ===========================================================
@@ -90,7 +89,6 @@ function buildAuthClearCookies(): string[] {
 //              Public API - Set/Clear Cookies
 // ===========================================================
 
-
 /**
  * Generate the necessary `Set-Cookie` headers for authentication tokens
  * and append them to the existing `Set-Cookie` headers in the HTTP response, if provided.
@@ -160,7 +158,7 @@ export function parseCookiesFromCtx(ctx?: CtxLike): Record<string, string> {
   return header ? parseCookieHeader(header) : {};
 }
 
-// Utility to push Set-Cookie strings to Lambda adapter context 
+// Utility to push Set-Cookie strings to Lambda adapter context
 export function emitCookiesToLambda(ctx: CtxLike | undefined, headers: string[] | undefined) {
   if (!headers || headers.length === 0) return;
   ctx?.responseCookies?.push(...headers);

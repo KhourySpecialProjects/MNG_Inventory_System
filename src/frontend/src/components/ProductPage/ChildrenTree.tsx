@@ -14,7 +14,12 @@ interface ChildrenTreeProps {
   isEditMode?: boolean;
 }
 
-export default function ChildrenTree({ editedProduct, teamId, isCreateMode = false, isEditMode = false }: ChildrenTreeProps) {
+export default function ChildrenTree({
+  editedProduct,
+  teamId,
+  isCreateMode = false,
+  isEditMode = false,
+}: ChildrenTreeProps) {
   const navigate = useNavigate();
   const theme = useTheme();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -51,8 +56,8 @@ export default function ChildrenTree({ editedProduct, teamId, isCreateMode = fal
                 ? theme.palette.background.paper
                 : theme.palette.mode === 'dark'
                   ? `rgba(${theme.palette.primary.main.replace('rgb(', '').replace(')', '')}, ${
-                    0.04 * (level + 1)
-                  })`
+                      0.04 * (level + 1)
+                    })`
                   : `rgba(25, 118, 210, ${0.05 * (level + 1)})`,
             '&:hover': {
               bgcolor:
@@ -63,10 +68,10 @@ export default function ChildrenTree({ editedProduct, teamId, isCreateMode = fal
             borderLeft:
               level > 0
                 ? `3px solid ${
-                  theme.palette.mode === 'dark'
-                    ? theme.palette.primary.dark
-                    : `rgba(25,118,210,${0.3 + level * 0.2})`
-                }`
+                    theme.palette.mode === 'dark'
+                      ? theme.palette.primary.dark
+                      : `rgba(25,118,210,${0.3 + level * 0.2})`
+                  }`
                 : 'none',
             ml: level * 2,
             mb: 1,
@@ -93,7 +98,7 @@ export default function ChildrenTree({ editedProduct, teamId, isCreateMode = fal
                     color: isKit ? theme.palette.info.main : theme.palette.success.main,
                     '& .MuiChip-label': {
                       px: 1,
-                    }
+                    },
                   }}
                 />
               </Box>
@@ -217,7 +222,9 @@ export default function ChildrenTree({ editedProduct, teamId, isCreateMode = fal
       <Stack spacing={0.5}>
         {editedProduct.children.map((child: any) => renderChild(child, 0))}
         {/* Add button at the end if this is a kit AND in edit mode */}
-        {editedProduct.isKit && isEditMode && <AddItemButton parentId={editedProduct.itemId} level={0} teamId={teamId} />}
+        {editedProduct.isKit && isEditMode && (
+          <AddItemButton parentId={editedProduct.itemId} level={0} teamId={teamId} />
+        )}
       </Stack>
     </Box>
   );

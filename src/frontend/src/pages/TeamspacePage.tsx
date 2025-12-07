@@ -85,7 +85,6 @@ export default function TeamspacePage() {
 
       const data = await getTeamspace(user.userId);
       setTeams(data?.teams ?? []);
-
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load teams';
       setError(message);
@@ -162,9 +161,9 @@ export default function TeamspacePage() {
 
       <Profile open={profileOpen} onClose={handleProfileClose} />
 
-      <Container 
-        maxWidth="lg" 
-        sx={{ 
+      <Container
+        maxWidth="lg"
+        sx={{
           py: { xs: 3, sm: 4, md: 6 },
         }}
       >
@@ -187,7 +186,7 @@ export default function TeamspacePage() {
             onInvite={() => setOpenInvite(true)}
             onRemove={openRemoveFor}
             onDelete={openDeleteFor}
-            onViewMembers={openMembers} 
+            onViewMembers={openMembers}
           />
         )}
       </Container>
@@ -247,11 +246,7 @@ export default function TeamspacePage() {
         onClose={closeSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={closeSnackbar} 
-          severity={snackbar.severity} 
-          variant="filled"
-        >
+        <Alert onClose={closeSnackbar} severity={snackbar.severity} variant="filled">
           {snackbar.message}
         </Alert>
       </Snackbar>

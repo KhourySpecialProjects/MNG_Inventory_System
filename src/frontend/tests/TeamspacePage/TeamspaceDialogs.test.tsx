@@ -53,7 +53,7 @@ describe('CreateTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     expect(screen.getByText('Create New Teamspace')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('CreateTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const createButton = screen.getByRole('button', { name: /create/i });
@@ -87,7 +87,7 @@ describe('CreateTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await user.type(screen.getByLabelText(/teamspace name/i), 'New Team');
@@ -112,7 +112,7 @@ describe('CreateTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await user.type(screen.getByLabelText(/teamspace name/i), 'New Team');
@@ -124,10 +124,7 @@ describe('CreateTeamDialog', () => {
     await user.click(createButton);
 
     await waitFor(() => {
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        'Teamspace created successfully!',
-        'success'
-      );
+      expect(mockShowSnackbar).toHaveBeenCalledWith('Teamspace created successfully!', 'success');
       expect(mockOnClose).toHaveBeenCalled();
       expect(mockOnRefresh).toHaveBeenCalled();
     });
@@ -147,7 +144,7 @@ describe('CreateTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await user.type(screen.getByLabelText(/teamspace name/i), 'New Team');
@@ -172,7 +169,7 @@ describe('CreateTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
@@ -206,7 +203,7 @@ describe('InviteDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     expect(screen.getByText('Add to Teamspace')).toBeInTheDocument();
@@ -221,7 +218,7 @@ describe('InviteDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -238,7 +235,7 @@ describe('InviteDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const platformTab = screen.getByText('Invite to Platform');
@@ -256,7 +253,7 @@ describe('InviteDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -285,7 +282,7 @@ describe('InviteDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -305,10 +302,7 @@ describe('InviteDialog', () => {
     await user.click(addButton);
 
     await waitFor(() => {
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        'User "user1" added to teamspace.',
-        'success'
-      );
+      expect(mockShowSnackbar).toHaveBeenCalledWith('User "user1" added to teamspace.', 'success');
       expect(mockOnClose).toHaveBeenCalled();
       expect(mockOnRefresh).toHaveBeenCalled();
     });
@@ -325,7 +319,7 @@ describe('InviteDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const platformTab = screen.getByText('Invite to Platform');
@@ -340,7 +334,7 @@ describe('InviteDialog', () => {
     await waitFor(() => {
       expect(mockShowSnackbar).toHaveBeenCalledWith(
         'Invitation sent to test@example.com',
-        'success'
+        'success',
       );
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -383,7 +377,7 @@ describe('RemoveMemberDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     expect(screen.getByText(/workspace: team alpha/i)).toBeInTheDocument();
@@ -400,7 +394,7 @@ describe('RemoveMemberDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -431,7 +425,7 @@ describe('RemoveMemberDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -445,10 +439,7 @@ describe('RemoveMemberDialog', () => {
     await user.click(removeButton);
 
     await waitFor(() => {
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        'Member removed successfully.',
-        'success'
-      );
+      expect(mockShowSnackbar).toHaveBeenCalledWith('Member removed successfully.', 'success');
       expect(mockOnClose).toHaveBeenCalled();
       expect(mockOnRefresh).toHaveBeenCalled();
     });
@@ -470,7 +461,7 @@ describe('RemoveMemberDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     await waitFor(() => {
@@ -509,7 +500,7 @@ describe('DeleteTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     expect(screen.getByText(/this action cannot be undone/i)).toBeInTheDocument();
@@ -531,17 +522,14 @@ describe('DeleteTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const deleteButton = screen.getByRole('button', { name: /delete/i });
     await user.click(deleteButton);
 
     await waitFor(() => {
-      expect(mockShowSnackbar).toHaveBeenCalledWith(
-        'Teamspace deleted successfully.',
-        'success'
-      );
+      expect(mockShowSnackbar).toHaveBeenCalledWith('Teamspace deleted successfully.', 'success');
       expect(mockOnClose).toHaveBeenCalled();
       expect(mockOnRefresh).toHaveBeenCalled();
     });
@@ -563,7 +551,7 @@ describe('DeleteTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const deleteButton = screen.getByRole('button', { name: /delete/i });
@@ -585,7 +573,7 @@ describe('DeleteTeamDialog', () => {
         teams={mockTeams}
         onRefresh={mockOnRefresh}
         showSnackbar={mockShowSnackbar}
-      />
+      />,
     );
 
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
@@ -599,21 +587,15 @@ describe('MissingNameDialog', () => {
   const mockOnOpenProfile = vi.fn();
 
   it('renders warning message', () => {
-    renderWithProviders(
-      <MissingNameDialog open={true} onOpenProfile={mockOnOpenProfile} />
-    );
+    renderWithProviders(<MissingNameDialog open={true} onOpenProfile={mockOnOpenProfile} />);
 
     expect(screen.getByText(/missing name/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/please insert your name and username/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/please insert your name and username/i)).toBeInTheDocument();
   });
 
   it('calls onOpenProfile when Got It is clicked', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <MissingNameDialog open={true} onOpenProfile={mockOnOpenProfile} />
-    );
+    renderWithProviders(<MissingNameDialog open={true} onOpenProfile={mockOnOpenProfile} />);
 
     const gotItButton = screen.getByRole('button', { name: /got it/i });
     await user.click(gotItButton);
@@ -623,7 +605,7 @@ describe('MissingNameDialog', () => {
 
   it('cannot be closed by clicking outside', () => {
     const { container } = renderWithProviders(
-      <MissingNameDialog open={true} onOpenProfile={mockOnOpenProfile} />
+      <MissingNameDialog open={true} onOpenProfile={mockOnOpenProfile} />,
     );
 
     // Try to click on the backdrop

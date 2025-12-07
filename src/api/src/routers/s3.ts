@@ -50,19 +50,15 @@ export const s3Router = router({
         Key: key,
         Body: buffer,
         ContentType: mime,
-        ...(KMS_KEY_ARN
-          ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN }
-          : {}),
+        ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
       };
 
       await s3.send(new PutObjectCommand(putParams));
       console.log(`[S3] Uploaded ${key} size=${buffer.byteLength}`);
 
-      const url = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
-        { expiresIn: 3600 },
-      );
+      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
+        expiresIn: 3600,
+      });
 
       console.log(`[S3] Generated signed URL for ${key}`);
 
@@ -109,9 +105,7 @@ export const s3Router = router({
       }),
     )
     .query(async ({ input }) => {
-      console.log(
-        `[S3] getInventoryForm teamId=${input.teamId ?? 'defaultTeam'} nsn=${input.nsn}`,
-      );
+      console.log(`[S3] getInventoryForm teamId=${input.teamId ?? 'defaultTeam'} nsn=${input.nsn}`);
 
       const teamId = input.teamId ?? 'defaultTeam';
       const key = `Documents/${teamId}/inventoryForm/${input.nsn}.pdf`;
@@ -124,11 +118,9 @@ export const s3Router = router({
         throw new Error(`Inventory form for NSN ${input.nsn} not found`);
       }
 
-      const url = await getSignedUrl(
-        s3,
-        new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
-        { expiresIn: 600 },
-      );
+      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
+        expiresIn: 600,
+      });
 
       console.log(`[S3] Signed URL generated for form ${key}`);
 

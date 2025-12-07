@@ -8,7 +8,7 @@ export const sendInviteEmail = async (params: {
   signinUrl: string;
 }) => {
   const { to, tempPassword, signinUrl } = params;
-  const config = loadConfig()
+  const config = loadConfig();
   const URL_signin = config.WEB_URL;
 
   const FROM = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';

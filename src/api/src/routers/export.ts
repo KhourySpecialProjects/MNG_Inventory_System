@@ -3,11 +3,7 @@ import { z } from 'zod';
 import { router, permissionedProcedure } from './trpc';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { loadConfig } from '../process';
-import {
-  S3Client,
-  ListObjectsV2Command,
-  DeleteObjectsCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 
 const config = loadConfig();
 const REGION = config.REGION;
@@ -68,9 +64,7 @@ async function invokePythonLambda(functionName: string, teamId: string) {
 
     if (response.FunctionError) {
       console.error(`[Lambda] Error in ${functionName}:`, result);
-      throw new Error(
-        result.errorMessage || `Lambda ${functionName} failed with FunctionError`,
-      );
+      throw new Error(result.errorMessage || `Lambda ${functionName} failed with FunctionError`);
     }
 
     console.log(`[Lambda] Success ${functionName}`);
@@ -108,9 +102,7 @@ export async function runExport(teamId: string) {
     const ok1 = pdf2404Response?.ok;
     const ok2 = csvResponse?.ok;
 
-    console.log(
-      `[Export] Lambda statuses pdf2404=${ok1} csvInventory=${ok2}`,
-    );
+    console.log(`[Export] Lambda statuses pdf2404=${ok1} csvInventory=${ok2}`);
 
     if (!ok1 && !ok2) {
       throw new Error('Both export operations failed');
@@ -143,8 +135,7 @@ export const exportRouter = router({
         return {
           success: false,
           error: err.message || 'Failed to run export.',
-          stack:
-            process.env.NODE_ENV === 'development' ? err.stack : undefined,
+          stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
         };
       }
     }),

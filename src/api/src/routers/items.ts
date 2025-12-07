@@ -121,7 +121,7 @@ export const itemsRouter = router({
           }
           return false;
         });
-        
+
         if (duplicate) {
           const field = input.isKit ? 'End Item NIIN' : 'NSN';
           const value = input.isKit ? input.endItemNiin : input.nsn;
@@ -538,7 +538,7 @@ export const itemsRouter = router({
 
         // Search for items with matching NSN across all teams
         const allItems: any[] = [];
-        
+
         for (const teamId of teamIds) {
           const result = await doc.send(
             new QueryCommand({
@@ -578,7 +578,7 @@ export const itemsRouter = router({
                 teamName,
                 imageLink,
               };
-            })
+            }),
           );
 
           allItems.push(...itemsWithImages);

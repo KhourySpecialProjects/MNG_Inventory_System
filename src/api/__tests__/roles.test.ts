@@ -120,13 +120,10 @@ describe('Roles Router', () => {
     });
 
     it('validates permissions array is not empty', async () => {
-      const res = await request(app)
-        .post('/trpc/createRole')
-        .set('Cookie', validAuthCookie)
-        .send({
-          name: 'Empty Role',
-          permissions: [],
-        });
+      const res = await request(app).post('/trpc/createRole').set('Cookie', validAuthCookie).send({
+        name: 'Empty Role',
+        permissions: [],
+      });
 
       expect(res.status).toBe(400);
     });
@@ -146,15 +143,10 @@ describe('Roles Router', () => {
   describe('getAllRoles', () => {
     it('returns all roles', async () => {
       dynamoSendSpy.mockResolvedValue({
-        Items: [
-          mockRole,
-          { ...mockRole, PK: 'ROLE#VIEWER', roleId: 'VIEWER', name: 'Viewer' },
-        ],
+        Items: [mockRole, { ...mockRole, PK: 'ROLE#VIEWER', roleId: 'VIEWER', name: 'Viewer' }],
       });
 
-      const res = await request(app)
-        .get('/trpc/getAllRoles')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getAllRoles').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.roles).toHaveLength(2);
@@ -163,9 +155,7 @@ describe('Roles Router', () => {
     it('returns empty array when no roles exist', async () => {
       dynamoSendSpy.mockResolvedValue({ Items: [] });
 
-      const res = await request(app)
-        .get('/trpc/getAllRoles')
-        .set('Cookie', validAuthCookie);
+      const res = await request(app).get('/trpc/getAllRoles').set('Cookie', validAuthCookie);
 
       expect(res.status).toBe(200);
       expect(res.body?.result?.data?.roles).toEqual([]);
@@ -278,13 +268,10 @@ describe('Roles Router', () => {
     it('returns 404 when role not found', async () => {
       dynamoSendSpy.mockResolvedValue({ Item: null });
 
-      const res = await request(app)
-        .post('/trpc/updateRole')
-        .set('Cookie', validAuthCookie)
-        .send({
-          name: 'Nonexistent',
-          description: 'Test',
-        });
+      const res = await request(app).post('/trpc/updateRole').set('Cookie', validAuthCookie).send({
+        name: 'Nonexistent',
+        description: 'Test',
+      });
 
       expect(res.status).toBe(404);
       expect(JSON.stringify(res.body)).toContain('Role not found');
@@ -299,13 +286,10 @@ describe('Roles Router', () => {
       };
       dynamoSendSpy.mockResolvedValue({ Item: ownerRole });
 
-      const res = await request(app)
-        .post('/trpc/updateRole')
-        .set('Cookie', validAuthCookie)
-        .send({
-          name: 'Owner',
-          description: 'Hacked',
-        });
+      const res = await request(app).post('/trpc/updateRole').set('Cookie', validAuthCookie).send({
+        name: 'Owner',
+        description: 'Hacked',
+      });
 
       expect(res.status).toBe(403);
       expect(JSON.stringify(res.body)).toContain('Cannot modify default roles');
@@ -340,24 +324,19 @@ describe('Roles Router', () => {
       };
       dynamoSendSpy.mockResolvedValue({ Item: memberRole });
 
-      const res = await request(app)
-        .post('/trpc/updateRole')
-        .set('Cookie', validAuthCookie)
-        .send({
-          name: 'Member',
-          description: 'Modified',
-        });
+      const res = await request(app).post('/trpc/updateRole').set('Cookie', validAuthCookie).send({
+        name: 'Member',
+        description: 'Modified',
+      });
 
       expect(res.status).toBe(403);
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/updateRole')
-        .send({
-          name: 'Custom',
-          description: 'Test',
-        });
+      const res = await request(app).post('/trpc/updateRole').send({
+        name: 'Custom',
+        description: 'Test',
+      });
 
       expect(res.status).toBe(401);
     });
@@ -477,9 +456,7 @@ describe('Roles Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/deleteRole')
-        .send({ name: 'Custom' });
+      const res = await request(app).post('/trpc/deleteRole').send({ name: 'Custom' });
 
       expect(res.status).toBe(401);
     });

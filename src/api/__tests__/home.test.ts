@@ -78,10 +78,7 @@ describe('Home Router', () => {
       s3SendSpy.mockImplementation(async (command: MockableCommand) => {
         if (isCommandNamed(command, 'ListObjectsV2Command')) {
           return {
-            Contents: [
-              { Key: 'items/team123/img1.png' },
-              { Key: 'items/team123/img2.png' },
-            ],
+            Contents: [{ Key: 'items/team123/img1.png' }, { Key: 'items/team123/img2.png' }],
           };
         }
         if (isCommandNamed(command, 'DeleteObjectsCommand')) {
@@ -176,9 +173,7 @@ describe('Home Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/hardReset')
-        .send({ teamId: 'team123' });
+      const res = await request(app).post('/trpc/hardReset').send({ teamId: 'team123' });
 
       expect(res.status).toBe(401);
     });
@@ -257,9 +252,7 @@ describe('Home Router', () => {
     });
 
     it('returns 401 without auth', async () => {
-      const res = await request(app)
-        .post('/trpc/softReset')
-        .send({ teamId: 'team123' });
+      const res = await request(app).post('/trpc/softReset').send({ teamId: 'team123' });
 
       expect(res.status).toBe(401);
     });

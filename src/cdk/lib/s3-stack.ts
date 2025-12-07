@@ -77,7 +77,7 @@ export class S3UploadsStack extends Stack {
       sources: [
         s3deploy.Source.asset('./python_2404', {
           exclude: ['**', '!2404-handler.py', '!inventory-handler.py'],
-        })
+        }),
       ],
       prune: true,
     });
@@ -88,7 +88,7 @@ export class S3UploadsStack extends Stack {
       sources: [
         s3deploy.Source.asset('./python_inventory', {
           exclude: ['**', '!2404-handler.py', '!inventory-handler.py'],
-        })
+        }),
       ],
       prune: true,
     });
@@ -100,7 +100,7 @@ export class S3UploadsStack extends Stack {
       sources: [
         s3deploy.Source.asset('./templates', {
           exclude: ['!2404-template.pdf'],
-        })
+        }),
       ],
       prune: true,
     });
