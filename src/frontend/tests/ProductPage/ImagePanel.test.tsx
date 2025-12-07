@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ImagePanel component.
+ * Tests image upload, preview display, file validation, and HEIC support.
+ * Verifies size limits (3MB), error handling, and edit/create mode behaviors.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ImagePanel from '../../src/components/ProductPage/ImagePanel';

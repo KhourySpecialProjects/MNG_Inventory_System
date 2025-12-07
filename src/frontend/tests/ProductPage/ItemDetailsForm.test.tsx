@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ItemDetailsForm component.
+ * Tests form rendering in view/edit modes, kit vs item field visibility, and validation.
+ * Verifies status buttons, damage reports integration, NSN autocomplete, and always-editable fields.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ItemDetailsForm from '../../src/components/ProductPage/ItemDetailsForm';

@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ProductReviewPage.
+ * Tests create/edit mode rendering, data loading, error handling, and child component integration.
+ * Verifies item-to-productName mapping, children tree display, and damage reports section.
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';

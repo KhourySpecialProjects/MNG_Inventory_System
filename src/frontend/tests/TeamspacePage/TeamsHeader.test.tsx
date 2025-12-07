@@ -1,3 +1,8 @@
+/**
+ * Unit tests for TeamsHeader component.
+ * Tests header rendering, button callbacks, and admin navigation link.
+ * Verifies Create Team and Invite Member action triggers.
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';

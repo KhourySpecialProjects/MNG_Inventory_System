@@ -1,4 +1,8 @@
-import React from 'react';
+/**
+ * Permission checkbox group component for RBAC management.
+ * Displays categorized permissions (team, user, role, item, report) with select-all functionality per category.
+ * Supports indeterminate state for partial selections and disabled mode for read-only views.
+ */
 import { Box, FormControl, FormGroup, FormControlLabel, Checkbox, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 

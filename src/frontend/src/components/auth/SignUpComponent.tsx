@@ -1,3 +1,8 @@
+/**
+ * New user password setup component with strength validation and confirmation.
+ * Enforces password requirements (10+ chars, uppercase, lowercase, number) with visual feedback.
+ * Handles NEW_PASSWORD_REQUIRED Cognito challenge and optional OTP flow.
+ */
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -12,19 +17,12 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { Visibility, VisibilityOff, CheckCircle, Cancel, Lock } from '@mui/icons-material';
-import { completeNewPassword, me, refresh } from '../api/auth';
+import { completeNewPassword, me, refresh } from '../../api/auth';
 import EmailOtpCard from './EmailOtpCard';
 
 type OtpChallengeName = 'EMAIL_OTP' | 'SMS_MFA' | 'SOFTWARE_TOKEN_MFA';
 
 interface CompleteNewPasswordResponse {
-  success?: boolean;
-  challengeName?: OtpChallengeName | string;
-  session?: string;
-  message?: string;
-}
-
-interface LoginUserResponse {
   success?: boolean;
   challengeName?: OtpChallengeName | string;
   session?: string;

@@ -1,3 +1,7 @@
+/**
+ * Admin API: Role-based access control (RBAC) operations for managing users, roles, and permissions.
+ * Provides functions for assigning roles, managing permissions, and user administration.
+ */
 import { trpcFetch } from './utils';
 
 const TRPC = '/trpc';

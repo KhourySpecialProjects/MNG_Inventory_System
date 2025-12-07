@@ -1,3 +1,8 @@
+/**
+ * Comprehensive form for item/kit details with dynamic field visibility.
+ * Handles kit vs. item type switching, NSN autocomplete with cross-team suggestions, and field validation.
+ * Manages hierarchical parent selection, status updates, damage reports, and quantity tracking.
+ */
 /* eslint-disable */
 import React from 'react';
 import {
@@ -22,7 +27,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import PendingIcon from '@mui/icons-material/Pending';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import CategoryIcon from '@mui/icons-material/Category';
-import DamageReportsSection from '../DamageReportsSection';
+import DamageReportsSection from './DamageReportsSection';
 import { getAllItemsByNSN } from '../../api/items';
 
 interface ItemDetailsFormProps {

@@ -1,8 +1,12 @@
+/**
+ * Animated circular progress indicator showing inventory review completion percentage.
+ * Features smooth animation on mount and responsive sizing across breakpoints.
+ * Used in dashboard widgets to visualize overall progress.
+ */
 import { useState, useEffect } from 'react';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 
-// TODO: split up into a pie chart with different Reviewed statuses (completed, shortages, damaged)
 export default function CircularProgressBar({ value = 30 }) {
   const theme = useTheme();
   const [progress, setProgress] = useState(0);

@@ -1,4 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * User profile dialog with image upload, name/username editing, and logout functionality.
+ * Features animated avatar changes, profile field updates, and session management.
+ * Integrated with Framer Motion for smooth transitions.
+ */
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,

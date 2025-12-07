@@ -1,3 +1,7 @@
+/**
+ * General API utilities: Health checks and basic tRPC endpoint testing.
+ * Includes inventory form retrieval from S3 and system health monitoring.
+ */
 import { trpcFetch } from './utils';
 
 const TRPC_URL = '/trpc';

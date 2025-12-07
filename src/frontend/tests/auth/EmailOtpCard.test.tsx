@@ -1,19 +1,27 @@
+/**
+ * Unit tests for EmailOtpCard component.
+ * Tests UI rendering, form validation, API integration, and navigation flow for OTP verification.
+ * Covers EMAIL_OTP, SMS_MFA, and SOFTWARE_TOKEN_MFA challenge types.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
-import EmailOtpCard from '../src/components/EmailOtpCard';
+import EmailOtpCard from '../../src/components/auth/EmailOtpCard';
 
 type OtpChallengeName = 'EMAIL_OTP' | 'SMS_MFA' | 'SOFTWARE_TOKEN_MFA';
 type SubmitOtpResponse = { success?: boolean; message?: string };
 
 // ---- Mock navigate so routing doesn't actually change location ----
 const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async (orig) => {
-  const actual = await orig();
-  return { ...actual, useNavigate: () => mockNavigate };
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return { 
+    ...actual, 
+    useNavigate: () => mockNavigate 
+  };
 });
 
-vi.mock('../src/api/auth', () => {
+vi.mock('../../src/api/auth', () => {
   const submitOtp = (
     _challenge: OtpChallengeName,
     _session: string,
@@ -55,7 +63,7 @@ describe('EmailOtpCard (UI-only)', () => {
   });
 
   it('navigates to /workspace when submitOtp resolves with success', async () => {
-    const authMod = (await import('../src/api/auth')) as typeof import('../src/api/auth');
+    const authMod = (await import('../../src/api/auth')) as typeof import('../../src/api/auth');
     vi.spyOn(authMod, 'submitOtp').mockResolvedValueOnce({ success: true });
 
     render(<EmailOtpCard {...baseProps} />);
@@ -68,7 +76,7 @@ describe('EmailOtpCard (UI-only)', () => {
   });
 
   it('shows server message on unsuccessful verification (still UI-only)', async () => {
-    const authMod = (await import('../src/api/auth')) as typeof import('../src/api/auth');
+    const authMod = (await import('../../src/api/auth')) as typeof import('../../src/api/auth');
     vi.spyOn(authMod, 'submitOtp').mockResolvedValueOnce({
       success: false,
       message: 'Wrong code.',

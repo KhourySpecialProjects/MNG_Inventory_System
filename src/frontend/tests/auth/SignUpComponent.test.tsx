@@ -1,6 +1,11 @@
+/**
+ * Unit tests for SignUpComponent component.
+ * Tests password validation, strength indicators, form submission, and OTP flow.
+ * Verifies password requirements and session handling for new user setup.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import SignUpComponent from '../src/components/SignUpComponent';
+import SignUpComponent from '../../src/components/auth/SignUpComponent';
 
 type OtpChallengeName = 'EMAIL_OTP' | 'SMS_MFA' | 'SOFTWARE_TOKEN_MFA';
 type MeRes = { authenticated: boolean };
@@ -21,12 +26,12 @@ interface EmailOtpCardProps {
   onBack?: () => void;
 }
 
-vi.mock('../src/components/EmailOtpCard', () => ({
+vi.mock('../../src/components/auth/EmailOtpCard', () => ({
   __esModule: true,
   default: (_: EmailOtpCardProps) => <div data-testid="otp-card-stub">OTP</div>,
 }));
 
-vi.mock('../src/api/auth', () => {
+vi.mock('../../src/api/auth', () => {
   const me = (): Promise<MeRes> => Promise.resolve({ authenticated: false });
   const refresh = (): Promise<RefreshRes> => Promise.resolve({ refreshed: false });
   const completeNewPassword = (

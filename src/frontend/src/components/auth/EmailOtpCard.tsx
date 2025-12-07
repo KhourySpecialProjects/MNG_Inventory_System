@@ -4,7 +4,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import ReplayIcon from '@mui/icons-material/Replay';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import { submitOtp } from '../api/auth';
+import { submitOtp } from '../../api/auth';
 
 type OtpChallengeName = 'EMAIL_OTP' | 'SMS_MFA' | 'SOFTWARE_TOKEN_MFA';
 

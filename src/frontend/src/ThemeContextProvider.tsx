@@ -1,3 +1,8 @@
+/**
+ * Theme context provider managing light/dark mode state with localStorage persistence.
+ * Provides toggleTheme function and current mode to all child components.
+ * Automatically restores user's theme preference on app load.
+ */
 import React, { createContext, useMemo, useState, useContext } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { createTheme } from '@mui/material/styles';

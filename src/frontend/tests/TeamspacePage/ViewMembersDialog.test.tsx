@@ -1,5 +1,9 @@
+/**
+ * Unit tests for ViewMembersDialog component.
+ * Tests member list display, search filtering, role display, and member removal.
+ * Verifies sorting by permissions and proper error handling for team member operations.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/frontend/tests/TeamspacesPage/ViewMembersDialog.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

@@ -1,3 +1,8 @@
+/**
+ * Action panel managing item lifecycle operations (create, edit, save, delete).
+ * Handles validation for kit vs. item fields, damage reports, and quantity constraints.
+ * Shows context-aware buttons (CREATE/Save/DONE/Edit/Delete) based on mode and field changes.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {

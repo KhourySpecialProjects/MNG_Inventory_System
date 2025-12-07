@@ -1,4 +1,7 @@
-// components/EmptyState.tsx
+/**
+ * Empty state component for teams list with loading, error, and no-results states.
+ * Displays contextual messages and loading indicators during data fetch operations.
+ */
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 

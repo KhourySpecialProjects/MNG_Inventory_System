@@ -1,3 +1,7 @@
+/**
+ * Utility functions and components for product/item management.
+ * Includes tree flattening helper and status chip component for consistent status display.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React from 'react';

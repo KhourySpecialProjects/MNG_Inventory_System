@@ -1,3 +1,8 @@
+/**
+ * Hierarchical tree view displaying kit contents and nested items.
+ * Features expandable/collapsible nodes with visual depth indicators and status badges.
+ * Shows AddItemButton for kits in edit mode to maintain parent-child relationships.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { Box, Card, Chip, Collapse, IconButton, Stack, Typography } from '@mui/material';

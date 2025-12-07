@@ -1,3 +1,8 @@
+/**
+ * Reviewed inventory page with tabbed views for completed, shortage, and damaged items.
+ * Displays hierarchical item lists with search filtering and expandable kit contents.
+ * Automatically expands kits containing matching search results.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useMemo } from 'react';
 import {

@@ -1,3 +1,8 @@
+/**
+ * Light mode theme configuration for Material-UI.
+ * Defines military-inspired color palette with command blue primary and medal gold accents.
+ * Configures typography using Roboto Condensed with strong font weights for professional appearance.
+ */
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({

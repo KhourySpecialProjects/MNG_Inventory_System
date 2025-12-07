@@ -1,3 +1,8 @@
+/**
+ * Unit tests for TeamsSearch component.
+ * Tests search input rendering, value display, onChange callbacks, and clear functionality.
+ * Verifies controlled input behavior with character-by-character typing.
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

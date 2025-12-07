@@ -1,8 +1,13 @@
+/**
+ * Unit tests for Profile component.
+ * Tests profile dialog rendering, user data loading, and display of name/email/role.
+ * Mocks authentication and profile API calls to verify component integration.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// 🧩 Mock API modules *before* importing the component
+// Mock API modules *before* importing the component
 vi.mock('../src/api/auth', () => ({
   me: vi.fn().mockResolvedValue({
     userId: 'u123',

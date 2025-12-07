@@ -1,3 +1,8 @@
+/**
+ * Unit tests for ExportPage component.
+ * Tests document generation flow, loading states, error handling, and stat calculations.
+ * Mocks API calls and child components to isolate page-level logic.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -11,26 +16,30 @@ const { mockGetItems, mockGenerateExportDocuments } = vi.hoisted(() => ({
   mockGenerateExportDocuments: vi.fn(),
 }));
 
-vi.mock('../src/api/items', () => ({
+vi.mock('../../src/api/items', () => ({
   getItems: mockGetItems,
 }));
 
-vi.mock('../src/api/download', () => ({
+vi.mock('../../src/api/download', () => ({
   generateExportDocuments: mockGenerateExportDocuments,
 }));
 
 // Mock child components
-vi.mock('../src/components/TopBar', () => ({
+vi.mock('../../src/components/TopBar', () => ({
   default: ({ isLoggedIn }: { isLoggedIn: boolean }) => (
     <div data-testid="top-bar">TopBar - {isLoggedIn ? 'Logged In' : 'Logged Out'}</div>
   ),
 }));
 
-vi.mock('../src/components/NavBar', () => ({
+vi.mock('../../src/components/NavBar', () => ({
   default: () => <div data-testid="nav-bar">NavBar</div>,
 }));
 
-vi.mock('../src/components/ExportCategoryBar', () => ({
+vi.mock('../../src/components/Profile', () => ({
+  default: () => <div data-testid="profile">Profile</div>,
+}));
+
+vi.mock('../../src/components/ExportPage/ExportCategoryBar', () => ({
   default: ({
     activeCategory,
     onCategoryChange,
@@ -46,7 +55,7 @@ vi.mock('../src/components/ExportCategoryBar', () => ({
   ),
 }));
 
-vi.mock('../src/components/ExportPageContent', () => ({
+vi.mock('../../src/components/ExportPage/ExportPageContent', () => ({
   default: ({
     items,
     percentReviewed,
@@ -68,7 +77,7 @@ vi.mock('../src/components/ExportPageContent', () => ({
 }));
 
 // Import after mocks are defined
-import ExportPage from '../src/pages/ExportPage';
+import ExportPage from '../../src/pages/ExportPage';
 
 const theme = createTheme();
 
@@ -282,13 +291,15 @@ describe('ExportPage', () => {
       });
     });
 
-    it('renders NavBar at bottom', async () => {
+    it('renders NavBar', async () => {
       mockGetItems.mockResolvedValue({ items: [] });
 
-      renderWithProviders(<ExportPage />);
+      const { container } = renderWithProviders(<ExportPage />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('nav-bar')).toBeInTheDocument();
+        // NavBar is in the DOM but may be in a fixed position container
+        const navBar = container.querySelector('[data-testid="nav-bar"]');
+        expect(navBar).toBeInTheDocument();
       });
     });
   });

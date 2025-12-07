@@ -1,4 +1,8 @@
-// dialogs/TeamspaceDialogs.tsx
+/**
+ * Collection of dialog components for teamspace management operations.
+ * Includes: CreateTeam, Invite (to teamspace or platform), RemoveMember, DeleteTeam, and MissingName dialogs.
+ * Features user search/autocomplete, validation, and error handling for all teamspace actions.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import {

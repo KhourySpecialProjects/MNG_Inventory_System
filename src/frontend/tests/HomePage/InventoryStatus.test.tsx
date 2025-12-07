@@ -1,3 +1,8 @@
+/**
+ * Unit tests for InventoryStatus component.
+ * Tests rendering of status cards, value display, team name handling, and layout structure.
+ * Verifies correct display of To Review, Completed, Shortages, and Damaged counts.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';

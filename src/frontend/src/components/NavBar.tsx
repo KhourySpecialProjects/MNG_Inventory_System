@@ -1,3 +1,7 @@
+/**
+ * Bottom navigation bar for mobile-first navigation between main app sections.
+ * Provides quick access to Home, To Review, Reviewed, and Export pages for a team.
+ */
 import React from 'react';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';

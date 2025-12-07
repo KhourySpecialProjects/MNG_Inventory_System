@@ -1,3 +1,8 @@
+/**
+ * Main inventory list view with expandable hierarchical kit structure.
+ * Displays items as cards with images, status badges, and metadata in a collapsible tree format.
+ * Features click-through navigation, inline add buttons for kits, and visual depth indicators.
+ */
 import React, { useState, useEffect } from 'react';
 import { Box, Card, CardMedia, Typography, IconButton, Collapse } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';

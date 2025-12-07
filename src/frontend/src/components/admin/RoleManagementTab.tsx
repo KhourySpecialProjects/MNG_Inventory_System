@@ -1,5 +1,10 @@
+/**
+ * Role management dashboard for creating, editing, and deleting roles.
+ * Displays all roles in a searchable grid with protection for default roles (Owner, Manager, Member).
+ * Integrates RoleForm and RoleCard components for complete role lifecycle management.
+ */
 /* eslint-disable */
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Button,

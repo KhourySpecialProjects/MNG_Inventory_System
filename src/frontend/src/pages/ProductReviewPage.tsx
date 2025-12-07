@@ -1,3 +1,8 @@
+/**
+ * Item detail/creation page for viewing and editing inventory items.
+ * Supports both create mode (new items) and edit mode (existing items) with validation.
+ * Features image upload, hierarchical kit/item relationships, and damage report management.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import { Alert, Box, Button, CircularProgress, Grid, Snackbar } from '@mui/material';
@@ -8,7 +13,7 @@ import NavBar from '../components/NavBar';
 import ImagePanel from '../components/ProductPage/ImagePanel';
 import ItemDetailsForm from '../components/ProductPage/ItemDetailsForm';
 import ActionPanel from '../components/ProductPage/ActionPanel';
-import { flattenTree } from '../components/Producthelpers';
+import { flattenTree } from '../components/ProductPage/Producthelpers';
 import { getItem, getItems } from '../api/items';
 import ChildrenTree from '../components/ProductPage/ChildrenTree';
 import TopBar from '../components/TopBar';

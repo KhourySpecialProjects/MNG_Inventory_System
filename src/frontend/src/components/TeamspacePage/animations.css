@@ -1,5 +1,8 @@
-/* Teamspace Animations */
-
+/**
+ * Animation library for teamspace UI components.
+ * Provides fadeIn, slide, pulse, float, and shimmer effects with staggered delays.
+ * Includes accessibility support with prefers-reduced-motion media query.
+ */
 @keyframes fadeInUp {
   from {
     opacity: 0;

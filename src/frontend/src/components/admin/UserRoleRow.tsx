@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+/**
+ * Individual user row component for role assignment and user deletion.
+ * Displays user info with inline role selector dropdown that includes delete option.
+ * Prevents users from modifying their own role to avoid self-lockout scenarios.
+ */
+import { useState } from 'react';
 import {
   Box,
   Typography,

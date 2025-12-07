@@ -1,3 +1,8 @@
+/**
+ * Unit tests for SignInPage component.
+ * Tests login flow, OTP challenge handling, new password setup, and view transitions.
+ * Mocks authentication API and child components to isolate page-level routing logic.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
@@ -13,7 +18,7 @@ type LoginRes = {
   error?: string;
 };
 
-vi.mock('../src/api/auth', () => {
+vi.mock('../../src/api/auth', () => {
   const me = (): Promise<MeRes> => Promise.resolve({ authenticated: false });
   const refresh = (): Promise<RefreshRes> => Promise.resolve({ refreshed: false });
   const loginUser = (_identifier: string, _password: string): Promise<LoginRes> =>
@@ -26,7 +31,7 @@ vi.mock('../src/api/auth', () => {
 interface SignUpComponentProps {
   onComplete: () => void;
 }
-vi.mock('../src/components/SignUpComponent', () => ({
+vi.mock('../../src/components/auth/SignUpComponent', () => ({
   __esModule: true,
   default: ({ onComplete }: SignUpComponentProps) => (
     <div data-testid="signup-mock">
@@ -44,7 +49,7 @@ interface EmailOtpCardProps {
   onResend: () => void;
   onBack: () => void;
 }
-vi.mock('../src/components/EmailOtpCard', () => ({
+vi.mock('../../src/components/auth/EmailOtpCard', () => ({
   __esModule: true,
   default: (props: EmailOtpCardProps) => (
     <div data-testid="email-otp-mock">
@@ -56,15 +61,15 @@ vi.mock('../src/components/EmailOtpCard', () => ({
 }));
 
 // ---------- Mock navigate ----------
-vi.mock('react-router-dom', async (orig) => {
-  const actual = await orig();
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
   return {
     ...actual,
     useNavigate: () => vi.fn(),
   };
 });
 
-import SignInPage from '../src/pages/SignInPage';
+import SignInPage from '../../src/pages/SignInPage';
 
 describe('SignInPage (UI-only)', () => {
   beforeEach(() => {
@@ -88,7 +93,7 @@ describe('SignInPage (UI-only)', () => {
   });
 
   it('switches to Email OTP view on OTP challenge (UI only)', async () => {
-    const authMod = (await import('../src/api/auth')) as typeof import('../src/api/auth');
+    const authMod = (await import('../../src/api/auth')) as typeof import('../../src/api/auth');
     vi.spyOn(authMod, 'loginUser').mockResolvedValueOnce({
       challengeName: 'EMAIL_OTP',
       session: 'abc',
@@ -112,7 +117,7 @@ describe('SignInPage (UI-only)', () => {
   });
 
   it('switches to Sign Up on NEW_PASSWORD_REQUIRED (UI only)', async () => {
-    const authMod = (await import('../src/api/auth')) as typeof import('../src/api/auth');
+    const authMod = (await import('../../src/api/auth')) as typeof import('../../src/api/auth');
     vi.spyOn(authMod, 'loginUser').mockResolvedValueOnce({
       challengeName: 'NEW_PASSWORD_REQUIRED',
       session: 'xyz',
@@ -136,7 +141,7 @@ describe('SignInPage (UI-only)', () => {
   });
 
   it('can go back from OTP to login view (UI only)', async () => {
-    const authMod = (await import('../src/api/auth')) as typeof import('../src/api/auth');
+    const authMod = (await import('../../src/api/auth')) as typeof import('../../src/api/auth');
     vi.spyOn(authMod, 'loginUser').mockResolvedValueOnce({
       challengeName: 'EMAIL_OTP',
       session: 'abc',
@@ -163,7 +168,7 @@ describe('SignInPage (UI-only)', () => {
   });
 
   it('resend in OTP view stays on OTP (UI only)', async () => {
-    const authMod = (await import('../src/api/auth')) as typeof import('../src/api/auth');
+    const authMod = (await import('../../src/api/auth')) as typeof import('../../src/api/auth');
     vi.spyOn(authMod, 'loginUser')
       .mockResolvedValueOnce({
         challengeName: 'EMAIL_OTP',

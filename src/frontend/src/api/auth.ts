@@ -1,3 +1,7 @@
+/**
+ * Authentication API: User authentication, session management, and MFA operations.
+ * Handles login, logout, token refresh, password challenges, and user identity verification.
+ */
 import { trpcFetch } from './utils';
 
 const TRPC = '/trpc';

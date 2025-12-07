@@ -1,3 +1,8 @@
+/**
+ * Main dashboard page displaying team inventory overview and statistics.
+ * Features inventory status widgets, review progress charts, follow-up tables, and team activity.
+ * Provides quick actions for adding inventory and restarting review process.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Box, Button, Grid, Stack, Typography } from '@mui/material';

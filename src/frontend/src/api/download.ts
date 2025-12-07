@@ -1,3 +1,7 @@
+/**
+ * Download API: Document generation and download utilities for inventory data.
+ * Generates CSV inventory reports and DA Form 2404 PDFs, with client-side download helpers.
+ */
 import { trpcFetch } from './utils';
 
 const TRPC = '/trpc';

@@ -1,3 +1,8 @@
+/**
+ * Stacked bar chart displaying team member review activity and outcomes.
+ * Visualizes completed, shortage, and damaged item counts per team member.
+ * Features custom rounded bar tops and color-coded status categories for easy comparison.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Paper, Typography, Box, Fade } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -20,7 +25,7 @@ export default function TeamActivityChart({ teamStats }: TeamActivityChartProps)
   const RoundedTopBar = (props: any) => {
     const { fill, x, y, width, height } = props;
 
-    if (height <= 0) return null;
+    if (height <= 0) return <></>;
 
     const radius = 4;
     const path = `

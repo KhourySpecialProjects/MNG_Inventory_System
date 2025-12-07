@@ -1,3 +1,7 @@
+/**
+ * Item API: Core inventory management operations for kits and individual items.
+ * Handles CRUD operations, hierarchical parent-child relationships, image uploads, and NSN-based queries.
+ */
 import { trpcFetch } from './utils';
 import { me } from './auth';
 

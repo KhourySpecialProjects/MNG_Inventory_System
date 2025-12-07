@@ -1,4 +1,7 @@
-import React from 'react';
+/**
+ * Reusable search input component with icon and themed styling.
+ * Provides consistent search interface across inventory views with hover effects.
+ */
 import { InputAdornment, TextField } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useTheme } from '@mui/material/styles';

@@ -1,3 +1,8 @@
+/**
+ * Soft reset action card with two-step confirmation wizard.
+ * Allows resetting all item statuses to "To Review" for starting a new inventory cycle.
+ * Features destructive action warnings and error handling for safe bulk operations.
+ */
 import { useState } from 'react';
 import {
   Button,
@@ -10,7 +15,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { softReset } from '../api/home';
+import { softReset } from '../../api/home';
 
 interface RestartProcessCardProps {
   teamId: string; // pass the current teamId

@@ -1,4 +1,8 @@
-import React from 'react';
+/**
+ * Role card component displaying role summary with edit/delete actions.
+ * Shows role name, description, permission count, and default/current user badges.
+ * Prevents modification of default roles and the user's own role to maintain system integrity.
+ */
 import {
   Card,
   CardContent,

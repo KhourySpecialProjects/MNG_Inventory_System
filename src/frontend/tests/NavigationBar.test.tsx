@@ -1,3 +1,8 @@
+/**
+ * Unit tests for NavBar component.
+ * Tests bottom navigation rendering with all navigation buttons (Home, To Review, Reviewed, Export).
+ * Verifies proper button labels and accessibility.
+ */
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import NavBar from '../src/components/NavBar';

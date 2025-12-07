@@ -1,3 +1,8 @@
+/**
+ * Unit tests for AddInventoryCard component.
+ * Tests rendering, navigation links, styling, and accessibility.
+ * Verifies correct routing to item creation page with teamId parameter.
+ */
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';

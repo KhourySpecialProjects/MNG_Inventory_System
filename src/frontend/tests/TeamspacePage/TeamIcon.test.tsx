@@ -1,9 +1,14 @@
+/**
+ * Unit tests for TeamIcon component.
+ * Tests team card rendering, progress display, menu interactions, and action callbacks.
+ * Verifies context menu options (open, view members, invite, remove, delete).
+ */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import userEvent from '@testing-library/user-event';
-import TeamIcon from '../../src/components/TeamspacePage/TeamsComponent';
+import TeamIcon from '../../src/components/TeamspacePage/TeamIcon';
 
 const theme = createTheme();
 

@@ -1,4 +1,7 @@
-import React from 'react';
+/**
+ * Generic error dialog component for displaying error messages to users.
+ * Provides consistent error UI with icon, title, message, and dismiss action.
+ */
 import {
   Dialog,
   DialogTitle,
