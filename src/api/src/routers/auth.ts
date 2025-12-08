@@ -40,13 +40,11 @@ const verifier = CognitoJwtVerifier.create({
   tokenUse: 'access',
 });
 
-// generates a temp password
+// generates a temp password with letters + digits only
 const generateTempPassword = (): string => {
-  return crypto
-    .randomBytes(12)
-    .toString('base64')
-    .replace(/[^a-zA-Z]/g, '')
-    .slice(0, 16);
+  const letters = crypto.randomBytes(8).toString("base64").replace(/[^a-zA-Z]/g, "").slice(0, 8);
+  const digits = Math.floor(1000 + Math.random() * 9000).toString(); 
+  return letters + digits; 
 };
 
 // handles invite user
