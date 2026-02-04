@@ -4,12 +4,13 @@ import { router, permissionedProcedure } from './trpc';
 import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { loadConfig } from '../process';
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { isLocalDev } from '../localDev';
 
 const config = loadConfig();
 const REGION = config.REGION;
 
-const lambda = new LambdaClient({ region: REGION });
-const s3 = new S3Client({ region: REGION });
+const lambda = isLocalDev ? null : new LambdaClient({ region: REGION });
+const s3 = isLocalDev ? null : new S3Client({ region: REGION });
 
 const UPLOADS_BUCKET = config.BUCKET_NAME;
 
@@ -21,7 +22,7 @@ async function clearOldExports(teamId: string) {
 
   const prefix = `Documents/${teamId}/`;
 
-  const listed = await s3.send(
+  const listed = await s3!.send(
     new ListObjectsV2Command({
       Bucket: UPLOADS_BUCKET,
       Prefix: prefix,
@@ -35,7 +36,7 @@ async function clearOldExports(teamId: string) {
 
   const toDelete = listed.Contents!.map((obj) => ({ Key: obj.Key! }));
 
-  await s3.send(
+  await s3!.send(
     new DeleteObjectsCommand({
       Bucket: UPLOADS_BUCKET,
       Delete: { Objects: toDelete },
@@ -55,7 +56,7 @@ async function invokePythonLambda(functionName: string, teamId: string) {
       Payload: JSON.stringify({ teamId }),
     });
 
-    const response = await lambda.send(command);
+    const response = await lambda!.send(command);
 
     if (!response.Payload) throw new Error(`No payload returned from ${functionName}`);
 
@@ -82,6 +83,31 @@ async function invokePythonLambda(functionName: string, teamId: string) {
 // Main export: clears exports → invokes inventory + pdf Lambdas
 export async function runExport(teamId: string) {
   console.log(`[Export] runExport start teamId=${teamId}`);
+
+  // Local dev mode: return mock response with actual data
+  if (isLocalDev) {
+    console.log('[LocalDev] Export: returning mock response (Lambda not available)');
+    
+    // Generate mock CSV content
+    const mockCSV = 'Item Name,Status,Quantity,NSN\nM4 Carbine,Completed,1,1005-01-231-0973\nACH Helmet,Damaged,2,8470-01-519-8669\n';
+    
+    // Generate mock PDF as base64 (minimal valid PDF)
+    const mockPDFBase64 = 'JVBERi0xLjQKJeLj0lMAKVN0YXJ0eHJlZiAwCiUlRU9G';
+    
+    return {
+      success: true,
+      pdf2404: { 
+        ok: true,
+        downloadBase64: mockPDFBase64,
+        filename: `DA-Form-2404-${teamId}.pdf`
+      },
+      csvInventory: { 
+        ok: true,
+        csvContent: mockCSV,
+        filename: `Inventory-Report-${teamId}.csv`
+      },
+    };
+  }
 
   const pdf2404FunctionName = process.env.EXPORT_2404_FUNCTION_NAME;
   const inventoryFunctionName = process.env.EXPORT_INVENTORY_FUNCTION_NAME;

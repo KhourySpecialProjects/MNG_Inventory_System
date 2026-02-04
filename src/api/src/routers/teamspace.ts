@@ -12,6 +12,7 @@ import crypto from 'crypto';
 import { doc } from '../aws';
 import { loadConfig } from '../process';
 import { DeleteObjectsCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
+import { isLocalDev } from '../localDev';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
@@ -363,28 +364,31 @@ export const teamspaceRouter = router({
           ),
         );
 
-        const s3 = new S3Client({ region: config.REGION });
+        // Skip S3 cleanup in local dev mode
+        if (!isLocalDev) {
+          const s3 = new S3Client({ region: config.REGION });
 
-        const prefix = `items/${input.inviteWorkspaceId}/`;
+          const prefix = `items/${input.inviteWorkspaceId}/`;
 
-        const listed = await s3.send(
-          new ListObjectsV2Command({
-            Bucket: config.BUCKET_NAME,
-            Prefix: prefix,
-          }),
-        );
-
-        const contents = listed.Contents ?? [];
-
-        if (contents.length > 0) {
-          await s3.send(
-            new DeleteObjectsCommand({
+          const listed = await s3.send(
+            new ListObjectsV2Command({
               Bucket: config.BUCKET_NAME,
-              Delete: {
-                Objects: contents.map((o) => ({ Key: o.Key! })),
-              },
+              Prefix: prefix,
             }),
           );
+
+          const contents = listed.Contents ?? [];
+
+          if (contents.length > 0) {
+            await s3.send(
+              new DeleteObjectsCommand({
+                Bucket: config.BUCKET_NAME,
+                Delete: {
+                  Objects: contents.map((o) => ({ Key: o.Key! })),
+                },
+              }),
+            );
+          }
         }
 
         return { success: true, deleted: input.inviteWorkspaceId };

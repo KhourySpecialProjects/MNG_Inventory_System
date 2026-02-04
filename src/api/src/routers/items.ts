@@ -13,6 +13,7 @@ import crypto from 'crypto';
 import { doc } from '../aws';
 import { loadConfig } from '../process';
 import { TRPCError } from '@trpc/server';
+import { isLocalDev } from '../localDev';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
@@ -20,8 +21,11 @@ const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
-if (!BUCKET_NAME) throw new Error('❌ Missing S3 bucket name');
-const s3 = new S3Client({ region: REGION });
+// In-memory image store for local dev
+const localItemImages = new Map<string, string>();
+
+if (!isLocalDev && !BUCKET_NAME) throw new Error('❌ Missing S3 bucket name');
+const s3 = isLocalDev ? null : new S3Client({ region: REGION });
 
 // creates an ID for the item
 function newId(n = 10): string {
@@ -58,8 +62,13 @@ async function getUserName(userId: string): Promise<string | undefined> {
 async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
   if (!imageKey) return undefined;
 
+  // Local dev mode: return from memory store
+  if (isLocalDev) {
+    return localItemImages.get(imageKey) || undefined;
+  }
+
   const url = await getSignedUrl(
-    s3,
+    s3!,
     new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: imageKey,
@@ -68,6 +77,27 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
   );
 
   return url;
+}
+
+// Helper to upload image (handles local dev)
+async function uploadImage(key: string, base64Data: string, contentType: string): Promise<void> {
+  if (isLocalDev) {
+    // Store the base64 data URL for local retrieval
+    localItemImages.set(key, base64Data);
+    console.log(`[LocalDev] Stored item image: ${key}`);
+    return;
+  }
+
+  const buffer = Buffer.from(stripBase64Header(base64Data), 'base64');
+  await s3!.send(
+    new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+      ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
+    }),
+  );
 }
 
 export const itemsRouter = router({
@@ -139,19 +169,7 @@ export const itemsRouter = router({
         if (input.imageBase64) {
           const ext = getImageExtension(input.imageBase64);
           imageKey = `items/${input.teamId}/${input.nsn}.${ext}`;
-
-          const body = Buffer.from(stripBase64Header(input.imageBase64), 'base64');
-
-          await s3.send(
-            new PutObjectCommand({
-              Bucket: BUCKET_NAME,
-              Key: imageKey,
-              Body: body,
-              ContentEncoding: 'base64',
-              ContentType: `image/${ext}`,
-              ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
-            }),
-          );
+          await uploadImage(imageKey, input.imageBase64, `image/${ext}`);
         }
 
         const userName = await getUserName(input.userId);
@@ -349,17 +367,7 @@ export const itemsRouter = router({
         if (input.imageBase64) {
           const ext = getImageExtension(input.imageBase64);
           const newKey = `items/${input.teamId}/${input.nsn ?? input.itemId}.${ext}`;
-
-          await s3.send(
-            new PutObjectCommand({
-              Bucket: BUCKET_NAME,
-              Key: newKey,
-              Body: Buffer.from(stripBase64Header(input.imageBase64), 'base64'),
-              ContentEncoding: 'base64',
-              ContentType: `image/${ext}`,
-              ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
-            }),
-          );
+          await uploadImage(newKey, input.imageBase64, `image/${ext}`);
 
           updates.push('imageKey = :imageKey');
           values[':imageKey'] = newKey;
@@ -459,12 +467,16 @@ export const itemsRouter = router({
         if (!getRes.Item) return { success: false, error: 'Item not found' };
 
         if (getRes.Item.imageKey) {
-          await s3.send(
-            new (await import('@aws-sdk/client-s3')).DeleteObjectCommand({
-              Bucket: BUCKET_NAME,
-              Key: getRes.Item.imageKey,
-            }),
-          );
+          if (isLocalDev) {
+            localItemImages.delete(getRes.Item.imageKey);
+          } else {
+            await s3!.send(
+              new (await import('@aws-sdk/client-s3')).DeleteObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: getRes.Item.imageKey,
+              }),
+            );
+          }
         }
 
         await doc.send(
@@ -491,20 +503,7 @@ export const itemsRouter = router({
       try {
         const ext = getImageExtension(input.imageBase64);
         const key = `items/${input.teamId}/${input.nsn}.${ext}`;
-
-        const body = Buffer.from(stripBase64Header(input.imageBase64), 'base64');
-
-        await s3.send(
-          new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-            Body: body,
-            ContentEncoding: 'base64',
-            ContentType: `image/${ext}`,
-            ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
-          }),
-        );
-
+        await uploadImage(key, input.imageBase64, `image/${ext}`);
         return { success: true, imageKey: key };
       } catch (err: any) {
         return { success: false, error: err.message };

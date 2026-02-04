@@ -11,6 +11,7 @@
     "dev:frontend": "npm -w src/frontend run dev",
     "dev:api": "npm -w src/api run dev",
     "dev": "concurrently -k -n FRONTEND,API \"npm -w src/frontend run dev\" \"npm -w src/api run dev\"",
+    "dev:local": "LOCAL_DEV=true concurrently -k -n FRONTEND,API \"npm -w src/frontend run dev\" \"LOCAL_DEV=true npm -w src/api run dev\"",
     "// build": "=============== BUILD ================",
     "build:frontend": "npm -w src/frontend run build",
     "build:api": "npm -w src/api run build",
