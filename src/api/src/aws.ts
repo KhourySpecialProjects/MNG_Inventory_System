@@ -4,7 +4,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { LambdaClient } from '@aws-sdk/client-lambda';
-import { isLocalDev, mockDynamoDB, MOCK_USER, memoryStore } from './localDev';
+import { isLocalDev, MOCK_USER } from './localDev';
 
 // Hardcode region; change if needed
 const AWS_REGION = 'us-east-1';
@@ -25,64 +25,31 @@ export const s3Client = new S3Client({
   region: AWS_REGION,
 });
 
-export const ddb = new DynamoDBClient({
-  region: AWS_REGION,
-});
+// DynamoDB client configuration
+// In local dev mode, connect to DynamoDB Local running in Docker (credentials don't matter for that)
+export const ddb = new DynamoDBClient(
+  isLocalDev
+    ? {
+        region: AWS_REGION,
+        endpoint: process.env.DYNAMODB_ENDPOINT || 'http://localhost:8000',
+        credentials: {
+          accessKeyId: 'dummy',
+          secretAccessKey: 'dummy',
+        },
+      }
+    : {
+        region: AWS_REGION,
+      },
+);
 
 export const lambdaClient = new LambdaClient({
   region: AWS_REGION,
 });
 
-// Create mock DynamoDB document client for local dev
-const createMockDocClient = () => {
-  return {
-    send: async (command: any) => {
-      const commandName = command.constructor.name;
-      const input = command.input;
-
-      switch (commandName) {
-        case 'GetCommand':
-          return mockDynamoDB.get(input);
-        case 'PutCommand':
-          return mockDynamoDB.put(input);
-        case 'QueryCommand':
-          return mockDynamoDB.query(input);
-        case 'DeleteCommand':
-          return mockDynamoDB.delete(input);
-        case 'ScanCommand':
-          return mockDynamoDB.scan(input);
-        case 'UpdateCommand':
-          // Handle updates by getting, modifying, and putting back
-          const existing = mockDynamoDB.get({
-            TableName: input.TableName,
-            Key: input.Key,
-          });
-          if (existing.Item) {
-            // Apply updates (simplified)
-            const updated = { ...existing.Item, updatedAt: new Date().toISOString() };
-            if (input.ExpressionAttributeValues) {
-              for (const [key, value] of Object.entries(input.ExpressionAttributeValues)) {
-                const attrName = key.replace(':', '');
-                updated[attrName] = value;
-              }
-            }
-            mockDynamoDB.put({ TableName: input.TableName, Item: updated });
-            return { Attributes: updated };
-          }
-          return { Attributes: undefined };
-        default:
-          console.log(`[LocalDev] Unhandled DynamoDB command: ${commandName}`);
-          return {};
-      }
-    },
-  };
-};
-
-export const doc = isLocalDev
-  ? (createMockDocClient() as unknown as DynamoDBDocumentClient)
-  : DynamoDBDocumentClient.from(ddb, {
-      marshallOptions: { removeUndefinedValues: true },
-    });
+// DynamoDB Document Client - works with both local and AWS DynamoDB
+export const doc = DynamoDBDocumentClient.from(ddb, {
+  marshallOptions: { removeUndefinedValues: true },
+});
 
 export const AWS_CONFIG = {
   region: AWS_REGION,
@@ -91,4 +58,4 @@ export const AWS_CONFIG = {
 };
 
 // Export local dev utilities for use in other modules
-export { isLocalDev, MOCK_USER, memoryStore };
+export { isLocalDev, MOCK_USER };
