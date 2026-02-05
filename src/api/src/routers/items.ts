@@ -64,7 +64,13 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
 
   // Local dev mode: return from memory store
   if (isLocalDev) {
-    return localItemImages.get(imageKey) || undefined;
+    const image = localItemImages.get(imageKey);
+    if (image) {
+      console.log(`[LocalDev] Retrieved item image: ${imageKey} (size: ${image.length} chars)`);
+    } else {
+      console.log(`[LocalDev] No image found for key: ${imageKey}`);
+    }
+    return image || undefined;
   }
 
   const url = await getSignedUrl(
@@ -82,9 +88,14 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
 // Helper to upload image (handles local dev)
 async function uploadImage(key: string, base64Data: string, contentType: string): Promise<void> {
   if (isLocalDev) {
-    // Store the base64 data URL for local retrieval
+    // Store the full base64 data URL (with header) for local retrieval
+    // This ensures the browser can display it directly
+    if (!base64Data.startsWith('data:')) {
+      // If it doesn't have a header, add it
+      base64Data = `data:${contentType};base64,${base64Data}`;
+    }
     localItemImages.set(key, base64Data);
-    console.log(`[LocalDev] Stored item image: ${key}`);
+    console.log(`[LocalDev] Stored item image: ${key} (size: ${base64Data.length} chars)`);
     return;
   }
 

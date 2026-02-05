@@ -54,7 +54,8 @@ export default function ToReviewPage() {
                 actualName: item.actualName || item.name,
                 subtitle: item.description || 'No description',
                 image:
-                  item.imageLink && item.imageLink.startsWith('http')
+                  item.imageLink &&
+                  (item.imageLink.startsWith('http') || item.imageLink.startsWith('data:'))
                     ? item.imageLink
                     : '',
                 date: new Date(item.createdAt).toLocaleDateString('en-US', {

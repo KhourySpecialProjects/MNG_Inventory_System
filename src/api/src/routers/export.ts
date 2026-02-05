@@ -15,14 +15,15 @@ const s3 = isLocalDev ? null : new S3Client({ region: REGION });
 const UPLOADS_BUCKET = config.BUCKET_NAME;
 
 // Remove all old files under Documents/<teamId>/
-async function clearOldExports(teamId: string) {
+async function _clearOldExports(teamId: string) {
   console.log(`[Export] Clearing old exports teamId=${teamId}`);
 
   if (!UPLOADS_BUCKET) throw new Error('UPLOADS_BUCKET env var missing');
+  if (!s3) throw new Error('S3 client not initialized');
 
   const prefix = `Documents/${teamId}/`;
 
-  const listed = await s3!.send(
+  const listed = await s3.send(
     new ListObjectsV2Command({
       Bucket: UPLOADS_BUCKET,
       Prefix: prefix,
@@ -36,7 +37,7 @@ async function clearOldExports(teamId: string) {
 
   const toDelete = listed.Contents!.map((obj) => ({ Key: obj.Key! }));
 
-  await s3!.send(
+  await s3.send(
     new DeleteObjectsCommand({
       Bucket: UPLOADS_BUCKET,
       Delete: { Objects: toDelete },
@@ -47,16 +48,17 @@ async function clearOldExports(teamId: string) {
 }
 
 // Invoke Python Lambda with payload { teamId }
-async function invokePythonLambda(functionName: string, teamId: string) {
+async function _invokePythonLambda(functionName: string, teamId: string) {
   console.log(`[Lambda] Invoking ${functionName} for teamId=${teamId}`);
 
   try {
+    if (!lambda) throw new Error('Lambda client not initialized');
     const command = new InvokeCommand({
       FunctionName: functionName,
       Payload: JSON.stringify({ teamId }),
     });
 
-    const response = await lambda!.send(command);
+    const response = await lambda.send(command);
 
     if (!response.Payload) throw new Error(`No payload returned from ${functionName}`);
 
@@ -87,24 +89,25 @@ export async function runExport(teamId: string) {
   // Local dev mode: return mock response with actual data
   if (isLocalDev) {
     console.log('[LocalDev] Export: returning mock response (Lambda not available)');
-    
+
     // Generate mock CSV content
-    const mockCSV = 'Item Name,Status,Quantity,NSN\nM4 Carbine,Completed,1,1005-01-231-0973\nACH Helmet,Damaged,2,8470-01-519-8669\n';
-    
+    const mockCSV =
+      'Item Name,Status,Quantity,NSN\nM4 Carbine,Completed,1,1005-01-231-0973\nACH Helmet,Damaged,2,8470-01-519-8669\n';
+
     // Generate mock PDF as base64 (minimal valid PDF)
     const mockPDFBase64 = 'JVBERi0xLjQKJeLj0lMAKVN0YXJ0eHJlZiAwCiUlRU9G';
-    
+
     return {
       success: true,
-      pdf2404: { 
+      pdf2404: {
         ok: true,
         downloadBase64: mockPDFBase64,
-        filename: `DA-Form-2404-${teamId}.pdf`
+        filename: `DA-Form-2404-${teamId}.pdf`,
       },
-      csvInventory: { 
+      csvInventory: {
         ok: true,
         csvContent: mockCSV,
-        filename: `Inventory-Report-${teamId}.csv`
+        filename: `Inventory-Report-${teamId}.csv`,
       },
     };
   }
@@ -117,12 +120,12 @@ export async function runExport(teamId: string) {
     throw new Error('Export function names not configured.');
   }
 
-  await clearOldExports(teamId);
+  await _clearOldExports(teamId);
 
   try {
     const [pdf2404Response, csvResponse] = await Promise.all([
-      invokePythonLambda(pdf2404FunctionName, teamId),
-      invokePythonLambda(inventoryFunctionName, teamId),
+      _invokePythonLambda(pdf2404FunctionName, teamId),
+      _invokePythonLambda(inventoryFunctionName, teamId),
     ]);
 
     const ok1 = pdf2404Response?.ok;

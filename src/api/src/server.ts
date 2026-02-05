@@ -37,7 +37,7 @@ const app = express();
  * Then JSON parser, then routes.
  */
 app.use(corsMiddleware);
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 /**
  * Health check

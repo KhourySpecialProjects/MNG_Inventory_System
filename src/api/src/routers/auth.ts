@@ -27,7 +27,7 @@ import {
 import { decodeJwtNoVerify } from '../helpers/authUtils';
 import { ensureUserRecord } from '../helpers/awsUsers';
 import { loadConfig } from '../process';
-import { isLocalDev, MOCK_USER, mockDynamoDB } from '../localDev';
+import { isLocalDev, MOCK_USER } from '../localDev';
 
 const config = loadConfig();
 export const USER_POOL_ID = config.COGNITO_USER_POOL_ID;
@@ -432,6 +432,7 @@ export const authRouter = router({
     // verify token
     let decoded;
     try {
+      //verifier only null in local dev mode
       decoded = await verifier!.verify(accessToken);
     } catch (err: any) {
       console.error('[DynamoDB] me() token verification error:', err);

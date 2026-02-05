@@ -109,7 +109,10 @@ export default function ProductReviewPage() {
         setEditedProduct(mappedItem);
         setDamageReports(mappedItem.damageReports || []);
 
-        if (mappedItem.imageLink && mappedItem.imageLink.startsWith('http')) {
+        if (
+          mappedItem.imageLink &&
+          (mappedItem.imageLink.startsWith('http') || mappedItem.imageLink.startsWith('data:'))
+        ) {
           setImagePreview(mappedItem.imageLink);
         } else {
           setImagePreview('');

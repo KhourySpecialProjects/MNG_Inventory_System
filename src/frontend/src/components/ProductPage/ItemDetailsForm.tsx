@@ -485,12 +485,15 @@ export default function ItemDetailsForm({
                         try {
                           setImagePreview(value.imageLink);
 
-                          // Fetch the image and convert to File object
-                          const response = await fetch(value.imageLink);
-                          const blob = await response.blob();
-                          const fileName = `${value.nsn || 'item'}.jpg`;
-                          const file = new File([blob], fileName, { type: blob.type });
-                          setSelectedImageFile(file);
+                          // Only fetch and convert if it's an HTTP URL (not base64 data URL)
+                          if (value.imageLink.startsWith('http')) {
+                            const response = await fetch(value.imageLink);
+                            const blob = await response.blob();
+                            const fileName = `${value.nsn || 'item'}.jpg`;
+                            const file = new File([blob], fileName, { type: blob.type });
+                            setSelectedImageFile(file);
+                          }
+                          // For base64 data URLs in local dev, skip file conversion
                         } catch (error) {
                           console.error('Error fetching image:', error);
                         }
