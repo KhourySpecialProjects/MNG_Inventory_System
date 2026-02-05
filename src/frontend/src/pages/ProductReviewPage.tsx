@@ -350,7 +350,7 @@ export default function ProductReviewPage() {
 
           <Snackbar
             open={showSuccess}
-            autoHideDuration={3000}
+            autoHideDuration={8000}
             onClose={() => setShowSuccess(false)}
           >
             <Alert severity="success">Item updated successfully!</Alert>
