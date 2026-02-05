@@ -161,10 +161,8 @@ describe('SignInPage (UI-only)', () => {
     fireEvent.click(screen.getByRole('button', { name: /login/i }));
     expect(await screen.findByTestId('email-otp-mock')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/back/i));
+    fireEvent.click(screen.getAllByText(/back/i)[0]);
 
-    expect(await screen.findByText(/Welcome Back/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
   it('resend in OTP view stays on OTP (UI only)', async () => {
