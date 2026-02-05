@@ -19,10 +19,37 @@ Run the test suite to confirm everything is functioning correctly:
 npm run test
 ```
 
-Bootstrap the CDK environment:
+To deploy the environment to AWS, bootstrap the CDK environment:
 
 ```bash
 npm run bootstrap
+```
+
+## Local Development
+
+To develop locally without the need for AWS, you can build a dynamodb docker container to mock the AWS DynamoDB:
+
+```bash
+docker compose build
+```
+
+Then you can start and stop the database with:
+
+```bash
+docker compose up
+docker compose down
+```
+
+To seed the local database with seed data from [seed.ts](./src/api/src/seed.ts):
+
+```bash
+npm run seed
+```
+
+Finally, to spin up a local development environment with a default mock admin user:
+
+```bash
+npm run dev:local
 ```
 
 ## Prerequisites in order to deploy to prod
