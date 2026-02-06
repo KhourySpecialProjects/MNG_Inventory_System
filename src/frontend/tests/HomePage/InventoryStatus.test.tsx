@@ -18,6 +18,7 @@ interface Totals {
   damaged: number;
 }
 
+
 const renderComponent = (teamName: string, totals: Totals) => {
   return render(
     <MemoryRouter>

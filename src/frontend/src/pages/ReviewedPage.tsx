@@ -74,7 +74,6 @@ export default function ReviewedPage() {
     }
   };
 
-
   useEffect(() => {
     setSelectedTab(getInitialTab());
   }, [tabParam]);

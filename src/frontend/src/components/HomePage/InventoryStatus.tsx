@@ -41,6 +41,7 @@ export default function InventoryStatus({ teamName, teamId, totals }: InventoryS
   `;
 
   return (
+  
     <Fade in timeout={400}>
       <Paper
         elevation={0}
