@@ -64,8 +64,8 @@ export default function ItemDetailsForm({
   );
   const [nsnOptions, setNsnOptions] = React.useState<any[]>([]);
   const [nsnLoading, setNsnLoading] = React.useState(false);
-  const [nsnInputValue, setNsnInputValue] = React.useState('');
-  // const [parentError, setParentError] = React.useState(false);
+  const [nsnInputValue, setNsnInputValue] = React.useState(editedProduct?.nsn || '');  
+// const [parentError, setParentError] = React.useState(false);
 
   if (!editedProduct) {
     return null;

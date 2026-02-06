@@ -96,6 +96,14 @@ export default function ProductReviewPage() {
           ...item,
           productName: item.name,
           actualName: item.actualName,
+          nsn: item.nsn || '',
+          serialNumber: item.serialNumber || '',
+          description: item.description || '',
+          liin: item.liin || '', 
+          endItemNiin: item.endItemNiin || '',  
+          authQuantity: item.authQuantity || 1,  
+          ohQuantity: item.ohQuantity || 1,  
+          notes: item.notes || '',
         };
 
         // Manually find children from the full items list

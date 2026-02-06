@@ -368,9 +368,9 @@ export const itemsRouter = router({
         const names: Record<string, string> = {};
 
         const push = (key: string, val: any, fieldName?: string) => {
-          if (val !== undefined && val !== null) {
+          if (val !== undefined) {
             updates.push(`${fieldName || key} = :${key}`);
-            values[`:${key}`] = val;
+            values[`:${key}`] = val ?? null;
             if (key === 'name' || key === 'status') names[`#${key}`] = key;
           }
         };
