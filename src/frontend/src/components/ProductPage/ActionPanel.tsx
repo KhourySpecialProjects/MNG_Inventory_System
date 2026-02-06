@@ -175,14 +175,13 @@ export default function ActionPanel({
           editedProduct.description || '',
           editedProduct.parent || null,
           editedProduct.isKit || false,
-          editedProduct.isKit ? '' : editedProduct.nsn || '', // Empty for kits, NSN for items
-          editedProduct.isKit ? '' : editedProduct.serialNumber || '', // Empty for kits, serial for items
+          editedProduct.nsn || '', 
+          editedProduct.serialNumber || '', 
           editedProduct.isKit ? 0 : parseInt(editedProduct.authQuantity) || 1,
           editedProduct.isKit ? 0 : parseInt(editedProduct.ohQuantity) || 1,
-          editedProduct.isKit ? editedProduct.liin || '' : '', // LIIN only for kits
-          editedProduct.isKit ? editedProduct.endItemNiin || '' : '', // End Item NIIN only for kits
+          editedProduct.liin || '', 
+          editedProduct.endItemNiin || '', 
         );
-
         if (res.success) {
           setShowSuccess(true);
           navigate(`/teams/to-review/${teamId}`, { replace: true });
