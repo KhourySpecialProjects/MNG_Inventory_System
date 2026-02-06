@@ -195,12 +195,8 @@ export default function ActionPanel({
         const res = await updateItem(teamId, itemId, {
           name: nameValue,
           actualName: editedProduct.actualName || nameValue,
-          nsn: editedProduct.isKit
-            ? editedProduct.endItemNiin || ''
-            : editedProduct.nsn || editedProduct.serialNumber || '',
-          serialNumber: editedProduct.isKit
-            ? editedProduct.liin || ''
-            : editedProduct.serialNumber || '',
+          nsn: editedProduct.nsn || '', 
+          serialNumber: editedProduct.serialNumber || '',  
           authQuantity: parseInt(editedProduct.authQuantity) || 1,
           ohQuantity: parseInt(editedProduct.ohQuantity) || 1,
           description: editedProduct.description || '',
@@ -209,8 +205,8 @@ export default function ActionPanel({
           notes: editedProduct.notes || '',
           parent: editedProduct.parent || null,
           damageReports: damageReports || [],
-          liin: editedProduct.liin || '',
-          endItemNiin: editedProduct.endItemNiin || '',
+          liin: editedProduct.liin || '', 
+          endItemNiin: editedProduct.endItemNiin || '',  
         });
 
         if (res.success) {
