@@ -216,7 +216,11 @@ export default function HomePage() {
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, md: 8 }}>
               <Stack spacing={3}>
-                <InventoryStatus teamName={teamName || teamId!} totals={totals} />
+                <InventoryStatus 
+                  teamName={teamName || teamId!} 
+                  teamId={teamId!}
+                  totals={totals} 
+                />
                 <InventoryReviewed
                   percentReviewed={percentReviewed}
                   items={items.filter((item) => {

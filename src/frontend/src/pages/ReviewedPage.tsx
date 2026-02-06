@@ -15,7 +15,7 @@ import {
   Typography,
   Fade,
 } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
@@ -23,6 +23,8 @@ import Profile from '../components/Profile';
 import SearchBar from '../components/ProductPage/SearchBar';
 import { useTheme } from '@mui/material/styles';
 import { getItems } from '../api/items';
+
+
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,6 +58,26 @@ export default function ReviewedPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  const getInitialTab = () => {
+    switch (tabParam) {
+      case 'completed':
+        return 0;
+      case 'shortages':
+        return 1;
+      case 'damaged':
+        return 2;
+      default:
+        return 0;
+    }
+  };
+
+
+  useEffect(() => {
+    setSelectedTab(getInitialTab());
+  }, [tabParam]);
 
   useEffect(() => {
     const fetchReviewedItems = async () => {
