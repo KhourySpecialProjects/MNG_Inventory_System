@@ -85,13 +85,7 @@ export default function ActionPanel({
 
     // Item-specific required fields
     if (!editedProduct.isKit) {
-      if (!editedProduct.nsn?.trim()) {
-        newErrors.nsn = true;
-      }
-
-      if (!editedProduct.description?.trim()) {
-        newErrors.description = true;
-      }
+     
 
       // Validate Authorized Quantity for items
       const authQty = parseInt(editedProduct.authQuantity);
@@ -116,16 +110,7 @@ export default function ActionPanel({
           newErrors.ohQuantity = true;
         }
       }
-    } else {
-      // Kit-specific required fields
-      if (!editedProduct.liin?.trim()) {
-        newErrors.liin = true;
-      }
-
-      if (!editedProduct.endItemNiin?.trim()) {
-        newErrors.endItemNiin = true;
-      }
-    }
+    } 
 
     // Items must explicitly select either a kit or "No Kit" in create mode
     if (isCreateMode && !editedProduct.isKit && editedProduct.parent === undefined) {
