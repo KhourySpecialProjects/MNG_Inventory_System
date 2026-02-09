@@ -689,7 +689,6 @@ describe('ActionPanel', () => {
         expect(mockSetFieldErrors).toHaveBeenCalledWith(
           expect.objectContaining({
             productName: true,
-            nsn: true,
           }),
         );
       });

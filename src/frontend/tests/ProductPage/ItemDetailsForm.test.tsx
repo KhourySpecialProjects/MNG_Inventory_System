@@ -516,7 +516,7 @@ describe('ItemDetailsForm', () => {
       );
 
       expect(screen.getByText('Display Name is required')).toBeInTheDocument();
-      expect(screen.getByText('NSN is required and must be unique')).toBeInTheDocument();
+      expect(screen.getByText('NSN must be unique if provided')).toBeInTheDocument();
       expect(screen.getByText('Must be a number ≥ 0')).toBeInTheDocument();
     });
   });

@@ -85,13 +85,7 @@ export default function ActionPanel({
 
     // Item-specific required fields
     if (!editedProduct.isKit) {
-      if (!editedProduct.nsn?.trim()) {
-        newErrors.nsn = true;
-      }
-
-      if (!editedProduct.description?.trim()) {
-        newErrors.description = true;
-      }
+     
 
       // Validate Authorized Quantity for items
       const authQty = parseInt(editedProduct.authQuantity);
@@ -116,16 +110,7 @@ export default function ActionPanel({
           newErrors.ohQuantity = true;
         }
       }
-    } else {
-      // Kit-specific required fields
-      if (!editedProduct.liin?.trim()) {
-        newErrors.liin = true;
-      }
-
-      if (!editedProduct.endItemNiin?.trim()) {
-        newErrors.endItemNiin = true;
-      }
-    }
+    } 
 
     // Items must explicitly select either a kit or "No Kit" in create mode
     if (isCreateMode && !editedProduct.isKit && editedProduct.parent === undefined) {
@@ -190,14 +175,13 @@ export default function ActionPanel({
           editedProduct.description || '',
           editedProduct.parent || null,
           editedProduct.isKit || false,
-          editedProduct.isKit ? '' : editedProduct.nsn || '', // Empty for kits, NSN for items
-          editedProduct.isKit ? '' : editedProduct.serialNumber || '', // Empty for kits, serial for items
+          editedProduct.nsn || '', 
+          editedProduct.serialNumber || '', 
           editedProduct.isKit ? 0 : parseInt(editedProduct.authQuantity) || 1,
           editedProduct.isKit ? 0 : parseInt(editedProduct.ohQuantity) || 1,
-          editedProduct.isKit ? editedProduct.liin || '' : '', // LIIN only for kits
-          editedProduct.isKit ? editedProduct.endItemNiin || '' : '', // End Item NIIN only for kits
+          editedProduct.liin || '', 
+          editedProduct.endItemNiin || '', 
         );
-
         if (res.success) {
           setShowSuccess(true);
           navigate(`/teams/to-review/${teamId}`, { replace: true });
@@ -210,12 +194,8 @@ export default function ActionPanel({
         const res = await updateItem(teamId, itemId, {
           name: nameValue,
           actualName: editedProduct.actualName || nameValue,
-          nsn: editedProduct.isKit
-            ? editedProduct.endItemNiin || ''
-            : editedProduct.nsn || editedProduct.serialNumber || '',
-          serialNumber: editedProduct.isKit
-            ? editedProduct.liin || ''
-            : editedProduct.serialNumber || '',
+          nsn: editedProduct.nsn || '', 
+          serialNumber: editedProduct.serialNumber || '',  
           authQuantity: parseInt(editedProduct.authQuantity) || 1,
           ohQuantity: parseInt(editedProduct.ohQuantity) || 1,
           description: editedProduct.description || '',
@@ -224,8 +204,8 @@ export default function ActionPanel({
           notes: editedProduct.notes || '',
           parent: editedProduct.parent || null,
           damageReports: damageReports || [],
-          liin: editedProduct.liin || '',
-          endItemNiin: editedProduct.endItemNiin || '',
+          liin: editedProduct.liin || '', 
+          endItemNiin: editedProduct.endItemNiin || '',  
         });
 
         if (res.success) {

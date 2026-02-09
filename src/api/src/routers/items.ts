@@ -127,7 +127,7 @@ export const itemsRouter = router({
         isKit: z.boolean().optional(),
 
         // item fields
-        nsn: z.string(),
+        nsn: z.string().optional().nullable(),
         serialNumber: z.string().optional().nullable(),
         authQuantity: z.number().optional().nullable(),
         ohQuantity: z.number().optional().nullable(),
@@ -178,10 +178,11 @@ export const itemsRouter = router({
         let imageKey: string | undefined;
 
         if (input.imageBase64) {
-          const ext = getImageExtension(input.imageBase64);
-          imageKey = `items/${input.teamId}/${input.nsn}.${ext}`;
-          await uploadImage(imageKey, input.imageBase64, `image/${ext}`);
-        }
+        const ext = getImageExtension(input.imageBase64);
+        const identifier = input.nsn || input.liin || input.endItemNiin || itemId;
+        imageKey = `items/${input.teamId}/${identifier}.${ext}`;
+        await uploadImage(imageKey, input.imageBase64, `image/${ext}`);
+}
 
         const userName = await getUserName(input.userId);
 
@@ -367,23 +368,23 @@ export const itemsRouter = router({
         const names: Record<string, string> = {};
 
         const push = (key: string, val: any, fieldName?: string) => {
-          if (val !== undefined && val !== null) {
+          if (val !== undefined) {
             updates.push(`${fieldName || key} = :${key}`);
-            values[`:${key}`] = val;
+            values[`:${key}`] = val ?? null;
             if (key === 'name' || key === 'status') names[`#${key}`] = key;
           }
         };
 
         // new image upload
-        if (input.imageBase64) {
-          const ext = getImageExtension(input.imageBase64);
-          const newKey = `items/${input.teamId}/${input.nsn ?? input.itemId}.${ext}`;
-          await uploadImage(newKey, input.imageBase64, `image/${ext}`);
+          if (input.imageBase64) {
+            const ext = getImageExtension(input.imageBase64);
+            const identifier = input.nsn || input.liin || input.endItemNiin || input.itemId;
+            const newKey = `items/${input.teamId}/${identifier}.${ext}`;
+            await uploadImage(newKey, input.imageBase64, `image/${ext}`);
 
-          updates.push('imageKey = :imageKey');
-          values[':imageKey'] = newKey;
-        }
-
+            updates.push('imageKey = :imageKey');
+            values[':imageKey'] = newKey;
+}
         // base fields
         push('name', input.name, '#name');
         push('actualName', input.actualName);
