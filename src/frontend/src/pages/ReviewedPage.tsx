@@ -114,25 +114,21 @@ export default function ReviewedPage() {
             return roots;
           };
 
-          const hasStatusInTree = (item: ItemListItem, targetStatuses: string[]): boolean => {
+          const matchesStatuses = (item: ItemListItem, targetStatuses: string[]): boolean => {
             const itemStatus = (item.status ?? '').toLowerCase();
-            if (targetStatuses.some((s) => s.toLowerCase() === itemStatus)) return true;
-            if (item.children) {
-              return item.children.some((child) => hasStatusInTree(child, targetStatuses));
-            }
-            return false;
+            return targetStatuses.some((s) => s.toLowerCase() === itemStatus);
           };
 
           const fullHierarchy = buildHierarchy(itemsArray);
 
           const completed = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, ['completed', 'complete', 'found']),
+            matchesStatuses(item, ['completed', 'complete', 'found']),
           );
           const shortages = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, ['shortage', 'shortages', 'missing']),
+            matchesStatuses(item, ['shortage', 'shortages', 'missing']),
           );
           const damaged = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, ['damaged', 'in repair']),
+            matchesStatuses(item, ['damaged', 'in repair']),
           );
 
           setCompletedItems(completed);

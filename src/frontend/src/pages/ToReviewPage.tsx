@@ -83,21 +83,12 @@ export default function ToReviewPage() {
             return roots;
           };
 
-          // Check if item or any descendant has the target status
-          const hasStatusInTree = (item: ItemListItem, targetStatus: string): boolean => {
-            if (item.status === targetStatus) return true;
-            if (item.children) {
-              return item.children.some((child) => hasStatusInTree(child, targetStatus));
-            }
-            return false;
-          };
-
           // Build full hierarchy from all items
           const fullHierarchy = buildHierarchy(itemsArray);
 
-          // Filter to only roots that have "To Review" somewhere in their tree
-          const incompleteItems = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, 'To Review'),
+          // Filter to only roots whose own status is "To Review"
+          const incompleteItems = fullHierarchy.filter(
+            (item) => item.status === 'To Review',
           );
 
           setItems(incompleteItems);

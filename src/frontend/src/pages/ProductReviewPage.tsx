@@ -4,7 +4,7 @@
  * Features image upload, hierarchical kit/item relationships, and damage report management.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Box, Button, CircularProgress, Grid, Snackbar } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -16,6 +16,7 @@ import ActionPanel from '../components/ProductPage/ActionPanel';
 import { flattenTree } from '../components/ProductPage/Producthelpers';
 import { getItem, getItems } from '../api/items';
 import ChildrenTree from '../components/ProductPage/ChildrenTree';
+import type { ChildEdits } from '../components/ProductPage/ChildrenTree';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
 
@@ -43,6 +44,46 @@ export default function ProductReviewPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const [childEdits, setChildEdits] = useState<Record<string, ChildEdits>>({});
+  const prevStatusRef = useRef<string | undefined>(undefined);
+
+  // Cascade "Completed" to all "To Review" children when parent status changes
+  const cascadeCompletedToChildren = useCallback(
+    (children: any[], currentEdits: Record<string, ChildEdits>) => {
+      let edits = { ...currentEdits };
+      for (const child of children) {
+        const existingEdit = edits[child.itemId];
+        const currentStatus = existingEdit?.status || child.status || 'To Review';
+        if (currentStatus === 'To Review') {
+          edits[child.itemId] = {
+            status: 'Completed',
+            damageReports: existingEdit?.damageReports || child.damageReports || [],
+            ohQuantity: existingEdit?.ohQuantity ?? child.ohQuantity ?? '',
+          };
+        }
+        if (child.children?.length > 0) {
+          edits = cascadeCompletedToChildren(child.children, edits);
+        }
+      }
+      return edits;
+    },
+    [],
+  );
+
+  // Watch for parent status changing to "Completed" and cascade to children
+  useEffect(() => {
+    const currentStatus = editedProduct?.status;
+    if (
+      currentStatus === 'Completed' &&
+      prevStatusRef.current !== undefined &&
+      prevStatusRef.current !== 'Completed' &&
+      editedProduct?.children?.length > 0
+    ) {
+      setChildEdits((prev) => cascadeCompletedToChildren(editedProduct.children, prev));
+    }
+    prevStatusRef.current = currentStatus;
+  }, [editedProduct?.status, editedProduct?.children, cascadeCompletedToChildren]);
 
   useEffect(() => {
     (async () => {
@@ -257,6 +298,7 @@ export default function ProductReviewPage() {
               setShowSuccess={setShowSuccess}
               damageReports={damageReports}
               setFieldErrors={setFieldErrors}
+              childEdits={childEdits}
             />
           </Box>
 
@@ -315,6 +357,8 @@ export default function ProductReviewPage() {
                   teamId={teamId!}
                   isCreateMode={isCreateMode}
                   isEditMode={isEditMode}
+                  childEdits={childEdits}
+                  onChildEditsChange={setChildEdits}
                 />
               )}
             </Grid>

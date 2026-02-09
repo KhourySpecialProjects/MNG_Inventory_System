@@ -38,21 +38,27 @@ export default function ActionPanel({
   setShowSuccess,
   damageReports,
   setFieldErrors,
+  childEdits = {},
 }: any) {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const updateChildrenStatus = async (children: any[], newStatus: string) => {
-    for (const child of children) {
+  const saveChildEdits = async () => {
+    for (const [childId, edit] of Object.entries(childEdits) as [string, any][]) {
       try {
-        await updateItem(teamId, child.itemId, { status: newStatus });
-        if (child.children?.length > 0) {
-          await updateChildrenStatus(child.children, newStatus);
+        const updates: any = { status: edit.status };
+        if (edit.status === 'Damaged') {
+          updates.damageReports = edit.damageReports || [];
         }
+        if (edit.status === 'Shortages') {
+          const numVal = Number(edit.ohQuantity);
+          updates.ohQuantity = isNaN(numVal) ? 0 : numVal;
+        }
+        await updateItem(teamId, childId, updates);
       } catch (err) {
-        console.error(`Failed to update child ${child.itemId}:`, err);
+        console.error(`Failed to update child ${childId}:`, err);
       }
     }
   };
@@ -202,7 +208,6 @@ export default function ActionPanel({
           setShowSuccess(true);
           navigate(`/teams/to-review/${teamId}`, { replace: true });
         } else {
-          console.log('Create failed with response:', res);
           setErrorMessage(res.error || 'Failed to create item');
         }
       } else {
@@ -229,8 +234,9 @@ export default function ActionPanel({
         });
 
         if (res.success) {
-          if (product?.status !== editedProduct.status && editedProduct.children?.length > 0) {
-            await updateChildrenStatus(editedProduct.children, editedProduct.status);
+          // Save all staged child edits to the backend
+          if (Object.keys(childEdits).length > 0) {
+            await saveChildEdits();
           }
 
           if (!isQuickUpdate) setIsEditMode(false);
@@ -265,8 +271,11 @@ export default function ActionPanel({
     const damageReportsChanged =
       JSON.stringify(damageReports) !== JSON.stringify(product?.damageReports || []);
 
-    // Must have changed status, notes, OH quantity, or damage reports
-    if (!statusChanged && !notesChanged && !ohQuantityChanged && !damageReportsChanged)
+    // Show DONE if any child edits are staged
+    const hasChildEdits = Object.keys(childEdits).length > 0;
+
+    // Must have changed status, notes, OH quantity, damage reports, or child edits
+    if (!statusChanged && !notesChanged && !ohQuantityChanged && !damageReportsChanged && !hasChildEdits)
       return false;
 
     // If status changed to "Damaged", must have at least one damage report
