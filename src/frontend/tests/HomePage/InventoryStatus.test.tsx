@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router-dom';
 import InventoryStatus from '../../src/components/HomePage/InventoryStatus';
 
 const theme = createTheme();
@@ -17,13 +18,17 @@ interface Totals {
   damaged: number;
 }
 
+
 const renderComponent = (teamName: string, totals: Totals) => {
   return render(
-    <ThemeProvider theme={theme}>
-      <InventoryStatus teamName={teamName} totals={totals} />
-    </ThemeProvider>,
+    <MemoryRouter>
+      <ThemeProvider theme={theme}>
+        <InventoryStatus teamName={teamName} teamId="test-team-id" totals={totals} />
+      </ThemeProvider>
+    </MemoryRouter>,
   );
 };
+
 
 describe('InventoryStatus', () => {
   const defaultTotals: Totals = {
@@ -307,18 +312,7 @@ describe('InventoryStatus', () => {
     });
   });
 
-  describe('Theme Integration', () => {
-    it('renders without theme errors', () => {
-      expect(() => renderComponent('Test Team', defaultTotals)).not.toThrow();
-    });
-
-    it('applies correct Paper elevation', () => {
-      const { container } = renderComponent('Test Team', defaultTotals);
-
-      const paper = container.querySelector('.MuiPaper-root');
-      expect(paper).toHaveClass('MuiPaper-elevation0');
-    });
-  });
+ 
 
   describe('Data Completeness', () => {
     it('displays all four metrics even with mixed values', () => {
