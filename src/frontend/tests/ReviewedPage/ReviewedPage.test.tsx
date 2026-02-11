@@ -181,7 +181,7 @@ describe('ReviewedPage', () => {
     });
   });
 
-  it('filters items by status across hierarchy', async () => {
+  it('filters kits by their own top-level status only', async () => {
     vi.mocked(itemsAPI.getItems).mockResolvedValueOnce({
       success: true,
       items: [
@@ -208,17 +208,18 @@ describe('ReviewedPage', () => {
 
     renderWithRouter();
 
+    // Kit with "Found" status should appear in Completed tab
     await waitFor(() => {
       const medicalKitElements = screen.getAllByText('Medical Kit');
       expect(medicalKitElements.length).toBeGreaterThan(0);
     });
 
+    // Kit should NOT appear in Damaged tab (child status is irrelevant)
     const damagedTab = screen.getByRole('tab', { name: /Damaged/i });
     fireEvent.click(damagedTab);
 
     await waitFor(() => {
-      const medicalKitElements = screen.getAllByText('Medical Kit');
-      expect(medicalKitElements.length).toBeGreaterThan(0);
+      expect(screen.getByText(/No damaged items/i)).toBeInTheDocument();
     });
   });
 

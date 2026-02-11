@@ -38,21 +38,27 @@ export default function ActionPanel({
   setShowSuccess,
   damageReports,
   setFieldErrors,
+  childEdits = {},
 }: any) {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const updateChildrenStatus = async (children: any[], newStatus: string) => {
-    for (const child of children) {
+  const saveChildEdits = async () => {
+    for (const [childId, edit] of Object.entries(childEdits) as [string, any][]) {
       try {
-        await updateItem(teamId, child.itemId, { status: newStatus });
-        if (child.children?.length > 0) {
-          await updateChildrenStatus(child.children, newStatus);
+        const updates: any = { status: edit.status };
+        if (edit.status === 'Damaged') {
+          updates.damageReports = edit.damageReports || [];
         }
+        if (edit.status === 'Shortages') {
+          const numVal = Number(edit.ohQuantity);
+          updates.ohQuantity = isNaN(numVal) ? 0 : numVal;
+        }
+        await updateItem(teamId, childId, updates);
       } catch (err) {
-        console.error(`Failed to update child ${child.itemId}:`, err);
+        console.error(`Failed to update child ${childId}:`, err);
       }
     }
   };
@@ -85,13 +91,7 @@ export default function ActionPanel({
 
     // Item-specific required fields
     if (!editedProduct.isKit) {
-      if (!editedProduct.nsn?.trim()) {
-        newErrors.nsn = true;
-      }
-
-      if (!editedProduct.description?.trim()) {
-        newErrors.description = true;
-      }
+     
 
       // Validate Authorized Quantity for items
       const authQty = parseInt(editedProduct.authQuantity);
@@ -116,16 +116,7 @@ export default function ActionPanel({
           newErrors.ohQuantity = true;
         }
       }
-    } else {
-      // Kit-specific required fields
-      if (!editedProduct.liin?.trim()) {
-        newErrors.liin = true;
-      }
-
-      if (!editedProduct.endItemNiin?.trim()) {
-        newErrors.endItemNiin = true;
-      }
-    }
+    } 
 
     // Items must explicitly select either a kit or "No Kit" in create mode
     if (isCreateMode && !editedProduct.isKit && editedProduct.parent === undefined) {
@@ -190,19 +181,17 @@ export default function ActionPanel({
           editedProduct.description || '',
           editedProduct.parent || null,
           editedProduct.isKit || false,
-          editedProduct.isKit ? '' : editedProduct.nsn || '', // Empty for kits, NSN for items
-          editedProduct.isKit ? '' : editedProduct.serialNumber || '', // Empty for kits, serial for items
+          editedProduct.nsn || '', 
+          editedProduct.serialNumber || '', 
           editedProduct.isKit ? 0 : parseInt(editedProduct.authQuantity) || 1,
           editedProduct.isKit ? 0 : parseInt(editedProduct.ohQuantity) || 1,
-          editedProduct.isKit ? editedProduct.liin || '' : '', // LIIN only for kits
-          editedProduct.isKit ? editedProduct.endItemNiin || '' : '', // End Item NIIN only for kits
+          editedProduct.liin || '', 
+          editedProduct.endItemNiin || '', 
         );
-
         if (res.success) {
           setShowSuccess(true);
           navigate(`/teams/to-review/${teamId}`, { replace: true });
         } else {
-          console.log('Create failed with response:', res);
           setErrorMessage(res.error || 'Failed to create item');
         }
       } else {
@@ -210,12 +199,8 @@ export default function ActionPanel({
         const res = await updateItem(teamId, itemId, {
           name: nameValue,
           actualName: editedProduct.actualName || nameValue,
-          nsn: editedProduct.isKit
-            ? editedProduct.endItemNiin || ''
-            : editedProduct.nsn || editedProduct.serialNumber || '',
-          serialNumber: editedProduct.isKit
-            ? editedProduct.liin || ''
-            : editedProduct.serialNumber || '',
+          nsn: editedProduct.nsn || '', 
+          serialNumber: editedProduct.serialNumber || '',  
           authQuantity: parseInt(editedProduct.authQuantity) || 1,
           ohQuantity: parseInt(editedProduct.ohQuantity) || 1,
           description: editedProduct.description || '',
@@ -224,13 +209,14 @@ export default function ActionPanel({
           notes: editedProduct.notes || '',
           parent: editedProduct.parent || null,
           damageReports: damageReports || [],
-          liin: editedProduct.liin || '',
-          endItemNiin: editedProduct.endItemNiin || '',
+          liin: editedProduct.liin || '', 
+          endItemNiin: editedProduct.endItemNiin || '',  
         });
 
         if (res.success) {
-          if (product?.status !== editedProduct.status && editedProduct.children?.length > 0) {
-            await updateChildrenStatus(editedProduct.children, editedProduct.status);
+          // Save all staged child edits to the backend
+          if (Object.keys(childEdits).length > 0) {
+            await saveChildEdits();
           }
 
           if (!isQuickUpdate) setIsEditMode(false);
@@ -265,8 +251,11 @@ export default function ActionPanel({
     const damageReportsChanged =
       JSON.stringify(damageReports) !== JSON.stringify(product?.damageReports || []);
 
-    // Must have changed status, notes, OH quantity, or damage reports
-    if (!statusChanged && !notesChanged && !ohQuantityChanged && !damageReportsChanged)
+    // Show DONE if any child edits are staged
+    const hasChildEdits = Object.keys(childEdits).length > 0;
+
+    // Must have changed status, notes, OH quantity, damage reports, or child edits
+    if (!statusChanged && !notesChanged && !ohQuantityChanged && !damageReportsChanged && !hasChildEdits)
       return false;
 
     // If status changed to "Damaged", must have at least one damage report

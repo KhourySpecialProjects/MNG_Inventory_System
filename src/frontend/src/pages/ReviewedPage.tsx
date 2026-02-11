@@ -15,7 +15,7 @@ import {
   Typography,
   Fade,
 } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import NavBar from '../components/NavBar';
 import TopBar from '../components/TopBar';
@@ -23,6 +23,8 @@ import Profile from '../components/Profile';
 import SearchBar from '../components/ProductPage/SearchBar';
 import { useTheme } from '@mui/material/styles';
 import { getItems } from '../api/items';
+
+
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,6 +58,25 @@ export default function ReviewedPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+
+  const getInitialTab = () => {
+    switch (tabParam) {
+      case 'completed':
+        return 0;
+      case 'shortages':
+        return 1;
+      case 'damaged':
+        return 2;
+      default:
+        return 0;
+    }
+  };
+
+  useEffect(() => {
+    setSelectedTab(getInitialTab());
+  }, [tabParam]);
 
   useEffect(() => {
     const fetchReviewedItems = async () => {
@@ -85,9 +106,10 @@ export default function ReviewedPage() {
                 actualName: item.actualName || item.name,
                 subtitle: item.description || 'No description',
                 image:
-                  item.imageLink && item.imageLink.startsWith('http')
+                  item.imageLink &&
+                  (item.imageLink.startsWith('http') || item.imageLink.startsWith('data:'))
                     ? item.imageLink
-                    : 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=400',
+                    : '',
                 date: new Date(item.createdAt).toLocaleDateString('en-US', {
                   month: '2-digit',
                   day: '2-digit',
@@ -113,25 +135,21 @@ export default function ReviewedPage() {
             return roots;
           };
 
-          const hasStatusInTree = (item: ItemListItem, targetStatuses: string[]): boolean => {
+          const matchesStatuses = (item: ItemListItem, targetStatuses: string[]): boolean => {
             const itemStatus = (item.status ?? '').toLowerCase();
-            if (targetStatuses.some((s) => s.toLowerCase() === itemStatus)) return true;
-            if (item.children) {
-              return item.children.some((child) => hasStatusInTree(child, targetStatuses));
-            }
-            return false;
+            return targetStatuses.some((s) => s.toLowerCase() === itemStatus);
           };
 
           const fullHierarchy = buildHierarchy(itemsArray);
 
           const completed = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, ['completed', 'complete', 'found']),
+            matchesStatuses(item, ['completed', 'complete', 'found']),
           );
           const shortages = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, ['shortage', 'shortages', 'missing']),
+            matchesStatuses(item, ['shortage', 'shortages', 'missing']),
           );
           const damaged = fullHierarchy.filter((item) =>
-            hasStatusInTree(item, ['damaged', 'in repair']),
+            matchesStatuses(item, ['damaged', 'in repair']),
           );
 
           setCompletedItems(completed);

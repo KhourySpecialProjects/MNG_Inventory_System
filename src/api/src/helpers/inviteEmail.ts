@@ -1,6 +1,7 @@
 import { SendEmailCommand, SendEmailCommandInput } from '@aws-sdk/client-sesv2';
 import { sesClient } from '../aws';
 import { loadConfig } from '../process';
+import { isLocalDev } from '../localDev';
 
 export const sendInviteEmail = async (params: {
   to: string;
@@ -9,6 +10,19 @@ export const sendInviteEmail = async (params: {
 }) => {
   const { to, tempPassword, signinUrl } = params;
   const config = loadConfig();
+
+  // Local dev mode: just log the invite details
+  if (isLocalDev) {
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('[LocalDev] EMAIL INVITE (not actually sent)');
+    console.log(`To: ${to}`);
+    console.log(`Temp Password: ${tempPassword}`);
+    console.log(`Sign-in URL: ${config.WEB_URL}`);
+    console.log('='.repeat(60));
+    console.log('');
+    return;
+  }
   const URL_signin = config.WEB_URL;
 
   const FROM = process.env.SES_FROM_ADDRESS || 'cdpyle1@gmail.com';

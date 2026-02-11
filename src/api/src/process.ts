@@ -43,6 +43,10 @@ export function loadConfig() {
 
   const WEB_URL = env.WEB_URL ?? 'https://d2cktegyq4qcfk.cloudfront.net';
 
+  // Dev fallbacks for Cognito - matches trpc.ts defaults
+  const COGNITO_USER_POOL_ID = env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
+  const COGNITO_CLIENT_ID = env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
+
   const config = {
     env,
     stage,
@@ -51,8 +55,8 @@ export function loadConfig() {
     BUCKET_NAME,
     KMS_KEY_ARN: env.S3_KMS_KEY_ARN,
 
-    COGNITO_USER_POOL_ID: env.COGNITO_USER_POOL_ID ?? '',
-    COGNITO_CLIENT_ID: env.COGNITO_CLIENT_ID ?? '',
+    COGNITO_USER_POOL_ID,
+    COGNITO_CLIENT_ID,
 
     SES_FROM: env.SES_FROM_ADDRESS,
     SES_CONFIG_SET: env.SES_CONFIG_SET ?? '',

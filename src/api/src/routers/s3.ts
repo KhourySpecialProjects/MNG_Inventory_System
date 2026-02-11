@@ -10,16 +10,22 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { router, protectedProcedure, permissionedProcedure } from './trpc';
 import { loadConfig } from '../process';
+import { isLocalDev } from '../localDev';
 
 const config = loadConfig();
 const REGION = config.REGION;
 const BUCKET_NAME = config.BUCKET_NAME;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
-const s3 = new S3Client({ region: REGION });
+const s3 = isLocalDev ? null : new S3Client({ region: REGION });
 
-if (!BUCKET_NAME) throw new Error('Missing S3_BUCKET_NAME');
-if (!KMS_KEY_ARN) console.warn('[S3] Warning: KMS encryption disabled');
+// In-memory storage for local dev
+const localImageStore = new Map<string, { mime: string; data: string }>();
+
+if (!isLocalDev) {
+  if (!BUCKET_NAME) throw new Error('Missing S3_BUCKET_NAME');
+  if (!KMS_KEY_ARN) console.warn('[S3] Warning: KMS encryption disabled');
+}
 
 function parseDataUrl(dataUrl: string) {
   // Parse base64 data URL into { mime, buffer }
@@ -45,6 +51,13 @@ export const s3Router = router({
 
       console.log(`[S3] Upload profile image start user=${input.userId} key=${key}`);
 
+      // Local dev mode: store in memory
+      if (isLocalDev) {
+        localImageStore.set(key, { mime, data: input.dataUrl });
+        console.log(`[LocalDev] Stored profile image: ${key}`);
+        return { key, url: input.dataUrl };
+      }
+
       const putParams: PutObjectCommandInput = {
         Bucket: BUCKET_NAME,
         Key: key,
@@ -53,10 +66,10 @@ export const s3Router = router({
         ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
       };
 
-      await s3.send(new PutObjectCommand(putParams));
+      await s3!.send(new PutObjectCommand(putParams));
       console.log(`[S3] Uploaded ${key} size=${buffer.byteLength}`);
 
-      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
+      const url = await getSignedUrl(s3!, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
         expiresIn: 3600,
       });
 
@@ -70,6 +83,19 @@ export const s3Router = router({
     .query(async ({ input }) => {
       console.log(`[S3] Fetch profile image user=${input.userId}`);
 
+      // Local dev mode: check memory store
+      if (isLocalDev) {
+        const prefix = `Profile/${input.userId}`;
+        for (const [key, value] of localImageStore) {
+          if (key.startsWith(prefix)) {
+            console.log(`[LocalDev] Found profile image: ${key}`);
+            return { url: value.data };
+          }
+        }
+        console.log(`[LocalDev] No profile image for user=${input.userId}`);
+        return { url: null };
+      }
+
       const prefix = `Profile/${input.userId}`;
       const exts = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
       let foundUrl: string | null = null;
@@ -78,11 +104,11 @@ export const s3Router = router({
         const key = `${prefix}.${ext}`;
 
         try {
-          await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+          await s3!.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
           console.log(`[S3] Found profile image: ${key}`);
 
           foundUrl = await getSignedUrl(
-            s3,
+            s3!,
             new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
             { expiresIn: 3600 },
           );
@@ -107,18 +133,24 @@ export const s3Router = router({
     .query(async ({ input }) => {
       console.log(`[S3] getInventoryForm teamId=${input.teamId ?? 'defaultTeam'} nsn=${input.nsn}`);
 
+      // Local dev mode: return a placeholder
+      if (isLocalDev) {
+        console.log(`[LocalDev] Inventory form request (no actual file)`);
+        return { url: null, key: `Documents/${input.teamId}/inventoryForm/${input.nsn}.pdf` };
+      }
+
       const teamId = input.teamId ?? 'defaultTeam';
       const key = `Documents/${teamId}/inventoryForm/${input.nsn}.pdf`;
 
       try {
-        await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+        await s3!.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
         console.log(`[S3] Inventory form exists: ${key}`);
       } catch {
         console.log(`[S3] Missing inventory form for nsn=${input.nsn}`);
         throw new Error(`Inventory form for NSN ${input.nsn} not found`);
       }
 
-      const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
+      const url = await getSignedUrl(s3!, new GetObjectCommand({ Bucket: BUCKET_NAME, Key: key }), {
         expiresIn: 600,
       });
 

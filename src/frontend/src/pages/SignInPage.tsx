@@ -27,6 +27,9 @@ import EmailOtpCard from '../components/auth/EmailOtpCard';
 
 import { useColorMode } from '../ThemeContextProvider';
 
+// Check if we're in development mode
+const isDevelopment = import.meta.env.MODE === 'development' || import.meta.env.DEV;
+
 export default function SignInPage() {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [identifier, setIdentifier] = useState('');
@@ -132,6 +135,25 @@ export default function SignInPage() {
     }
   };
 
+  // Dev mode quick sign-in
+  const handleDevSignIn = async () => {
+    setIdentifier('dev@localhost');
+    setPassword('devpassword123');
+    setErrorMsg('');
+    try {
+      setSubmitting(true);
+      const res = await loginUser('dev@localhost', 'devpassword123');
+      if (res?.success) {
+        await confirmAndEnterApp();
+      }
+    } catch (error) {
+      console.error('Dev sign-in failed:', error);
+      setErrorMsg('Dev sign-in failed. Make sure LOCAL_DEV=true is set on the backend.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await doLogin();
@@ -172,6 +194,27 @@ export default function SignInPage() {
         backgroundColor: '#F4F4F1',
       }}
     >
+      {isDevelopment && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bgcolor: '#FF6B35',
+            color: 'white',
+            py: 0.5,
+            px: 2,
+            textAlign: 'center',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            zIndex: 9999,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}
+        >
+          🚧 LOCAL DEVELOPMENT MODE - Backend running with mock data
+        </Box>
+      )}
       <Card
         elevation={3}
         sx={{
@@ -182,6 +225,7 @@ export default function SignInPage() {
           boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
           display: 'flex',
           flexDirection: 'column',
+          mt: isDevelopment ? 5 : 0,
         }}
       >
         <CardContent sx={{ p: 4, pb: 2, flex: '1 1 auto' }}>
@@ -289,6 +333,47 @@ export default function SignInPage() {
               >
                 {submitting ? 'Logging in...' : 'Login'}
               </Button>
+              
+              {isDevelopment && (
+                <Box sx={{ mt: 2 }}>
+                  <Divider sx={{ mb: 2 }}>
+                    <Typography variant="caption" sx={{ color: '#666', px: 1 }}>
+                      Development Mode
+                    </Typography>
+                  </Divider>
+                  <Button
+                    onClick={handleDevSignIn}
+                    variant="outlined"
+                    fullWidth
+                    disabled={submitting}
+                    sx={{
+                      borderRadius: 2,
+                      py: 1,
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      borderColor: '#FF6B35',
+                      color: '#FF6B35',
+                      ':hover': {
+                        borderColor: '#FF5522',
+                        bgcolor: '#FFF5F3',
+                      },
+                    }}
+                  >
+                    🚀 Dev Sign In (Local Mode)
+                  </Button>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      mt: 1,
+                      textAlign: 'center',
+                      color: '#999',
+                    }}
+                  >
+                    Uses dev@localhost with mock authentication
+                  </Typography>
+                </Box>
+              )}
             </Box>
           </>
         )}

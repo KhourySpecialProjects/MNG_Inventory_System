@@ -454,9 +454,9 @@ describe('ActionPanel', () => {
     });
   });
 
-  describe('Status Cascade to Children', () => {
-    it('updates all children when parent status changes', async () => {
-      const propsWithChildren = {
+  describe('Saving Child Edits', () => {
+    it('saves staged child edits when parent is saved', async () => {
+      const propsWithChildEdits = {
         ...baseProps,
         isEditMode: true,
         product: { ...baseProps.product, status: 'To Review' },
@@ -468,9 +468,13 @@ describe('ActionPanel', () => {
             { itemId: 'child-2', status: 'To Review', children: [] },
           ],
         },
+        childEdits: {
+          'child-1': { status: 'Completed', damageReports: [], ohQuantity: '' },
+          'child-2': { status: 'Completed', damageReports: [], ohQuantity: '' },
+        },
       };
 
-      renderWithRouter(<ActionPanel {...propsWithChildren} />);
+      renderWithRouter(<ActionPanel {...propsWithChildEdits} />);
 
       const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
@@ -490,25 +494,24 @@ describe('ActionPanel', () => {
       });
     });
 
-    it('recursively updates grandchildren', async () => {
-      const propsWithGrandchildren = {
+    it('includes damageReports for Damaged child edits', async () => {
+      const propsWithDamagedChildren = {
         ...baseProps,
         isEditMode: true,
         product: { ...baseProps.product, status: 'To Review' },
         editedProduct: {
           ...baseProps.editedProduct,
-          status: 'Damaged',
+          status: 'Completed',
           children: [
-            {
-              itemId: 'child-1',
-              status: 'To Review',
-              children: [{ itemId: 'grandchild-1', status: 'To Review', children: [] }],
-            },
+            { itemId: 'child-1', status: 'To Review', children: [] },
           ],
+        },
+        childEdits: {
+          'child-1': { status: 'Damaged', damageReports: ['Cracked screen'], ohQuantity: '' },
         },
       };
 
-      renderWithRouter(<ActionPanel {...propsWithGrandchildren} />);
+      renderWithRouter(<ActionPanel {...propsWithDamagedChildren} />);
 
       const saveButton = screen.getByRole('button', { name: /^Save$/i });
       fireEvent.click(saveButton);
@@ -516,16 +519,12 @@ describe('ActionPanel', () => {
       await waitFor(() => {
         expect(vi.mocked(itemsAPI.updateItem)).toHaveBeenCalledWith('test-team-123', 'child-1', {
           status: 'Damaged',
+          damageReports: ['Cracked screen'],
         });
-        expect(vi.mocked(itemsAPI.updateItem)).toHaveBeenCalledWith(
-          'test-team-123',
-          'grandchild-1',
-          { status: 'Damaged' },
-        );
       });
     });
 
-    it('does not update children if status unchanged', async () => {
+    it('does not save child edits when childEdits is empty', async () => {
       const propsUnchangedStatus = {
         ...baseProps,
         isEditMode: true,
@@ -689,7 +688,6 @@ describe('ActionPanel', () => {
         expect(mockSetFieldErrors).toHaveBeenCalledWith(
           expect.objectContaining({
             productName: true,
-            nsn: true,
           }),
         );
       });

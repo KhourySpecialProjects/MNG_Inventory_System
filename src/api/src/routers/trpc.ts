@@ -7,6 +7,7 @@ import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { getUserPermissions } from '../helpers/teamspaceHelpers';
 import { TRPCError } from '@trpc/server';
 import type { Permission } from './roles';
+import { isLocalDev, MOCK_USER } from '../localDev';
 
 export type Context = {
   req?: Request;
@@ -71,17 +72,67 @@ export const mergeRouters = t.mergeRouters;
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
 const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
 
-const verifier = CognitoJwtVerifier.create({
-  userPoolId: USER_POOL_ID,
-  clientId: USER_POOL_CLIENT_ID,
-  tokenUse: 'access',
-});
+// Only create verifier if not in local dev mode
+const verifier = isLocalDev
+  ? null
+  : CognitoJwtVerifier.create({
+      userPoolId: USER_POOL_ID,
+      clientId: USER_POOL_CLIENT_ID,
+      tokenUse: 'access',
+    });
 
 /**
  *  Auth Middleware
  * Extracts cookies, validates JWT, attaches user info to context.
  */
 const isAuthed = t.middleware(async ({ ctx, next }) => {
+  // Local dev mode: use mock user
+  if (isLocalDev) {
+    const allPermissions = [
+      'team.create',
+      'team.view',
+      'team.update',
+      'team.delete',
+      'team.add_member',
+      'team.remove_member',
+      'item.create',
+      'item.view',
+      'item.update',
+      'item.delete',
+      'item.reset',
+      'user.invite',
+      'user.view',
+      'user.update',
+      'user.remove',
+      'user.delete',
+      'user.assign_roles',
+      'role.view',
+      'role.assign',
+      'role.add',
+      'role.modify',
+      'role.remove',
+      'reports.create',
+      'reports.view',
+      'reports.export',
+      'reports.delete',
+    ];
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: {
+          teamId: MOCK_USER.sub,
+          userId: MOCK_USER.sub,
+          email: MOCK_USER.email,
+          username: MOCK_USER.username,
+          roleName: MOCK_USER.role,
+          permissions: allPermissions,
+          decode: { sub: MOCK_USER.sub },
+        },
+      },
+    });
+  }
+
   const cookies = parseCookiesFromCtx(ctx);
   const accessToken = cookies[COOKIE_ACCESS];
 
@@ -93,7 +144,7 @@ const isAuthed = t.middleware(async ({ ctx, next }) => {
   }
 
   try {
-    const decoded = await verifier.verify(accessToken);
+    const decoded = await verifier!.verify(accessToken);
 
     // Normalize email to a string at runtime to keep things predictable
     const emailValue =

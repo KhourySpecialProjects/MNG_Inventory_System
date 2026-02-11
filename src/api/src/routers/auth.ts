@@ -27,6 +27,7 @@ import {
 import { decodeJwtNoVerify } from '../helpers/authUtils';
 import { ensureUserRecord } from '../helpers/awsUsers';
 import { loadConfig } from '../process';
+import { isLocalDev, MOCK_USER } from '../localDev';
 
 const config = loadConfig();
 export const USER_POOL_ID = config.COGNITO_USER_POOL_ID;
@@ -34,11 +35,14 @@ export const USER_POOL_CLIENT_ID = config.COGNITO_CLIENT_ID;
 export const SES_FROM_ADDRESS = config.SES_FROM;
 export const APP_SIGNIN_URL = config.APP_SIGNIN_URL || `${config.WEB_URL}/signin`;
 
-const verifier = CognitoJwtVerifier.create({
-  userPoolId: USER_POOL_ID,
-  clientId: USER_POOL_CLIENT_ID,
-  tokenUse: 'access',
-});
+// Only create verifier if not in local dev mode
+const verifier = isLocalDev
+  ? null
+  : CognitoJwtVerifier.create({
+      userPoolId: USER_POOL_ID,
+      clientId: USER_POOL_CLIENT_ID,
+      tokenUse: 'access',
+    });
 
 // generates a temp password with letters + digits only
 const generateTempPassword = (): string => {
@@ -156,6 +160,30 @@ export const authRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      // Local dev mode: accept any credentials
+      if (isLocalDev) {
+        console.log(`[LocalDev] Sign in for: ${input.email}`);
+        const mockToken = `local-dev-token-${Date.now()}`;
+
+        const headers = setAuthCookies(ctx.res, {
+          AccessToken: mockToken,
+          IdToken: mockToken,
+          RefreshToken: mockToken,
+          ExpiresIn: 3600,
+        });
+        emitCookiesToLambda(ctx, headers);
+
+        return {
+          success: true,
+          accessToken: mockToken,
+          idToken: mockToken,
+          refreshToken: mockToken,
+          tokenType: 'Bearer',
+          expiresIn: 3600,
+          message: 'Sign in successful (local dev mode)',
+        };
+      }
+
       try {
         console.log(`[Cognito] Sign in attempt for: ${input.email}`);
 
@@ -378,6 +406,19 @@ export const authRouter = router({
     }),
   // finding out who is the user
   me: publicProcedure.query(async ({ ctx }) => {
+    // Local dev mode: return mock user (no token check)
+    if (isLocalDev) {
+      console.log('[LocalDev] me() - Returning mock user');
+      return {
+        authenticated: true,
+        userId: MOCK_USER.sub,
+        name: MOCK_USER.name,
+        username: MOCK_USER.username,
+        role: MOCK_USER.role,
+        accountId: MOCK_USER.accountId,
+      };
+    }
+
     const cookies = parseCookiesFromCtx(ctx);
     const accessToken = cookies[COOKIE_ACCESS];
 
@@ -391,7 +432,8 @@ export const authRouter = router({
     // verify token
     let decoded;
     try {
-      decoded = await verifier.verify(accessToken);
+      //verifier only null in local dev mode
+      decoded = await verifier!.verify(accessToken);
     } catch (err: any) {
       console.error('[DynamoDB] me() token verification error:', err);
       throw new TRPCError({
@@ -475,6 +517,27 @@ export const authRouter = router({
 
   // getting a new token
   refresh: publicProcedure.mutation(async ({ ctx }) => {
+    // Local dev mode: return mock refresh
+    if (isLocalDev) {
+      console.log('[LocalDev] Refresh token - returning mock user');
+      const mockToken = `local-dev-token-${Date.now()}`;
+      
+      const headers = setAuthCookies(ctx.res, {
+        AccessToken: mockToken,
+        IdToken: mockToken,
+        RefreshToken: mockToken,
+        ExpiresIn: 3600,
+      });
+      emitCookiesToLambda(ctx, headers);
+
+      return {
+        refreshed: true,
+        userId: MOCK_USER.sub,
+        username: MOCK_USER.username,
+        accountId: MOCK_USER.accountId,
+      };
+    }
+
     try {
       const cookies = parseCookiesFromCtx(ctx);
       const refreshToken = cookies['auth_refresh'];

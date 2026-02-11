@@ -4,13 +4,14 @@ import { QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamod
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { doc } from '../aws';
 import { loadConfig } from '../process';
+import { isLocalDev } from '../localDev';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
 const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 
-const s3 = new S3Client({ region: REGION });
+const s3 = isLocalDev ? null : new S3Client({ region: REGION });
 
 // HARD RESET — Delete all items and images for a team
 async function hardReset(teamId: string) {
@@ -37,23 +38,25 @@ async function hardReset(teamId: string) {
     );
   }
 
-  // Delete all S3 objects under team prefix
-  const listed = await s3.send(
-    new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: `items/${teamId}/`,
-    }),
-  );
-
-  if (listed.Contents && listed.Contents.length > 0) {
-    await s3.send(
-      new DeleteObjectsCommand({
+  // Delete all S3 objects under team prefix (skip in local dev)
+  if (!isLocalDev && s3) {
+    const listed = await s3.send(
+      new ListObjectsV2Command({
         Bucket: BUCKET_NAME,
-        Delete: {
-          Objects: listed.Contents.map((obj) => ({ Key: obj.Key! })),
-        },
+        Prefix: `items/${teamId}/`,
       }),
     );
+
+    if (listed.Contents && listed.Contents.length > 0) {
+      await s3.send(
+        new DeleteObjectsCommand({
+          Bucket: BUCKET_NAME,
+          Delete: {
+            Objects: listed.Contents.map((obj) => ({ Key: obj.Key! })),
+          },
+        }),
+      );
+    }
   }
 
   return { success: true, message: 'Hard reset completed.' };

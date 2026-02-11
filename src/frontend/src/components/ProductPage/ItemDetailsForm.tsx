@@ -64,8 +64,8 @@ export default function ItemDetailsForm({
   );
   const [nsnOptions, setNsnOptions] = React.useState<any[]>([]);
   const [nsnLoading, setNsnLoading] = React.useState(false);
-  const [nsnInputValue, setNsnInputValue] = React.useState('');
-  // const [parentError, setParentError] = React.useState(false);
+  const [nsnInputValue, setNsnInputValue] = React.useState(editedProduct?.nsn || '');  
+// const [parentError, setParentError] = React.useState(false);
 
   if (!editedProduct) {
     return null;
@@ -485,12 +485,15 @@ export default function ItemDetailsForm({
                         try {
                           setImagePreview(value.imageLink);
 
-                          // Fetch the image and convert to File object
-                          const response = await fetch(value.imageLink);
-                          const blob = await response.blob();
-                          const fileName = `${value.nsn || 'item'}.jpg`;
-                          const file = new File([blob], fileName, { type: blob.type });
-                          setSelectedImageFile(file);
+                          // Only fetch and convert if it's an HTTP URL (not base64 data URL)
+                          if (value.imageLink.startsWith('http')) {
+                            const response = await fetch(value.imageLink);
+                            const blob = await response.blob();
+                            const fileName = `${value.nsn || 'item'}.jpg`;
+                            const file = new File([blob], fileName, { type: blob.type });
+                            setSelectedImageFile(file);
+                          }
+                          // For base64 data URLs in local dev, skip file conversion
                         } catch (error) {
                           console.error('Error fetching image:', error);
                         }
@@ -502,9 +505,9 @@ export default function ItemDetailsForm({
                       {...params}
                       label="National Serial Number"
                       size="small"
-                      required
+                      
                       error={errors.nsn}
-                      helperText={errors.nsn ? 'NSN is required and must be unique' : ''}
+                      helperText={errors.nsn ? 'NSN must be unique if provided' : ''}
                       InputProps={{
                         ...params.InputProps,
                         endAdornment: (
@@ -586,9 +589,9 @@ export default function ItemDetailsForm({
                   fullWidth
                   value={editedProduct.liin || ''}
                   onChange={(e) => handleChange('liin', e.target.value)}
-                  required
+                  
                   error={errors.liin}
-                  helperText={errors.liin ? 'LIIN is required and must be unique' : ''}
+                  helperText={errors.liin ? 'LIIN must be unique' : ''}
                 />
               ) : (
                 <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -619,10 +622,10 @@ export default function ItemDetailsForm({
                   fullWidth
                   value={editedProduct.endItemNiin || ''}
                   onChange={(e) => handleChange('endItemNiin', e.target.value)}
-                  required
+                  
                   error={errors.endItemNiin}
                   helperText={
-                    errors.endItemNiin ? 'End Item NIIN is required and must be unique' : ''
+                    errors.endItemNiin ? 'End Item NIIN must be unique' : ''
                   }
                 />
               ) : (
@@ -650,6 +653,78 @@ export default function ItemDetailsForm({
         </Grid>
       )}
 
+      {/* NSN + Serial Number (side by side) for Kits */}
+{itemType === 'kit' && (
+  <Grid container spacing={2}>
+    <Grid size={{ xs: 12, sm: 6 }}>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        {isEditMode ? (
+          <TextField
+            label="National Serial Number"
+            size="small"
+            fullWidth
+            value={editedProduct.nsn || ''}
+            onChange={(e) => handleChange('nsn', e.target.value)}
+            error={errors.nsn}
+            helperText={errors.nsn ? 'NSN must be unique if provided' : ''}
+          />
+        ) : (
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              National Serial Number
+            </Typography>
+            <Typography sx={{ wordBreak: 'break-all' }}>
+              {editedProduct.nsn || '-'}
+            </Typography>
+          </Box>
+        )}
+        {editedProduct.nsn && !isEditMode && (
+          <Tooltip title="Copy">
+            <IconButton size="small" onClick={() => copyToClipboard(editedProduct.nsn)}>
+              <ContentCopyIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Stack>
+    </Grid>
+
+    <Grid size={{ xs: 12, sm: 6 }}>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        {isEditMode ? (
+          <TextField
+            label="Serial Number"
+            size="small"
+            fullWidth
+            value={editedProduct.serialNumber || ''}
+            onChange={(e) => handleChange('serialNumber', e.target.value)}
+            error={errors.serialNumber}
+            helperText={errors.serialNumber ? 'Must be unique if provided' : ''}
+          />
+        ) : (
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              Serial Number
+            </Typography>
+            <Typography sx={{ wordBreak: 'break-all' }}>
+              {editedProduct.serialNumber || '-'}
+            </Typography>
+          </Box>
+        )}
+        {editedProduct.serialNumber && !isEditMode && (
+          <Tooltip title="Copy">
+            <IconButton
+              size="small"
+              onClick={() => copyToClipboard(editedProduct.serialNumber)}
+            >
+              <ContentCopyIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Stack>
+    </Grid>
+  </Grid>
+)}
+
       {/* 8. Description - Full Width (at the bottom) */}
       {itemType === 'item' &&
         (isEditMode || alwaysEditable('description') ? (
@@ -661,9 +736,8 @@ export default function ItemDetailsForm({
             rows={4}
             value={editedProduct.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
-            required={isEditMode}
             error={errors.description}
-            helperText={errors.description ? 'Description is required' : ''}
+          
           />
         ) : (
           <Box>
