@@ -2,28 +2,62 @@
  * Hierarchical tree view displaying kit contents and nested items.
  * Features expandable/collapsible nodes with visual depth indicators and status badges.
  * Shows AddItemButton for kits in edit mode to maintain parent-child relationships.
+ * Supports inline status editing for kit children — changes are staged locally
+ * and only persisted when the parent kit is saved via ActionPanel.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { Box, Card, Chip, Collapse, IconButton, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  Chip,
+  Collapse,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import PendingIcon from '@mui/icons-material/Pending';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ReportProblemIcon from '@mui/icons-material/ReportProblem';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useTheme, alpha } from '@mui/material/styles';
 import AddItemButton from '../ProductPage/AddItemButton';
+import DamageReportsSection from './DamageReportsSection';
+
+export interface ChildEdits {
+  status: string;
+  damageReports: string[];
+  ohQuantity: number | string;
+}
 
 interface ChildrenTreeProps {
   editedProduct: any;
   teamId: string;
   isCreateMode?: boolean;
   isEditMode?: boolean;
+  childEdits: Record<string, ChildEdits>;
+  onChildEditsChange: (edits: Record<string, ChildEdits>) => void;
 }
+
+const statuses = [
+  { value: 'To Review', label: 'To Review', icon: <PendingIcon />, color: '#9e9e9e' },
+  { value: 'Completed', label: 'Completed', icon: <CheckCircleIcon />, color: '#4caf50' },
+  { value: 'Damaged', label: 'Damaged', icon: <ReportProblemIcon />, color: '#f44336' },
+  { value: 'Shortages', label: 'Shortages', icon: <WarningIcon />, color: '#ff9800' },
+];
 
 export default function ChildrenTree({
   editedProduct,
   teamId,
   isCreateMode = false,
   isEditMode = false,
+  childEdits,
+  onChildEditsChange,
 }: ChildrenTreeProps) {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -33,6 +67,39 @@ export default function ChildrenTree({
   if (isCreateMode) {
     return null;
   }
+
+  const getChildState = (child: any): ChildEdits => {
+    if (childEdits[child.itemId]) {
+      return childEdits[child.itemId];
+    }
+    return {
+      status: child.status || 'To Review',
+      damageReports: child.damageReports || [],
+      ohQuantity: child.ohQuantity ?? '',
+    };
+  };
+
+  const handleChildStatusChange = (child: any, newStatus: string) => {
+    const current = getChildState(child);
+    const updated = { ...current, status: newStatus };
+    onChildEditsChange({ ...childEdits, [child.itemId]: updated });
+  };
+
+  const handleChildDamageReportsChange = (childId: string, reports: string[]) => {
+    const current = childEdits[childId] || { status: '', damageReports: [], ohQuantity: '' };
+    onChildEditsChange({
+      ...childEdits,
+      [childId]: { ...current, damageReports: reports },
+    });
+  };
+
+  const handleChildOhQuantityChange = (childId: string, value: string) => {
+    const current = childEdits[childId] || { status: '', damageReports: [], ohQuantity: '' };
+    onChildEditsChange({
+      ...childEdits,
+      [childId]: { ...current, ohQuantity: value },
+    });
+  };
 
   const toggleExpand = (itemId: string, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -48,6 +115,7 @@ export default function ChildrenTree({
     const hasChildren = !!child.children?.length;
     const isExpanded = expandedItems.has(child.itemId);
     const isKit = child.isKit;
+    const childState = getChildState(child);
 
     return (
       <Box key={child.itemId}>
@@ -112,19 +180,19 @@ export default function ChildrenTree({
                 {'  '.repeat(level)} {child.actualName || child.name}
               </Typography>
 
-              {child.status && (
+              {childState.status && (
                 <Chip
-                  label={child.status}
+                  label={childState.status}
                   size="small"
                   sx={{ ml: 1, mt: 0.5 }}
                   color={
-                    child.status === 'Completed'
+                    childState.status === 'Completed'
                       ? 'success'
-                      : child.status === 'Damaged'
+                      : childState.status === 'Damaged'
                         ? 'error'
-                        : child.status === 'Shortages'
+                        : childState.status === 'Shortages'
                           ? 'warning'
-                          : child.status === 'To Review'
+                          : childState.status === 'To Review'
                             ? 'default'
                             : 'default'
                   }
@@ -140,6 +208,87 @@ export default function ChildrenTree({
               >
                 {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
+            )}
+          </Box>
+
+          {/* Inline status editing — inside the card */}
+          <Box
+            sx={{
+              mt: 1,
+              pt: 1,
+              borderTop: `1px solid ${theme.palette.divider}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Stack
+              direction="row"
+              spacing={0.5}
+              flexWrap="wrap"
+              sx={{ gap: 0.5 }}
+            >
+              {statuses.map((s) => (
+                <Button
+                  key={s.value}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleChildStatusChange(child, s.value);
+                  }}
+                  variant={childState.status === s.value ? 'contained' : 'outlined'}
+                  startIcon={s.icon}
+                  size="small"
+                  aria-label={`Set ${child.name} status to ${s.value}`}
+                  sx={{
+                    textTransform: 'none',
+                    fontSize: { xs: '0.575rem', sm: '0.7rem' },
+                    px: { xs: 0.4, sm: 0.8 },
+                    py: { xs: 0.3, sm: 0.6 },
+                    minWidth: 'auto',
+                    fontWeight: childState.status === s.value ? 700 : 500,
+                    bgcolor: childState.status === s.value ? s.color : 'transparent',
+                    color: childState.status === s.value ? 'white' : s.color,
+                    borderColor: s.color,
+                    '&:hover': {
+                      bgcolor: childState.status === s.value ? s.color : `${s.color}20`,
+                      borderColor: s.color,
+                    },
+                    '& .MuiButton-startIcon': {
+                      marginRight: { xs: '2px', sm: '4px' },
+                    },
+                  }}
+                >
+                  {s.label}
+                </Button>
+              ))}
+            </Stack>
+
+            {/* Damage Reports inline when status is Damaged */}
+            {childState.status === 'Damaged' && (
+              <Box sx={{ mt: 1 }} onClick={(e) => e.stopPropagation()}>
+                <DamageReportsSection
+                  damageReports={childState.damageReports}
+                  setDamageReports={(reports) =>
+                    handleChildDamageReportsChange(child.itemId, reports)
+                  }
+                  isEditMode={true}
+                />
+              </Box>
+            )}
+
+            {/* OH Quantity inline when status is Shortages and child is an item (not a kit) */}
+            {childState.status === 'Shortages' && !isKit && (
+              <Box sx={{ mt: 1 }} onClick={(e) => e.stopPropagation()}>
+                <TextField
+                  label="OH Quantity"
+                  type="text"
+                  size="small"
+                  value={childState.ohQuantity}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleChildOhQuantityChange(child.itemId, e.target.value);
+                  }}
+                  sx={{ width: 150 }}
+                />
+              </Box>
             )}
           </Box>
         </Card>

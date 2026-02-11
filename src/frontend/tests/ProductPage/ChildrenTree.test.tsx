@@ -1,7 +1,7 @@
 /**
  * Unit tests for ChildrenTree component.
- * Tests hierarchical tree rendering, expand/collapse functionality, and navigation.
- * Verifies child item display, status badges, indentation levels, and deep nesting support.
+ * Tests hierarchical tree rendering, expand/collapse functionality, navigation,
+ * and inline status editing for kit children (staged locally, not saved directly).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -22,29 +22,39 @@ const renderWithRouter = (component: React.ReactElement) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
 
-describe('ChildrenTree', () => {
-  const teamId = 'test-team-123';
+const defaultProps = {
+  teamId: 'test-team-123',
+  childEdits: {} as Record<string, { status: string; damageReports: string[]; ohQuantity: number | string }>,
+  onChildEditsChange: vi.fn(),
+};
 
+describe('ChildrenTree', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    defaultProps.onChildEditsChange = vi.fn();
+    defaultProps.childEdits = {};
   });
 
   it('returns null when editedProduct has no children', () => {
     const { container } = renderWithRouter(
-      <ChildrenTree editedProduct={{ children: [] }} teamId={teamId} />,
+      <ChildrenTree editedProduct={{ children: [] }} {...defaultProps} />,
     );
 
     expect(container.firstChild).toBeNull();
   });
 
   it('returns null when editedProduct is null', () => {
-    const { container } = renderWithRouter(<ChildrenTree editedProduct={null} teamId={teamId} />);
+    const { container } = renderWithRouter(
+      <ChildrenTree editedProduct={null} {...defaultProps} />,
+    );
 
     expect(container.firstChild).toBeNull();
   });
 
   it('returns null when children is undefined', () => {
-    const { container } = renderWithRouter(<ChildrenTree editedProduct={{}} teamId={teamId} />);
+    const { container } = renderWithRouter(
+      <ChildrenTree editedProduct={{}} {...defaultProps} />,
+    );
 
     expect(container.firstChild).toBeNull();
   });
@@ -57,7 +67,7 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
 
     expect(screen.getByText(/📦 Kit Contents \(2 items\)/i)).toBeInTheDocument();
   });
@@ -67,7 +77,7 @@ describe('ChildrenTree', () => {
       children: [{ itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', status: 'Found' }],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productOneChild} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productOneChild} {...defaultProps} />);
 
     expect(screen.getByText(/📦 Kit Contents \(1 item\)$/i)).toBeInTheDocument();
   });
@@ -85,7 +95,7 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
 
     expect(screen.getByText(/├─ Bandages/i)).toBeInTheDocument();
     expect(screen.getByText(/Gauze Pack/i)).toBeInTheDocument();
@@ -103,16 +113,19 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
 
-    const completedChip = screen.getByText('Completed');
-    expect(completedChip.closest('.MuiChip-root')).toHaveClass('MuiChip-colorSuccess');
+    const chips = screen.getAllByText('Completed');
+    const completedChip = chips.find((el) => el.closest('.MuiChip-root'));
+    expect(completedChip?.closest('.MuiChip-root')).toHaveClass('MuiChip-colorSuccess');
 
-    const damagedChip = screen.getByText('Damaged');
-    expect(damagedChip.closest('.MuiChip-root')).toHaveClass('MuiChip-colorError');
+    const damagedChips = screen.getAllByText('Damaged');
+    const damagedChip = damagedChips.find((el) => el.closest('.MuiChip-root'));
+    expect(damagedChip?.closest('.MuiChip-root')).toHaveClass('MuiChip-colorError');
 
-    const shortagesChip = screen.getByText('Shortages');
-    expect(shortagesChip.closest('.MuiChip-root')).toHaveClass('MuiChip-colorWarning');
+    const shortagesChips = screen.getAllByText('Shortages');
+    const shortagesChip = shortagesChips.find((el) => el.closest('.MuiChip-root'));
+    expect(shortagesChip?.closest('.MuiChip-root')).toHaveClass('MuiChip-colorWarning');
   });
 
   it('navigates to child item when clicked', () => {
@@ -120,7 +133,7 @@ describe('ChildrenTree', () => {
       children: [{ itemId: 'child-1', name: 'Item 1', actualName: 'Child 1' }],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
 
     const childCard = screen.getByText(/├─ Item 1/i).closest('.MuiCard-root');
     fireEvent.click(childCard!);
@@ -140,20 +153,21 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productNested} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productNested} {...defaultProps} />);
 
-    const expandButton = screen.getByRole('button');
+    const expandButton = screen.getByTestId('ExpandMoreIcon');
     expect(expandButton).toBeInTheDocument();
   });
 
-  it('does not show expand button for children without sub-children', () => {
+  it('does not show expand icon for children without sub-children', () => {
     const productNoNesting = {
       children: [{ itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', children: [] }],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productNoNesting} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productNoNesting} {...defaultProps} />);
 
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ExpandMoreIcon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ExpandLessIcon')).not.toBeInTheDocument();
   });
 
   it('expands to show grandchildren when expand clicked', () => {
@@ -167,18 +181,15 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productNested} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productNested} {...defaultProps} />);
 
-    // Check that collapse is hidden initially
     const deepItemElements = screen.getAllByText(/Deep Item/i);
     const collapseParent = deepItemElements[0].closest('.MuiCollapse-root');
     expect(collapseParent).toHaveClass('MuiCollapse-hidden');
 
-    // Click expand
-    const expandButton = screen.getByRole('button');
-    fireEvent.click(expandButton);
+    const expandIcon = screen.getByTestId('ExpandMoreIcon');
+    fireEvent.click(expandIcon.closest('button')!);
 
-    // Grandchild now visible (collapse no longer hidden)
     expect(collapseParent).not.toHaveClass('MuiCollapse-hidden');
   });
 
@@ -193,18 +204,17 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productNested} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productNested} {...defaultProps} />);
 
-    const expandButton = screen.getByRole('button');
+    const expandIcon = screen.getByTestId('ExpandMoreIcon');
+    fireEvent.click(expandIcon.closest('button')!);
 
-    // Expand
-    fireEvent.click(expandButton);
     const deepItemElements = screen.getAllByText(/Deep Item/i);
     const collapseParent = deepItemElements[0].closest('.MuiCollapse-root');
     expect(collapseParent).not.toHaveClass('MuiCollapse-hidden');
 
-    // Collapse
-    fireEvent.click(expandButton);
+    const collapseIcon = screen.getByTestId('ExpandLessIcon');
+    fireEvent.click(collapseIcon.closest('button')!);
     await waitFor(() => {
       expect(collapseParent).toHaveClass('MuiCollapse-hidden');
     });
@@ -221,10 +231,10 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productNested} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productNested} {...defaultProps} />);
 
-    const expandButton = screen.getByRole('button');
-    fireEvent.click(expandButton);
+    const expandIcon = screen.getByTestId('ExpandMoreIcon');
+    fireEvent.click(expandIcon.closest('button')!);
 
     expect(mockNavigate).not.toHaveBeenCalled();
   });
@@ -252,11 +262,10 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={deepNested} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={deepNested} {...defaultProps} />);
 
-    // Expand all levels
-    const buttons = screen.getAllByRole('button');
-    buttons.forEach((btn) => fireEvent.click(btn));
+    const expandIcons = screen.getAllByTestId('ExpandMoreIcon');
+    expandIcons.forEach((icon) => fireEvent.click(icon.closest('button')!));
 
     const level4Elements = screen.getAllByText(/Level 4/i);
     expect(level4Elements.length).toBeGreaterThan(0);
@@ -273,12 +282,11 @@ describe('ChildrenTree', () => {
       ],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productNested} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productNested} {...defaultProps} />);
 
-    const expandButton = screen.getByRole('button');
-    fireEvent.click(expandButton);
+    const expandIcon = screen.getByTestId('ExpandMoreIcon');
+    fireEvent.click(expandIcon.closest('button')!);
 
-    // Level 2 card should have left margin - use getAllByText since text appears twice
     const level2Elements = screen.getAllByText(/Level 2/i);
     const level2Card = level2Elements[0].closest('.MuiCard-root');
     expect(level2Card).toHaveStyle({ marginLeft: expect.any(String) });
@@ -289,7 +297,7 @@ describe('ChildrenTree', () => {
       children: [{ itemId: 'child-1', name: 'Item Name Only', actualName: undefined }],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
 
     const nameElements = screen.getAllByText(/Item Name Only/i);
     expect(nameElements.length).toBeGreaterThan(0);
@@ -300,8 +308,123 @@ describe('ChildrenTree', () => {
       children: [{ itemId: 'child-1', name: 'Item 1', actualName: 'Child 1' }],
     };
 
-    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} teamId={teamId} />);
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
 
     expect(screen.getByText(/Item 1/i)).toBeInTheDocument();
+  });
+
+  // --- Inline status editing tests ---
+
+  it('renders status buttons for each child item', () => {
+    const productWithChildren = {
+      children: [
+        { itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', status: 'To Review' },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    expect(screen.getByLabelText('Set Item 1 status to To Review')).toBeInTheDocument();
+    expect(screen.getByLabelText('Set Item 1 status to Completed')).toBeInTheDocument();
+    expect(screen.getByLabelText('Set Item 1 status to Damaged')).toBeInTheDocument();
+    expect(screen.getByLabelText('Set Item 1 status to Shortages')).toBeInTheDocument();
+  });
+
+  it('highlights the current status button as contained', () => {
+    const productWithChildren = {
+      children: [
+        { itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', status: 'Completed' },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    const completedBtn = screen.getByLabelText('Set Item 1 status to Completed');
+    expect(completedBtn).toHaveClass('MuiButton-contained');
+
+    const toReviewBtn = screen.getByLabelText('Set Item 1 status to To Review');
+    expect(toReviewBtn).toHaveClass('MuiButton-outlined');
+  });
+
+  it('calls onChildEditsChange when status button is clicked', () => {
+    const productWithChildren = {
+      children: [
+        { itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', status: 'To Review' },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    const completedBtn = screen.getByLabelText('Set Item 1 status to Completed');
+    fireEvent.click(completedBtn);
+
+    expect(defaultProps.onChildEditsChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'child-1': expect.objectContaining({ status: 'Completed' }),
+      }),
+    );
+  });
+
+  it('does not navigate when status button is clicked', () => {
+    const productWithChildren = {
+      children: [
+        { itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', status: 'To Review' },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    const completedBtn = screen.getByLabelText('Set Item 1 status to Completed');
+    fireEvent.click(completedBtn);
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('shows DamageReportsSection when child status is Damaged', () => {
+    const productWithChildren = {
+      children: [
+        { itemId: 'child-1', name: 'Item 1', actualName: 'Child 1', status: 'Damaged' },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    expect(screen.getByText('Damage Reports')).toBeInTheDocument();
+  });
+
+  it('shows OH Quantity field when child status is Shortages for items', () => {
+    const productWithChildren = {
+      children: [
+        {
+          itemId: 'child-1',
+          name: 'Item 1',
+          actualName: 'Child 1',
+          status: 'Shortages',
+          isKit: false,
+        },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    expect(screen.getByLabelText('OH Quantity')).toBeInTheDocument();
+  });
+
+  it('does not show OH Quantity for child kits with Shortages status', () => {
+    const productWithChildren = {
+      children: [
+        {
+          itemId: 'child-1',
+          name: 'Sub Kit',
+          actualName: 'Kit 1',
+          status: 'Shortages',
+          isKit: true,
+        },
+      ],
+    };
+
+    renderWithRouter(<ChildrenTree editedProduct={productWithChildren} {...defaultProps} />);
+
+    expect(screen.queryByLabelText('OH Quantity')).not.toBeInTheDocument();
   });
 });
