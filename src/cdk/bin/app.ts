@@ -68,7 +68,7 @@ const envCallbackUrls = fromEnvList(process.env.COGNITO_CALLBACK_URLS ?? '');
 const envLogoutUrls = fromEnvList(process.env.COGNITO_LOGOUT_URLS ?? '');
 
 // ---------------- SES config ----------------
-const sesFromAddress = 'cicotoste.d@northeastern.edu';
+const sesFromAddress = process.env.SES_FROM_ADDRESS || 'cdpyle1@gmail.com';
 const sesIdentityArn = `arn:aws:ses:${region}:${account}:identity/${sesFromAddress}`;
 
 // ---------------- Stacks ----------------

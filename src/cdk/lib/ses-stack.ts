@@ -31,7 +31,7 @@ export class SesStack extends cdk.Stack {
       fromLocalPart = 'noreply',
       createFeedbackTopic = true,
       stage = 'dev',
-      emailFrom = 'cicotoste.d@northeastern.edu',
+      emailFrom = 'cdpyle1@gmail.com',
     } = props;
 
     let identity: ses.EmailIdentity;

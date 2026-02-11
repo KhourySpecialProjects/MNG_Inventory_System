@@ -13,7 +13,7 @@ const envSchema = z.object({
   COGNITO_USER_POOL_ID: z.string().optional(),
   COGNITO_CLIENT_ID: z.string().optional(),
 
-  SES_FROM_ADDRESS: z.string().default('cicotoste.d@northeastern.edu'),
+  SES_FROM_ADDRESS: z.string().default('cdpyle1@gmail.com'),
   SES_CONFIG_SET: z.string().optional(),
 
   ALLOWED_ORIGINS: z.string().optional(),

@@ -11,7 +11,7 @@ export const sendInviteEmail = async (params: {
   const config = loadConfig();
   const URL_signin = config.WEB_URL;
 
-  const FROM = process.env.SES_FROM_ADDRESS || 'cicotoste.d@northeastern.edu';
+  const FROM = process.env.SES_FROM_ADDRESS || 'cdpyle1@gmail.com';
   const CONFIG_SET = process.env.SES_CONFIG_SET;
 
   const subject = 'Official Invitation – MNG Inventory Access';
