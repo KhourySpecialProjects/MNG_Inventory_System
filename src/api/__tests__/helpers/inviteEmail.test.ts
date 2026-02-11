@@ -112,7 +112,7 @@ describe('inviteEmail', () => {
       await sendInviteEmail(params);
 
       const command = mockSesSend.mock.calls[0][0] as SendEmailCommand;
-      expect(command.input.FromEmailAddress).toBe('cicotoste.d@northeastern.edu');
+      expect(command.input.FromEmailAddress).toBe('cdpyle1@gmail.com');
     });
 
     it('uses custom FROM address when SES_FROM_ADDRESS is set', async () => {
