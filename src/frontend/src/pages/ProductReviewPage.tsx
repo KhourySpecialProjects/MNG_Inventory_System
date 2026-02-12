@@ -5,7 +5,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Grid, Snackbar } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, Snackbar } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
@@ -47,6 +47,11 @@ export default function ProductReviewPage() {
 
   const [childEdits, setChildEdits] = useState<Record<string, ChildEdits>>({});
   const prevStatusRef = useRef<string | undefined>(undefined);
+
+  // Unsaved changes tracking
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   // Cascade "Completed" to all "To Review" children when parent status changes
   const cascadeCompletedToChildren = useCallback(
@@ -175,6 +180,46 @@ export default function ProductReviewPage() {
     })();
   }, [teamId, itemId, isCreateMode, parentIdFromState]);
 
+  // Track unsaved changes
+  useEffect(() => {
+    if (!isEditMode || !product || !editedProduct) {
+      setHasUnsavedChanges(false);
+      return;
+    }
+
+    // Compare original product with edited product
+    const hasChanges = 
+      JSON.stringify(product) !== JSON.stringify(editedProduct) ||
+      selectedImageFile !== null ||
+      JSON.stringify(product.damageReports || []) !== JSON.stringify(damageReports) ||
+      Object.keys(childEdits).length > 0;
+
+    setHasUnsavedChanges(hasChanges);
+  }, [product, editedProduct, selectedImageFile, damageReports, childEdits, isEditMode]);
+
+  // Handle back button with unsaved changes check
+  const handleBackClick = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedDialog(true);
+      setPendingNavigation(() => () => navigate(-1));
+    } else {
+      navigate(-1);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setShowUnsavedDialog(false);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
+  };
+
+  const handleCancelNavigation = () => {
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  };
+
   if (loading) {
     return (
       <Box
@@ -280,7 +325,7 @@ export default function ProductReviewPage() {
           >
             <Button
               startIcon={<ArrowBackIcon />}
-              onClick={() => navigate(-1)}
+              onClick={handleBackClick}
               sx={{
                 textTransform: 'none',
                 color: theme.palette.text.secondary,
@@ -315,7 +360,7 @@ export default function ProductReviewPage() {
             <Box sx={{ display: { xs: 'block', sm: 'none' }, mb: 3 }}>
               <Button
                 startIcon={<ArrowBackIcon />}
-                onClick={() => navigate(-1)}
+                onClick={handleBackClick}
                 sx={{
                   textTransform: 'none',
                   color: theme.palette.text.secondary,
@@ -409,6 +454,27 @@ export default function ProductReviewPage() {
           </Snackbar>
         </Box>
       </Box>
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <Dialog
+        open={showUnsavedDialog}
+        onClose={handleCancelNavigation}
+      >
+        <DialogTitle>Unsaved Changes</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelNavigation} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDiscardChanges} color="error" variant="contained">
+            Discard Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
 
