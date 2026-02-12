@@ -49,9 +49,7 @@ export default function ProductReviewPage() {
   const prevStatusRef = useRef<string | undefined>(undefined);
 
   // Unsaved changes tracking
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
 
   // Cascade "Completed" to all "To Review" children when parent status changes
   const cascadeCompletedToChildren = useCallback(
@@ -180,11 +178,10 @@ export default function ProductReviewPage() {
     })();
   }, [teamId, itemId, isCreateMode, parentIdFromState]);
 
-  // Track unsaved changes
-  useEffect(() => {
+  // Check for unsaved changes (only when needed, not on every render)
+  const checkForUnsavedChanges = (): boolean => {
     if (!isEditMode || !product || !editedProduct) {
-      setHasUnsavedChanges(false);
-      return;
+      return false;
     }
 
     // Compare original product with edited product
@@ -194,14 +191,13 @@ export default function ProductReviewPage() {
       JSON.stringify(product.damageReports || []) !== JSON.stringify(damageReports) ||
       Object.keys(childEdits).length > 0;
 
-    setHasUnsavedChanges(hasChanges);
-  }, [product, editedProduct, selectedImageFile, damageReports, childEdits, isEditMode]);
+    return hasChanges;
+  };
 
   // Handle back button with unsaved changes check
   const handleBackClick = () => {
-    if (hasUnsavedChanges) {
+    if (checkForUnsavedChanges()) {
       setShowUnsavedDialog(true);
-      setPendingNavigation(() => () => navigate(-1));
     } else {
       navigate(-1);
     }
@@ -209,15 +205,11 @@ export default function ProductReviewPage() {
 
   const handleDiscardChanges = () => {
     setShowUnsavedDialog(false);
-    if (pendingNavigation) {
-      pendingNavigation();
-      setPendingNavigation(null);
-    }
+    navigate(-1);
   };
 
   const handleCancelNavigation = () => {
     setShowUnsavedDialog(false);
-    setPendingNavigation(null);
   };
 
   if (loading) {
