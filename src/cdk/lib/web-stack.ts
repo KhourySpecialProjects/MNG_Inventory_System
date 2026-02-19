@@ -6,6 +6,9 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as targets from 'aws-cdk-lib/aws-route53-targets';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
 export interface WebStackProps extends cdk.StackProps {
   stage: { name: string };
@@ -13,6 +16,12 @@ export interface WebStackProps extends cdk.StackProps {
   frontendBuildPath?: string;
   apiDomainName?: string;
   apiPaths?: string[];
+  /** Route 53 hosted zone (enables custom domain for CloudFront) */
+  hostedZone?: route53.IHostedZone;
+  /** ACM certificate for the custom domain (required if hostedZone is set) */
+  certificate?: acm.ICertificate;
+  /** Custom domain name to use for the site */
+  siteDomain?: string;
 }
 
 export class WebStack extends cdk.Stack {
@@ -25,6 +34,7 @@ export class WebStack extends cdk.Stack {
 
     const stageName = props.stage.name;
     const serviceName = props.serviceName ?? 'mng-web';
+    const useCustomDomain = !!(props.hostedZone && props.certificate && props.siteDomain);
 
     // ===== S3 Bucket =====
     this.bucket = new s3.Bucket(this, 'WebBucket', {
@@ -102,7 +112,23 @@ export class WebStack extends cdk.Stack {
           ttl: cdk.Duration.minutes(1),
         },
       ],
+      // Custom domain config — only applied when domain infra is provided
+      ...(useCustomDomain
+        ? {
+            domainNames: [props.siteDomain!],
+            certificate: props.certificate!,
+          }
+        : {}),
     });
+
+    // ===== Route 53 Alias Record =====
+    if (useCustomDomain) {
+      new route53.ARecord(this, 'SiteAlias', {
+        zone: props.hostedZone!,
+        target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
+        recordName: props.siteDomain!,
+      });
+    }
 
     // ===== Deploy Frontend =====
     if (props.frontendBuildPath) {
@@ -121,13 +147,18 @@ export class WebStack extends cdk.Stack {
     }
 
     // ===== Outputs =====
-    new cdk.CfnOutput(this, 'SiteUrl', {
-      value: `https://${this.distribution.distributionDomainName}`,
+    const siteUrl = useCustomDomain
+      ? `https://${props.siteDomain}`
+      : `https://${this.distribution.distributionDomainName}`;
+
+    new cdk.CfnOutput(this, 'SiteUrl', { value: siteUrl });
+    new cdk.CfnOutput(this, 'DistributionDomain', {
+      value: this.distribution.distributionDomainName,
     });
     new cdk.CfnOutput(this, 'ApiDomainName', {
       value: apiDomainName ?? 'No API domain provided',
     });
 
-    this.webUrl = `https://${this.distribution.distributionDomainName}`;
+    this.webUrl = siteUrl;
   }
 }
