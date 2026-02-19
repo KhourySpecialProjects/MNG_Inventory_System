@@ -151,6 +151,8 @@ GSIs: GSI_WorkspaceByName, GSI_UsersByUid, GSI_UsersByUsername, GSI_RolesByName,
 - `SES_FROM_ADDRESS` - Email sender
 - `ALLOWED_ORIGINS` - CORS origins
 - `EXPORT_2404_FUNCTION_NAME`, `EXPORT_INVENTORY_FUNCTION_NAME` - Export Lambdas
+- `SITE_DOMAIN` - Custom domain (e.g. "myapp.com"). Enables Route 53, ACM cert, SES domain identity.
+- `WEB_URL` - Auto-set to custom domain URL or CloudFront URL
 
 ## Important File Locations
 
@@ -169,8 +171,23 @@ GSIs: GSI_WorkspaceByName, GSI_UsersByUid, GSI_UsersByUsername, GSI_RolesByName,
 
 ## Deployment Stages
 
-- `dev` - Development environment
+- `dev` - Development environment (no custom domain, SES sandbox mode)
 - `beta` - Staging environment
 - `prod` - Production (requires env var gate)
 
 Region: us-east-1
+
+## Custom Domain Setup
+
+To enable a custom domain, set `SITE_DOMAIN=yourdomain.com` (or pass `-c domain=yourdomain.com` to CDK).
+This creates a DnsStack with Route 53 hosted zone + ACM certificate, wires CloudFront to the domain,
+and sets up SES domain identity with DKIM + DMARC.
+
+After first deploy:
+1. Copy the NS records from the DnsStack output
+2. Update your registrar (e.g. Porkbun) nameservers to those NS records
+3. Wait for DNS propagation
+4. Request SES production access in the AWS console
+
+Dev stages (`dev`, `local`, `beta`) always use CloudFront default domain + SES sandbox mode,
+regardless of SITE_DOMAIN.

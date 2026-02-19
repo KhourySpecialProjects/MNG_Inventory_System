@@ -4,6 +4,7 @@ import * as apigwv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { resolveStage } from '../stage';
 import { AuthStack } from '../lib/auth-stack';
+import { DnsStack } from '../lib/dns-stack';
 import { DynamoStack } from '../lib/dynamo-stack';
 import { ApiStack } from '../lib/api-stack';
 import { WebStack } from '../lib/web-stack';
@@ -28,16 +29,29 @@ const region = process.env.CDK_DEFAULT_REGION ?? process.env.AWS_REGION ?? 'us-e
 
 console.log(`[App] synthesizing for stage=${cfg.name} account=${account} region=${region}`);
 
+// ---------------- Domain config ----------------
+// Set SITE_DOMAIN to enable custom domain (e.g. "myapp.com").
+// When unset, CloudFront uses its default *.cloudfront.net domain
+// and SES runs in sandbox (verified-email) mode.
+const siteDomain = process.env.SITE_DOMAIN ?? '';
+
+const isDevLike =
+  cfg.name.toLowerCase().includes('dev') ||
+  cfg.name.toLowerCase().includes('local') ||
+  cfg.name.toLowerCase().includes('beta');
+
+const useCustomDomain = !!(siteDomain && !isDevLike);
+
 /**
  * We are going to **force** a concrete list of allowed frontend origins.
  * This is CRITICAL for credentialed CORS.
  *
  * These must match where the browser will actually run:
- *  - CloudFront distro URL
+ *  - CloudFront distro URL (or custom domain)
  *  - local dev URLs
  */
 const canonicalAllowedOrigins = [
-  'https://d2cktegyq4qcfk.cloudfront.net',
+  ...(useCustomDomain ? [`https://${siteDomain}`] : ['https://d2cktegyq4qcfk.cloudfront.net']),
   'http://localhost:5173',
   'http://127.0.0.1:5173',
 ];
@@ -68,10 +82,34 @@ const envCallbackUrls = fromEnvList(process.env.COGNITO_CALLBACK_URLS ?? '');
 const envLogoutUrls = fromEnvList(process.env.COGNITO_LOGOUT_URLS ?? '');
 
 // ---------------- SES config ----------------
-const sesFromAddress = process.env.SES_FROM_ADDRESS || 'cdpyle1@gmail.com';
-const sesIdentityArn = `arn:aws:ses:${region}:${account}:identity/${sesFromAddress}`;
+const sesFromAddress = process.env.SES_FROM_ADDRESS;
+
+if (!useCustomDomain && !sesFromAddress) {
+  throw new Error(
+    'SES_FROM_ADDRESS environment variable is required for dev/sandbox deployments.\n' +
+    'Set it to an email address verified in the AWS SES console.\n' +
+    'Example: SES_FROM_ADDRESS=you@example.com npm run deploy:dev\n' +
+    'See deployment.md for setup instructions.',
+  );
+}
+
+const sesIdentityArn = useCustomDomain
+  ? `arn:aws:ses:${region}:${account}:identity/${siteDomain}`
+  : `arn:aws:ses:${region}:${account}:identity/${sesFromAddress}`;
 
 // ---------------- Stacks ----------------
+
+// DNS stack — only created when a custom domain is configured.
+// After first deploy, you must update your registrar's nameservers
+// to the NS records output by this stack.
+let dns: DnsStack | undefined;
+if (useCustomDomain) {
+  dns = new DnsStack(app, `MngDns-${cfg.name}`, {
+    env: { account, region },
+    rootDomain: siteDomain,
+    stage: cfg.name,
+  });
+}
 
 // Auth / Cognito stack
 const auth = new AuthStack(app, `MngAuth-${cfg.name}`, {
@@ -82,8 +120,9 @@ const auth = new AuthStack(app, `MngAuth-${cfg.name}`, {
   callbackUrls: envCallbackUrls.length ? envCallbackUrls : undefined,
   logoutUrls: envLogoutUrls.length ? envLogoutUrls : undefined,
 
-  sesFromAddress,
+  sesFromAddress: useCustomDomain ? `noreply@${siteDomain}` : sesFromAddress!,
   sesIdentityArn,
+  sesVerifiedDomain: useCustomDomain ? siteDomain : undefined,
 
   // MFA mode ("ON" means enforce MFA for all users)
   mfaMode: 'ON',
@@ -165,24 +204,23 @@ api.apiFn.addToRolePolicy(
   }),
 );
 
-// SES stack for custom invite / transactional email
-const isDevLike =
-  cfg.name.toLowerCase().includes('dev') ||
-  cfg.name.toLowerCase().includes('local') ||
-  cfg.name.toLowerCase().includes('beta');
-
+// SES stack — must deploy before Auth so the domain identity is verified
+// when Cognito tries to use it.
 const ses = new SesStack(app, `MngSes-${cfg.name}`, {
   env: { account, region },
   stage: cfg.name,
-  // Prevent Route53 lookup entirely for dev/beta/local stages
-  rootDomain: isDevLike ? '' : 'example.com',
+  hostedZone: dns?.hostedZone,
+  rootDomain: useCustomDomain ? siteDomain : undefined,
   fromLocalPart: 'noreply',
   createFeedbackTopic: true,
   emailFrom: sesFromAddress,
 });
 
-// Give Lambda permission to send via SES + pass SES config
-api.apiFn.role?.addManagedPolicy(ses.node.tryFindChild('SesSendPolicy') as iam.ManagedPolicy);
+// Auth must wait for SES domain identity to be verified
+auth.addDependency(ses);
+
+// Give Lambda permission to send via SES
+api.apiFn.role?.addManagedPolicy(ses.sendPolicy);
 
 api.apiFn.addEnvironment('SES_FROM_ADDRESS', ses.fromAddress);
 if (ses.configurationSetName) {
@@ -213,11 +251,24 @@ const web = new WebStack(app, `MngWeb-${cfg.name}`, {
   frontendBuildPath: '../../frontend/dist',
   apiDomainName,
   apiPaths: ['/trpc/*', '/health', '/hello'],
+  // Custom domain config — only wired when domain infra exists
+  hostedZone: dns?.hostedZone,
+  certificate: dns?.certificate,
+  siteDomain: useCustomDomain ? siteDomain : undefined,
 });
 
-// pass web URL to API for email links, etc.
-const webUrl = 'https://d305dnjd1krpyr.cloudfront.net';
-api.apiFn.addEnvironment('WEB_URL', webUrl);
+// Pass web URL to API for email links, etc.
+// When using a custom domain we know the URL at synth time, so no cross-stack ref needed.
+// In dev mode, the CloudFront domain isn't known until deploy, which creates a circular
+// dependency (Web → Api for the API origin, Api → Web for the URL). Instead we hardcode
+// the known dev CloudFront URL or let the Lambda fall back to APP_SIGNIN_URL.
+if (useCustomDomain) {
+  api.apiFn.addEnvironment('WEB_URL', `https://${siteDomain}`);
+} else {
+  // For dev: use the same origin we already have in canonicalAllowedOrigins.
+  // This is the CloudFront URL you've been using — update it after first deploy if it changes.
+  api.apiFn.addEnvironment('WEB_URL', canonicalAllowedOrigins[0]);
+}
 
 // Create uploads bucket
 const uploads = new S3UploadsStack(app, `MngS3-${cfg.name}`, {
@@ -277,8 +328,9 @@ api.apiFn.addEnvironment('S3_BUCKET_NAME', uploads.bucket.bucketName);
 api.apiFn.addEnvironment('S3_KMS_KEY_ARN', uploads.key.keyArn);
 
 // Tag stacks if you have tagging config
+const allStacks = [auth, dynamo, api, web, uploads, ses, exportLambdas, ...(dns ? [dns] : [])];
 if (cfg.tags) {
-  [auth, dynamo, api, web, uploads, ses, exportLambdas].forEach((stack) => {
+  allStacks.forEach((stack) => {
     Object.entries(cfg.tags!).forEach(([k, v]) => {
       cdk.Tags.of(stack).add(k, v);
     });
