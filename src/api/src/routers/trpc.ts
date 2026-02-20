@@ -115,6 +115,10 @@ const isAuthed = t.middleware(async ({ ctx, next }) => {
       'reports.view',
       'reports.export',
       'reports.delete',
+      'template.create',
+      'template.view',
+      'template.update',
+      'template.delete',
     ];
 
     return next({
