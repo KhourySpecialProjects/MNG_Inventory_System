@@ -2,7 +2,7 @@
  * Template detail page showing the template's name, description, and current item list.
  * Allows adding items from any team via AddItemsDialog and removing individual items.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -35,6 +35,7 @@ interface TemplateItem {
   name: string;
   description?: string;
   isKit?: boolean;
+  parent?: string | null;
   nsn?: string;
   endItemNiin?: string;
   liin?: string;
@@ -117,7 +118,121 @@ export default function TemplateDetailPage() {
     }
   }
 
+  async function handleRemoveKit(kit: TemplateItem) {
+    if (!templateId) return;
+    const children = items.filter((i) => i.parent === kit.templateItemId);
+    try {
+      await Promise.all(
+        children.map((c) => removeItemFromTemplate(templateId, c.templateItemId)),
+      );
+      await removeItemFromTemplate(templateId, kit.templateItemId);
+      setItems((prev) =>
+        prev.filter(
+          (i) => i.templateItemId !== kit.templateItemId && i.parent !== kit.templateItemId,
+        ),
+      );
+      const childCount = children.length;
+      showSnackbar(
+        `"${kit.name}" and ${childCount} child item${childCount !== 1 ? 's' : ''} removed`,
+        'success',
+      );
+    } catch (err) {
+      showSnackbar(err instanceof Error ? err.message : 'Failed to remove kit', 'error');
+    }
+  }
+
+  type ItemRow = { item: TemplateItem; isChild: boolean; addSpacerAbove: boolean };
+
+  // Build sorted row arrays for each card: kits (with children) and standalone items.
+  const { kitRows, standaloneRows } = useMemo(() => {
+    const childMap: Record<string, TemplateItem[]> = {};
+    for (const item of items) {
+      if (item.parent) {
+        if (!childMap[item.parent]) childMap[item.parent] = [];
+        childMap[item.parent].push(item);
+      }
+    }
+    for (const id of Object.keys(childMap)) {
+      childMap[id].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    const kits = items
+      .filter((i) => i.isKit && !i.parent)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const standalones = items
+      .filter((i) => !i.isKit && !i.parent)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const kitRowList: ItemRow[] = [];
+    kits.forEach((kit, i) => {
+      kitRowList.push({ item: kit, isChild: false, addSpacerAbove: i > 0 });
+      for (const child of childMap[kit.templateItemId] ?? []) {
+        kitRowList.push({ item: child, isChild: true, addSpacerAbove: false });
+      }
+    });
+
+    const standaloneRowList: ItemRow[] = standalones.map((item, i) => ({
+      item,
+      isChild: false,
+      addSpacerAbove: i > 0,
+    }));
+
+    return { kitRows: kitRowList, standaloneRows: standaloneRowList };
+  }, [items]);
+
   const borderColor = alpha(theme.palette.text.primary, 0.1);
+
+  function renderItemRows(rows: ItemRow[]) {
+    return rows.map(({ item, isChild, addSpacerAbove }, index) => {
+      if (!item) return null;
+      const isKit = item.isKit && !item.parent;
+      return (
+        <Box key={item.templateItemId}>
+          {index > 0 && <Divider sx={addSpacerAbove ? { my: 0.75 } : undefined} />}
+          <ListItem
+            secondaryAction={
+              <Tooltip title={isKit ? 'Remove kit and child items' : 'Remove from template'}>
+                <IconButton
+                  edge="end"
+                  size="small"
+                  onClick={() =>
+                    isKit
+                      ? void handleRemoveKit(item)
+                      : void handleRemoveItem(item.templateItemId, item.name)
+                  }
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    transition: 'color 0.2s ease',
+                    '&:hover': { color: 'error.main' },
+                  }}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            }
+            sx={{
+              pl: isChild ? 6 : 2,
+              bgcolor: isChild ? alpha(theme.palette.text.primary, 0.02) : 'transparent',
+            }}
+          >
+            <ListItemText
+              primary={
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <Typography variant="body1" fontWeight={isKit ? 700 : 600}>
+                    {item.name}
+                  </Typography>
+                  {isKit && (
+                    <Chip label="Kit" size="small" color="warning" variant="outlined" />
+                  )}
+                </Stack>
+              }
+              secondary={item.nsn ? `NSN: ${item.nsn}` : item.description || undefined}
+            />
+          </ListItem>
+        </Box>
+      );
+    });
+  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
@@ -194,57 +309,74 @@ export default function TemplateDetailPage() {
           </Typography>
         )}
 
-        {/* Items list */}
-        {!loading && !error && items.length > 0 && (
+        {/* Kits card */}
+        {!loading && !error && kitRows.length > 0 && (
           <Box
             sx={{
               border: `1px solid ${borderColor}`,
               borderRadius: 3,
               bgcolor: theme.palette.background.paper,
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+              mb: 3,
             }}
           >
-            <List disablePadding>
-              {items.map((item, index) => (
-                <Box key={item.templateItemId}>
-                  {index > 0 && <Divider />}
-                  <ListItem
-                    secondaryAction={
-                      <Tooltip title="Remove from template">
-                        <IconButton
-                          edge="end"
-                          size="small"
-                          onClick={() => void handleRemoveItem(item.templateItemId, item.name)}
-                          sx={{
-                            color: theme.palette.text.secondary,
-                            transition: 'color 0.2s ease',
-                            '&:hover': { color: 'error.main' },
-                          }}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    }
-                  >
-                    <ListItemText
-                      primary={
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="body1" fontWeight={600}>
-                            {item.name}
-                          </Typography>
-                          {item.isKit && (
-                            <Chip label="Kit" size="small" color="warning" variant="outlined" />
-                          )}
-                        </Stack>
-                      }
-                      secondary={
-                        item.nsn ? `NSN: ${item.nsn}` : item.description || undefined
-                      }
-                    />
-                  </ListItem>
-                </Box>
-              ))}
-            </List>
+            <Box
+              sx={{
+                px: 2,
+                py: 0.75,
+                bgcolor: alpha(theme.palette.text.primary, 0.03),
+                borderBottom: `1px solid ${borderColor}`,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: theme.palette.text.secondary,
+                }}
+              >
+                Kits
+              </Typography>
+            </Box>
+            <List disablePadding>{renderItemRows(kitRows)}</List>
+          </Box>
+        )}
+
+        {/* Standalone items card */}
+        {!loading && !error && standaloneRows.length > 0 && (
+          <Box
+            sx={{
+              border: `1px solid ${borderColor}`,
+              borderRadius: 3,
+              bgcolor: theme.palette.background.paper,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+            }}
+          >
+            <Box
+              sx={{
+                px: 2,
+                py: 0.75,
+                bgcolor: alpha(theme.palette.text.primary, 0.03),
+                borderBottom: `1px solid ${borderColor}`,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: theme.palette.text.secondary,
+                }}
+              >
+                Items
+              </Typography>
+            </Box>
+            <List disablePadding>{renderItemRows(standaloneRows)}</List>
           </Box>
         )}
       </Container>
@@ -252,6 +384,7 @@ export default function TemplateDetailPage() {
       <AddItemsDialog
         open={addItemsOpen}
         templateId={templateId ?? ''}
+        templateItems={items}
         onClose={() => setAddItemsOpen(false)}
         onSuccess={(count) => {
           showSnackbar(`${count} item${count !== 1 ? 's' : ''} added`, 'success');

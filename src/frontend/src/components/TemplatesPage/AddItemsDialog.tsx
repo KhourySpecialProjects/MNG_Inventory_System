@@ -42,6 +42,7 @@ interface Item {
   actualName?: string;
   description?: string;
   isKit?: boolean;
+  parent?: string | null;
   nsn?: string;
   liin?: string;
   endItemNiin?: string;
@@ -50,6 +51,7 @@ interface Item {
 interface AddItemsDialogProps {
   open: boolean;
   templateId: string;
+  templateItems: { nsn?: string; name: string }[];
   onClose: () => void;
   onSuccess: (count: number) => void;
 }
@@ -57,6 +59,7 @@ interface AddItemsDialogProps {
 export default function AddItemsDialog({
   open,
   templateId,
+  templateItems,
   onClose,
   onSuccess,
 }: AddItemsDialogProps) {
@@ -139,28 +142,71 @@ export default function AddItemsDialog({
   );
 
   async function handleConfirm() {
-    const toAdd = items.filter((item) => selected.has(item.itemId));
+    // Exclude a selected child only when its parent kit is also selected (it will be auto-added).
+    // A child selected without its parent kit is included and added as a standalone item.
+    const toAdd = items.filter(
+      (item) => selected.has(item.itemId) && !(item.parent && selected.has(item.parent)),
+    );
     if (toAdd.length === 0) return;
 
+    // Detect duplicates: match by NSN (when both have one) or by name
+    const duplicates = toAdd.filter((item) =>
+      templateItems.some(
+        (t) => (item.nsn && t.nsn && item.nsn === t.nsn) || item.name === t.name,
+      ),
+    );
+    const toAddFiltered = toAdd.filter((item) => !duplicates.includes(item));
+
+    if (duplicates.length > 0) {
+      const names = duplicates.map((d) => d.name).join(', ');
+      setAddError(`Already in template: ${names}`);
+    } else {
+      setAddError(null);
+    }
+
+    if (toAddFiltered.length === 0) return;
+
     setAdding(true);
-    setAddError(null);
+    let totalAdded = 0;
     try {
-      await Promise.all(
-        toAdd.map((item) =>
-          addItemToTemplate(templateId, {
-            name: item.name,
-            actualName: item.actualName,
-            description: item.description,
-            isKit: item.isKit,
-            parent: null,
-            nsn: item.nsn,
-            liin: item.liin,
-            endItemNiin: item.endItemNiin,
-          }),
-        ),
-      );
-      handleClose();
-      onSuccess(toAdd.length);
+      for (const item of toAddFiltered) {
+        const result = await addItemToTemplate(templateId, {
+          name: item.name,
+          actualName: item.actualName,
+          description: item.description,
+          isKit: item.isKit,
+          parent: null,
+          nsn: item.nsn,
+          liin: item.liin,
+          endItemNiin: item.endItemNiin,
+        });
+        totalAdded++;
+
+        if (item.isKit) {
+          const newTemplateItemId = (result as { templateItemId: string }).templateItemId;
+          const children = items.filter((i) => i.parent === item.itemId);
+          await Promise.all(
+            children.map((child) =>
+              addItemToTemplate(templateId, {
+                name: child.name,
+                actualName: child.actualName,
+                description: child.description,
+                isKit: child.isKit,
+                parent: newTemplateItemId,
+                nsn: child.nsn,
+                liin: child.liin,
+                endItemNiin: child.endItemNiin,
+              }),
+            ),
+          );
+          totalAdded += children.length;
+        }
+      }
+      // Only auto-close when everything succeeded with no duplicates to report
+      if (duplicates.length === 0) {
+        handleClose();
+      }
+      onSuccess(totalAdded);
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Failed to add items');
     } finally {
@@ -257,14 +303,14 @@ export default function AddItemsDialog({
           </>
         )}
 
+      </DialogContent>
+
+      <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
         {addError && (
-          <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+          <Typography color="error" variant="body2" sx={{ flex: '1 1 100%', px: 1 }}>
             {addError}
           </Typography>
         )}
-      </DialogContent>
-
-      <DialogActions>
         <Button onClick={handleClose} disabled={adding}>
           Cancel
         </Button>
