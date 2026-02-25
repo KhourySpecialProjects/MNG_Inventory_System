@@ -15,6 +15,8 @@ import AdminPage from './pages/AdminPage';
 import ThemeContextProvider from './ThemeContextProvider';
 import ToReviewPage from './pages/ToReviewPage';
 import ReviewedPage from './pages/ReviewedPage';
+import TemplatesPage from './pages/TemplatesPage';
+import TemplateDetailPage from './pages/TemplateDetailPage';
 
 export default function App() {
   return (
@@ -32,6 +34,8 @@ export default function App() {
           <Route path="/teams/to-review/:teamId" element={<ToReviewPage />} />
           <Route path="/teams/:teamId/items/:itemId" element={<ProductReviewPage />} />
           <Route path="/teams/reviewed/:teamId" element={<ReviewedPage />} />
+          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/templates/:templateId" element={<TemplateDetailPage />} />
         </Routes>
       </BrowserRouter>
     </ThemeContextProvider>
