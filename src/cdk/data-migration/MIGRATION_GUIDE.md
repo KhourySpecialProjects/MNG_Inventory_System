@@ -4,16 +4,16 @@ This guide explains how to use `scripts/migrate-teams-items.ts` to migrate team 
 
 ## What Gets Migrated
 
-| Data | Migrated? | Notes |
-|---|---|---|
-| Team metadata | Yes | `ownerId` rewritten to migration user |
-| Inventory items (including kits and kit children) | Yes | `createdBy` and `updateLog` rewritten to migration user |
-| Item images (S3) | Yes | Copied from source to destination bucket |
-| Team membership records | No | A new MEMBER record is created for the migration user per team |
-| User records | No | Users are managed via Cognito in the destination |
-| Role records | No | Roles are seeded automatically by CDK on deploy |
-| Profile images | No | Tied to user records |
-| Generated documents (PDFs/CSVs) | No | Can be regenerated via the export feature |
+| Data                                              | Migrated? | Notes                                                          |
+| ------------------------------------------------- | --------- | -------------------------------------------------------------- |
+| Team metadata                                     | Yes       | `ownerId` rewritten to migration user                          |
+| Inventory items (including kits and kit children) | Yes       | `createdBy` and `updateLog` rewritten to migration user        |
+| Item images (S3)                                  | Yes       | Copied from source to destination bucket                       |
+| Team membership records                           | No        | A new MEMBER record is created for the migration user per team |
+| User records                                      | No        | Users are managed via Cognito in the destination               |
+| Role records                                      | No        | Roles are seeded automatically by CDK on deploy                |
+| Profile images                                    | No        | Tied to user records                                           |
+| Generated documents (PDFs/CSVs)                   | No        | Can be regenerated via the export feature                      |
 
 ## Prerequisites
 
@@ -31,20 +31,20 @@ Open `scripts/migrate-teams-items.ts` and set the configuration variables at the
 const REGION = 'us-east-1';
 
 // DynamoDB tables
-const SOURCE_TABLE = 'mng-dev-data';        // Source table name
-const DEST_TABLE   = 'mng-prod-data';       // Destination table name
+const SOURCE_TABLE = 'mng-dev-data'; // Source table name
+const DEST_TABLE = 'mng-prod-data'; // Destination table name
 
 // S3 buckets
 const SOURCE_BUCKET = 'mng-dev-uploads-245120345540';
-const DEST_BUCKET   = 'mng-prod-uploads-245120345540';
+const DEST_BUCKET = 'mng-prod-uploads-245120345540';
 
 // Migration user (must already exist in destination Cognito)
-const MIGRATION_USER_SUB  = '...';  // Cognito sub (user ID)
-const MIGRATION_USER_NAME = '...';  // Display name
+const MIGRATION_USER_SUB = '...'; // Cognito sub (user ID)
+const MIGRATION_USER_NAME = '...'; // Display name
 
 // AWS CLI profiles
 const SOURCE_PROFILE = 'my_source_profile';
-const DEST_PROFILE   = 'my_dest_profile';
+const DEST_PROFILE = 'my_dest_profile';
 
 // Set to true for same-account, false for cross-account
 const SAME_ACCOUNT = true;
@@ -88,10 +88,11 @@ aws cloudformation describe-stacks \
 Always run a dry run first to verify what will be migrated:
 
 ```bash
-npx ts-node scripts/migrate-teams-items.ts --dry-run
+npx ts-node src/cdk/data-migration/migrate-teams-items.ts --dry-run
 ```
 
 This will:
+
 - Scan the source table and list all records found
 - Show how many teams, items, and member records will be created
 - Check for team name conflicts in the destination
@@ -101,10 +102,11 @@ This will:
 ### Step 2: Execute the Migration
 
 ```bash
-npx ts-node scripts/migrate-teams-items.ts
+npx ts-node src/cdk/data-migration/migrate-teams-items.ts
 ```
 
 The script will:
+
 1. Scan all records from the source DynamoDB table
 2. Filter to team metadata + item records only
 3. Check for team name conflicts in the destination (with a 5-second abort window)
@@ -131,8 +133,8 @@ This is the simpler case. Both stacks are in the same AWS account, just differen
 
 ```ts
 const SOURCE_PROFILE = 'mng_inventory';
-const DEST_PROFILE   = 'mng_inventory';  // Same profile
-const SAME_ACCOUNT   = true;
+const DEST_PROFILE = 'mng_inventory'; // Same profile
+const SAME_ACCOUNT = true;
 ```
 
 ### AWS Profile Configuration
@@ -213,8 +215,8 @@ This is used when moving the system to a different AWS account entirely.
 
 ```ts
 const SOURCE_PROFILE = 'my_account';
-const DEST_PROFILE   = 'client_account';  // Different profile
-const SAME_ACCOUNT   = false;             // Must be false
+const DEST_PROFILE = 'client_account'; // Different profile
+const SAME_ACCOUNT = false; // Must be false
 ```
 
 ### AWS Profile Configuration
@@ -320,19 +322,24 @@ After the migration completes:
 ## Troubleshooting
 
 ### "Access Denied" on S3 operations
+
 - Verify KMS permissions. Both source and destination buckets use customer-managed KMS keys. You need `kms:Decrypt` on source keys and `kms:GenerateDataKey` on destination keys.
 - For cross-account: ensure `SAME_ACCOUNT = false` so the script uses download-then-upload instead of `CopyObject`.
 
 ### "Team name already exists" warning
+
 - The destination already has a team with the same name. The script will overwrite it after a 5-second warning. To avoid this, rename the conflicting team in the destination first.
 
 ### Items appear but images don't load
+
 - Check that the S3 objects were copied to the correct bucket. Image keys follow the pattern `items/{teamId}/{identifier}.{ext}`.
 - Verify the API Lambda has `s3:GetObject` and `kms:Decrypt` permissions on the destination bucket and its KMS key.
 
 ### "UnprocessedItems" errors
+
 - DynamoDB throttling. The script retries up to 3 times with backoff. If items still fail, you can re-run the script safely -- `BatchWriteItem` with `PutRequest` is idempotent (it overwrites existing records).
 
 ### Migration user can't see teams
+
 - Verify the MEMBER records were created. Check DynamoDB for records with `PK=TEAM#{teamId}` and `SK=MEMBER#{migrationUserSub}`.
 - Verify the GSI attributes are present: `GSI1PK=USER#{sub}` and `GSI1SK=TEAM#{teamId}`.

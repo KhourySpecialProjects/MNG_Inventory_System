@@ -43,19 +43,19 @@ const REGION = 'us-east-1';
 const SOURCE_TABLE = 'mng-beta-data';
 
 /** Destination DynamoDB table name */
-const DEST_TABLE = 'mng-dev-data';
+const DEST_TABLE = 'mng-prod-data';
 
 /** Source S3 uploads bucket name */
 const SOURCE_BUCKET = 'mng-beta-uploads-245120345540';
 
 /** Destination S3 uploads bucket name */
-const DEST_BUCKET = 'mng-dev-uploads-245120345540';
+const DEST_BUCKET = 'mng-prod-uploads-245120345540';
 
 /** Cognito sub of the destination user to attribute everything to */
-const MIGRATION_USER_SUB = '9438d448-0051-7073-c5d4-5590b74ba0d5';
+const MIGRATION_USER_SUB = '2448b418-b021-70d5-cd81-683d159cdb65';
 
 /** Display name for the migration user (used in updateLog entries) */
-const MIGRATION_USER_NAME = 'Chris Pyle';
+const MIGRATION_USER_NAME = 'Paul Martin';
 
 /** AWS profile for the SOURCE account (set to undefined to use default/ambient credentials) */
 const SOURCE_PROFILE: string | undefined = 'mng_inventory';
