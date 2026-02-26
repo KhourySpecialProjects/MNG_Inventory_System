@@ -52,6 +52,28 @@ Finally, to spin up a local development environment with a default mock admin us
 npm run dev:local
 ```
 
+## Environment Variables
+
+All AWS deployment configuration is provided through environment variables, passed inline with the deploy command. No `.env` file is used.
+
+| Variable | Required for | Description |
+|---|---|---|
+| `AWS_PROFILE` | All deploys (optional) | AWS CLI profile name from `~/.aws/credentials`. If not set, the default profile or ambient credentials are used. |
+| `SES_FROM_ADDRESS` | Dev deploys | A verified email address in the AWS SES console, used as the sender in sandbox mode. Not needed for prod. |
+| `SITE_DOMAIN` | Prod deploys | Custom domain name (e.g. `mng-inv.nunext.com`). Enables Route 53, ACM certificate, and SES domain identity. Not used for dev. |
+
+## SES Email Setup (Dev Deployments)
+
+Dev and sandbox deployments use SES in sandbox mode, which requires a verified sender email address. This is **not** needed for production deployments that use a custom domain — those use a domain-level SES identity instead.
+
+1. Open the [AWS SES Console](https://console.aws.amazon.com/ses/) in `us-east-1`.
+2. Go to **Identities** → **Create identity** → choose **Email address**.
+3. Enter the email address you want to send from and click **Create identity**.
+4. Check your inbox for the verification email from AWS and click the confirmation link.
+5. Provide the `SES_FROM_ADDRESS` variable when deploying (see examples below).
+
+> **Note:** In SES sandbox mode, you can only send emails to other verified email addresses. This is sufficient for development and testing. Production deployments with a custom domain bypass this restriction.
+
 ## Prerequisites in order to deploy to prod
 
 1. Register or own a domain.
@@ -60,7 +82,7 @@ npm run dev:local
 4. Configure SPF to allow SES sending.
 5. Update CDK to use a domain identity instead of an email identity.
 6. Update sender address in environment variables.
-7. Follow deployment step bellow
+7. Follow deployment steps below.
 
 ## Deployment
 
@@ -72,14 +94,20 @@ Build the project before deploying:
 npm run build
 ```
 
-To deploy to the development environment:
+Deploy to the development environment:
 
 ```bash
-npm run deploy:dev
+SES_FROM_ADDRESS=you@example.com npm run deploy:dev
 ```
 
-To deploy to the production environment:
+Deploy to the production environment:
 
 ```bash
-npm run deploy:prod
+SITE_DOMAIN=mng-inv.nunext.com npm run deploy:prod
+```
+
+To specify an AWS profile for either deploy:
+
+```bash
+AWS_PROFILE=my-profile SITE_DOMAIN=mng-inv.nunext.com npm run deploy:prod
 ```
