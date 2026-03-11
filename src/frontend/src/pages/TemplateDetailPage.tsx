@@ -28,6 +28,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
 import AddItemsDialog from '../components/TemplatesPage/AddItemsDialog';
+import CreateTemplateItemDialog from '../components/TemplatesPage/CreateTemplateItemDialog';
 import { getTemplate, getTemplateItems, removeItemFromTemplate } from '../api/templates';
 
 interface TemplateItem {
@@ -60,6 +61,7 @@ export default function TemplateDetailPage() {
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [addItemsOpen, setAddItemsOpen] = useState(false);
+  const [createItemOpen, setCreateItemOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -143,7 +145,6 @@ export default function TemplateDetailPage() {
 
   type ItemRow = { item: TemplateItem; isChild: boolean; addSpacerAbove: boolean };
 
-  // Build sorted row arrays for each card: kits (with children) and standalone items.
   const { kitRows, standaloneRows } = useMemo(() => {
     const childMap: Record<string, TemplateItem[]> = {};
     for (const item of items) {
@@ -240,53 +241,49 @@ export default function TemplateDetailPage() {
       <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
 
       <Container maxWidth="lg" sx={{ py: { xs: 3, sm: 4, md: 6 } }}>
+        
+
         {/* Page header */}
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          gap={2}
-          sx={{ mb: 4 }}
-        >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 4 }}>
+          {/* Left: back + title */}
           <Stack direction="row" alignItems="center" spacing={1.5}>
             <IconButton onClick={() => navigate('/templates')} size="small">
               <ArrowBackIcon />
             </IconButton>
             <Box>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, color: theme.palette.text.primary }}
-              >
+              <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette.text.primary }}>
                 {loading ? 'Loading…' : templateName}
               </Typography>
               {!loading && templateDescription && (
-                <Typography
-                  variant="body2"
-                  sx={{ color: theme.palette.text.secondary, mt: 0.5 }}
-                >
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 0.5 }}>
                   {templateDescription}
                 </Typography>
               )}
             </Box>
           </Stack>
 
-          <Button
-            variant="contained"
-            color="warning"
-            startIcon={<AddIcon />}
-            onClick={() => setAddItemsOpen(true)}
-            disabled={loading}
-            sx={{
-              fontWeight: 600,
-              textTransform: 'none',
-              borderRadius: 2,
-              px: 2,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            Add Items
-          </Button>
-        </Stack>
+          {/* Right: action buttons — always rendered */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              color="warning"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateItemOpen(true)}
+              sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2, px: 2 }}
+            >
+              Create New Item
+            </Button>
+            <Button
+              variant="contained"
+              color="warning"
+              startIcon={<AddIcon />}
+              onClick={() => setAddItemsOpen(true)}
+              sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2, px: 2 }}
+            >
+              Add from Team
+            </Button>
+          </Box>
+        </Box>
 
         {/* Loading */}
         {loading && (
@@ -305,7 +302,8 @@ export default function TemplateDetailPage() {
         {/* Empty */}
         {!loading && !error && items.length === 0 && (
           <Typography sx={{ textAlign: 'center', py: 8, color: theme.palette.text.secondary }}>
-            No items yet. Click "Add Items" to add inventory items to this template.
+            No items yet. Click "Create New Item" to build one from scratch, or "Add Items" to
+            source from an existing team.
           </Typography>
         )}
 
@@ -388,6 +386,17 @@ export default function TemplateDetailPage() {
         onClose={() => setAddItemsOpen(false)}
         onSuccess={(count) => {
           showSnackbar(`${count} item${count !== 1 ? 's' : ''} added`, 'success');
+          void refreshItems();
+        }}
+      />
+
+      <CreateTemplateItemDialog
+        open={createItemOpen}
+        templateId={templateId ?? ''}
+        templateItems={items}
+        onClose={() => setCreateItemOpen(false)}
+        onSuccess={() => {
+          showSnackbar('Item created and added to template', 'success');
           void refreshItems();
         }}
       />

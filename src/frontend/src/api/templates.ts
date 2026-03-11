@@ -109,6 +109,34 @@ export async function removeItemFromTemplate(templateId: string, templateItemId:
   );
 }
 
+/** CREATE TEMPLATE ITEM (brand-new, not sourced from a team) */
+export async function createTemplateItem(
+  templateId: string,
+  item: {
+    name: string;
+    actualName?: string;
+    description?: string;
+    isKit?: boolean;
+    parent?: string | null;
+    nsn?: string;
+    liin?: string;
+    endItemNiin?: string;
+  },
+) {
+  const currentUser = await me();
+
+  return (
+    (await trpcFetch(`${TRPC}/createTemplateItem`, {
+      method: 'POST',
+      body: JSON.stringify({
+        templateId,
+        userId: currentUser.userId,
+        ...item,
+      }),
+    })) ?? {}
+  );
+}
+
 /** DELETE TEMPLATE */
 export async function deleteTemplate(templateId: string) {
   const currentUser = await me();

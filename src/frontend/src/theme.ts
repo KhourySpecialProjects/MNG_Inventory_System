@@ -83,14 +83,14 @@ const theme = createTheme({
           color: '#101214',
           '&:hover': { backgroundColor: '#B58827' },
         },
-        outlined: {
-          color: '#F7F7F7',
-          borderColor: 'rgba(247,247,247,0.6)',
-          '&:hover': {
-            borderColor: '#FFFFFF',
-            backgroundColor: 'rgba(247,247,247,0.1)',
-          },
+        outlinedPrimary: {
+        color: '#F7F7F7',
+        borderColor: 'rgba(247,247,247,0.6)',
+        '&:hover': {
+          borderColor: '#FFFFFF',
+          backgroundColor: 'rgba(247,247,247,0.1)',
         },
+      },
         text: {
           color: '#1F1F1F',
           '&:hover': { backgroundColor: 'rgba(40,57,150,0.08)' },

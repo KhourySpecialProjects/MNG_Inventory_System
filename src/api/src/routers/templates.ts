@@ -332,6 +332,101 @@ export const templatesRouter = router({
       }
     }),
 
+  /** CREATE TEMPLATE ITEM (brand-new, not sourced from a team) **/
+  createTemplateItem: permissionedProcedure('template.update')
+    .input(
+      z.object({
+        templateId: z.string(),
+        userId: z.string(),
+
+        // base fields
+        name: z.string(),
+        actualName: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+        isKit: z.boolean().optional(),
+        parent: z.string().optional().nullable(),
+
+        // item fields (no serialNumber, no quantities, no status)
+        nsn: z.string().optional().nullable(),
+        liin: z.string().optional().nullable(),
+        endItemNiin: z.string().optional().nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        // Verify template exists
+        const templateRes = await doc.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEMPLATE#${input.templateId}`, SK: 'METADATA' },
+          }),
+        );
+        if (!templateRes.Item) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+        }
+
+        const templateItemId = newId(12);
+        const now = new Date().toISOString();
+
+        const templateItem = {
+          PK: `TEMPLATE#${input.templateId}`,
+          SK: `ITEM#${templateItemId}`,
+          Type: 'TemplateItem',
+
+          templateId: input.templateId,
+          templateItemId,
+
+          name: input.name,
+          actualName: input.actualName ?? null,
+          description: input.description ?? null,
+          isKit: input.isKit ?? false,
+          parent: input.parent ?? null,
+
+          // no serialNumber, no quantities, no status
+          nsn: input.nsn ?? null,
+          liin: input.liin ?? null,
+          endItemNiin: input.endItemNiin ?? null,
+
+          createdBy: input.userId,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        await doc.send(new PutCommand({ TableName: TABLE_NAME, Item: templateItem }));
+
+        // Bump template updatedAt
+        const userName = await getUserName(input.userId);
+        await doc.send(
+          new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEMPLATE#${input.templateId}`, SK: 'METADATA' },
+            UpdateExpression:
+              'SET updatedAt = :now, updateLog = list_append(if_not_exists(updateLog, :empty), :log)',
+            ExpressionAttributeValues: {
+              ':now': now,
+              ':log': [
+                {
+                  userId: input.userId,
+                  userName: userName ?? 'Unknown',
+                  action: 'create_item',
+                  timestamp: now,
+                },
+              ],
+              ':empty': [],
+            },
+          }),
+        );
+
+        return { success: true, templateItemId, templateItem };
+      } catch (err: any) {
+        if (err.name === 'TRPCError') throw err;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: err.message || 'Failed to create template item',
+        });
+      }
+    }),
+
   /** REMOVE ITEM FROM TEMPLATE **/
   removeItemFromTemplate: permissionedProcedure('template.update')
     .input(
