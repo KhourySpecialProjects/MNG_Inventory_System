@@ -27,6 +27,18 @@ interface TemplateItem {
   liin?: string;
 }
 
+interface ProductForm {
+  productName: string;
+  actualName: string;
+  isKit: boolean;
+  parent: string | null;
+  nsn: string;
+  liin: string;
+  endItemNiin: string;
+  description: string;
+  notes: string;
+}
+
 interface CreateTemplateItemDialogProps {
   open: boolean;
   templateId: string;
@@ -54,7 +66,7 @@ export default function CreateTemplateItemDialog({
   onClose,
   onSuccess,
 }: CreateTemplateItemDialogProps) {
-  const [editedProduct, setEditedProduct] = useState<any>(emptyProduct());
+  const [editedProduct, setEditedProduct] = useState<ProductForm>(emptyProduct());
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
