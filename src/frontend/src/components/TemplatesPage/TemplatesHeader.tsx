@@ -2,8 +2,10 @@
  * Header component for the Templates page.
  * Displays the page title and a button to create a new template.
  */
-import { Stack, Typography, Button } from '@mui/material';
+import { Stack, Typography, Button, IconButton } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 
 interface TemplatesHeaderProps {
@@ -12,6 +14,7 @@ interface TemplatesHeaderProps {
 
 export default function TemplatesHeader({ onCreateTemplate }: TemplatesHeaderProps) {
   const theme = useTheme();
+  const navigate = useNavigate();
 
   return (
     <Stack
@@ -21,15 +24,20 @@ export default function TemplatesHeader({ onCreateTemplate }: TemplatesHeaderPro
       gap={2}
       sx={{ mb: 3 }}
     >
-      <Typography
-        variant="h4"
-        sx={{
-          fontWeight: 700,
-          color: theme.palette.text.primary,
-        }}
-      >
-        Templates
-      </Typography>
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <IconButton onClick={() => navigate('/teams')} size="small">
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+            color: theme.palette.text.primary,
+          }}
+        >
+          Templates
+        </Typography>
+      </Stack>
 
       <Stack
         direction={{ xs: 'column', sm: 'row' }}

@@ -13,33 +13,31 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
-  Chip,
-  Divider,
-  Tooltip,
 } from '@mui/material';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import TopBar from '../components/TopBar';
 import Profile from '../components/Profile';
 import AddItemsDialog from '../components/TemplatesPage/AddItemsDialog';
 import CreateTemplateItemDialog from '../components/TemplatesPage/CreateTemplateItemDialog';
+import EditTemplateItemDialog from '../components/TemplatesPage/EditTemplateItemDialog';
+import ItemListComponent, { ItemListItem } from '../components/ProductPage/ItemListComponent';
 import { getTemplate, getTemplateItems, removeItemFromTemplate } from '../api/templates';
 
 interface TemplateItem {
   templateItemId: string;
   name: string;
+  actualName?: string;
   description?: string;
   isKit?: boolean;
   parent?: string | null;
   nsn?: string;
   endItemNiin?: string;
   liin?: string;
+  imageLink?: string;
+  createdAt?: string;
 }
 
 interface SnackbarState {
@@ -62,6 +60,7 @@ export default function TemplateDetailPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [addItemsOpen, setAddItemsOpen] = useState(false);
   const [createItemOpen, setCreateItemOpen] = useState(false);
+  const [editItem, setEditItem] = useState<TemplateItem | null>(null);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -120,22 +119,23 @@ export default function TemplateDetailPage() {
     }
   }
 
-  async function handleRemoveKit(kit: TemplateItem) {
+  async function handleRemoveKit(kit: ItemListItem) {
     if (!templateId) return;
-    const children = items.filter((i) => i.parent === kit.templateItemId);
+    const kitId = String(kit.id);
+    const children = items.filter((i) => i.parent === kitId);
     try {
       await Promise.all(
         children.map((c) => removeItemFromTemplate(templateId, c.templateItemId)),
       );
-      await removeItemFromTemplate(templateId, kit.templateItemId);
+      await removeItemFromTemplate(templateId, kitId);
       setItems((prev) =>
         prev.filter(
-          (i) => i.templateItemId !== kit.templateItemId && i.parent !== kit.templateItemId,
+          (i) => i.templateItemId !== kitId && i.parent !== kitId,
         ),
       );
       const childCount = children.length;
       showSnackbar(
-        `"${kit.name}" and ${childCount} child item${childCount !== 1 ? 's' : ''} removed`,
+        `"${kit.productName}" and ${childCount} child item${childCount !== 1 ? 's' : ''} removed`,
         'success',
       );
     } catch (err) {
@@ -143,97 +143,48 @@ export default function TemplateDetailPage() {
     }
   }
 
-  type ItemRow = { item: TemplateItem; isChild: boolean; addSpacerAbove: boolean };
+  // Convert flat template items into hierarchical ItemListItem tree
+  const itemListItems = useMemo((): ItemListItem[] => {
+    const map: Record<string, ItemListItem> = {};
+    const roots: ItemListItem[] = [];
 
-  const { kitRows, standaloneRows } = useMemo(() => {
-    const childMap: Record<string, TemplateItem[]> = {};
+    // First pass: create all ItemListItem entries
     for (const item of items) {
-      if (item.parent) {
-        if (!childMap[item.parent]) childMap[item.parent] = [];
-        childMap[item.parent].push(item);
+      map[item.templateItemId] = {
+        id: item.templateItemId,
+        productName: item.name,
+        actualName: item.actualName || item.name,
+        subtitle: item.description || 'No description',
+        image:
+          item.imageLink &&
+          (item.imageLink.startsWith('http') || item.imageLink.startsWith('data:'))
+            ? item.imageLink
+            : '',
+        date: item.createdAt
+          ? new Date(item.createdAt).toLocaleDateString('en-US', {
+              month: '2-digit',
+              day: '2-digit',
+              year: '2-digit',
+            })
+          : '',
+        parent: item.parent,
+        isKit: item.isKit,
+        children: [],
+      };
+    }
+
+    // Second pass: build parent-child relationships
+    for (const item of items) {
+      const mapped = map[item.templateItemId];
+      if (item.parent && map[item.parent]) {
+        map[item.parent].children!.push(mapped);
+      } else {
+        roots.push(mapped);
       }
     }
-    for (const id of Object.keys(childMap)) {
-      childMap[id].sort((a, b) => a.name.localeCompare(b.name));
-    }
 
-    const kits = items
-      .filter((i) => i.isKit && !i.parent)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    const standalones = items
-      .filter((i) => !i.isKit && !i.parent)
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const kitRowList: ItemRow[] = [];
-    kits.forEach((kit, i) => {
-      kitRowList.push({ item: kit, isChild: false, addSpacerAbove: i > 0 });
-      for (const child of childMap[kit.templateItemId] ?? []) {
-        kitRowList.push({ item: child, isChild: true, addSpacerAbove: false });
-      }
-    });
-
-    const standaloneRowList: ItemRow[] = standalones.map((item, i) => ({
-      item,
-      isChild: false,
-      addSpacerAbove: i > 0,
-    }));
-
-    return { kitRows: kitRowList, standaloneRows: standaloneRowList };
+    return roots;
   }, [items]);
-
-  const borderColor = alpha(theme.palette.text.primary, 0.1);
-
-  function renderItemRows(rows: ItemRow[]) {
-    return rows.map(({ item, isChild, addSpacerAbove }, index) => {
-      if (!item) return null;
-      const isKit = item.isKit && !item.parent;
-      return (
-        <Box key={item.templateItemId}>
-          {index > 0 && <Divider sx={addSpacerAbove ? { my: 0.75 } : undefined} />}
-          <ListItem
-            secondaryAction={
-              <Tooltip title={isKit ? 'Remove kit and child items' : 'Remove from template'}>
-                <IconButton
-                  edge="end"
-                  size="small"
-                  onClick={() =>
-                    isKit
-                      ? void handleRemoveKit(item)
-                      : void handleRemoveItem(item.templateItemId, item.name)
-                  }
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    transition: 'color 0.2s ease',
-                    '&:hover': { color: 'error.main' },
-                  }}
-                >
-                  <DeleteOutlineIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            }
-            sx={{
-              pl: isChild ? 6 : 2,
-              bgcolor: isChild ? alpha(theme.palette.text.primary, 0.02) : 'transparent',
-            }}
-          >
-            <ListItemText
-              primary={
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography variant="body1" fontWeight={isKit ? 700 : 600}>
-                    {item.name}
-                  </Typography>
-                  {isKit && (
-                    <Chip label="Kit" size="small" color="warning" variant="outlined" />
-                  )}
-                </Stack>
-              }
-              secondary={item.nsn ? `NSN: ${item.nsn}` : item.description || undefined}
-            />
-          </ListItem>
-        </Box>
-      );
-    });
-  }
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: theme.palette.background.default }}>
@@ -271,7 +222,7 @@ export default function TemplateDetailPage() {
               onClick={() => setCreateItemOpen(true)}
               sx={{ fontWeight: 600, textTransform: 'none', borderRadius: 2, px: 2 }}
             >
-              Create New Item
+              Create New Template Item
             </Button>
             <Button
               variant="contained"
@@ -302,80 +253,23 @@ export default function TemplateDetailPage() {
         {/* Empty */}
         {!loading && !error && items.length === 0 && (
           <Typography sx={{ textAlign: 'center', py: 8, color: theme.palette.text.secondary }}>
-            No items yet. Click "Create New Item" to build one from scratch, or "Add Items" to
-            source from an existing team.
+            No items yet. Click &quot;Create New Template Item&quot; to build one from scratch, or &quot;Add
+            from Team&quot; to source from an existing team.
           </Typography>
         )}
 
-        {/* Kits card */}
-        {!loading && !error && kitRows.length > 0 && (
-          <Box
-            sx={{
-              border: `1px solid ${borderColor}`,
-              borderRadius: 3,
-              bgcolor: theme.palette.background.paper,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-              mb: 3,
+        {/* Item list (reuses ItemListComponent in template mode) */}
+        {!loading && !error && itemListItems.length > 0 && (
+          <ItemListComponent
+            items={itemListItems}
+            isTemplateMode
+            onEditItem={(itemId) => {
+              const found = items.find((i) => i.templateItemId === String(itemId));
+              if (found) setEditItem(found);
             }}
-          >
-            <Box
-              sx={{
-                px: 2,
-                py: 0.75,
-                bgcolor: alpha(theme.palette.text.primary, 0.03),
-                borderBottom: `1px solid ${borderColor}`,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: theme.palette.text.secondary,
-                }}
-              >
-                Kits
-              </Typography>
-            </Box>
-            <List disablePadding>{renderItemRows(kitRows)}</List>
-          </Box>
-        )}
-
-        {/* Standalone items card */}
-        {!loading && !error && standaloneRows.length > 0 && (
-          <Box
-            sx={{
-              border: `1px solid ${borderColor}`,
-              borderRadius: 3,
-              bgcolor: theme.palette.background.paper,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              sx={{
-                px: 2,
-                py: 0.75,
-                bgcolor: alpha(theme.palette.text.primary, 0.03),
-                borderBottom: `1px solid ${borderColor}`,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: theme.palette.text.secondary,
-                }}
-              >
-                Items
-              </Typography>
-            </Box>
-            <List disablePadding>{renderItemRows(standaloneRows)}</List>
-          </Box>
+            onRemoveItem={(itemId, name) => void handleRemoveItem(String(itemId), name)}
+            onRemoveKit={(kit) => void handleRemoveKit(kit)}
+          />
         )}
       </Container>
 
@@ -396,7 +290,19 @@ export default function TemplateDetailPage() {
         templateItems={items}
         onClose={() => setCreateItemOpen(false)}
         onSuccess={() => {
-          showSnackbar('Item created and added to template', 'success');
+          showSnackbar('Template item created', 'success');
+          void refreshItems();
+        }}
+      />
+
+      <EditTemplateItemDialog
+        open={editItem !== null}
+        templateId={templateId ?? ''}
+        templateItems={items}
+        item={editItem}
+        onClose={() => setEditItem(null)}
+        onSuccess={() => {
+          showSnackbar('Template item updated', 'success');
           void refreshItems();
         }}
       />

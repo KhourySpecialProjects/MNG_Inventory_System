@@ -4,11 +4,13 @@
  * Features click-through navigation, inline add buttons for kits, and visual depth indicators.
  */
 import React, { useState, useEffect } from 'react';
-import { Box, Card, CardMedia, Typography, IconButton, Collapse } from '@mui/material';
+import { Box, Card, CardMedia, Typography, IconButton, Collapse, Tooltip } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditIcon from '@mui/icons-material/Edit';
 import { useTheme, alpha } from '@mui/material/styles';
 
 export interface ItemListItem {
@@ -27,11 +29,19 @@ export interface ItemListItem {
 interface ItemListComponentProps {
   items?: ItemListItem[];
   initialExpandedItems?: Set<string | number>;
+  isTemplateMode?: boolean;
+  onEditItem?: (itemId: string | number) => void;
+  onRemoveItem?: (itemId: string | number, name: string) => void;
+  onRemoveKit?: (item: ItemListItem) => void;
 }
 
 export default function ItemListComponent({
   items = [],
   initialExpandedItems,
+  isTemplateMode,
+  onEditItem,
+  onRemoveItem,
+  onRemoveKit,
 }: ItemListComponentProps) {
   const navigate = useNavigate();
   const { teamId } = useParams<{ teamId: string }>();
@@ -107,6 +117,7 @@ export default function ItemListComponent({
   };
 
   const handleItemClick = (itemId: string | number, event: React.MouseEvent) => {
+    if (isTemplateMode) return;
     if ((event.target as HTMLElement).closest('.expand-button')) return;
     navigate(`/teams/${teamId}/items/${itemId}`);
   };
@@ -222,7 +233,7 @@ export default function ItemListComponent({
               backgroundColor: alpha(theme.palette.primary.main, 0.04),
               borderColor: alpha(theme.palette.primary.main, 0.3),
               boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.1)}`,
-              cursor: 'pointer',
+              cursor: isTemplateMode ? 'default' : 'pointer',
               '& .item-image': {
                 transform: 'scale(1.05)',
               },
@@ -313,16 +324,18 @@ export default function ItemListComponent({
                 gap: 0.5,
               }}
             >
-              <Typography
-                sx={{
-                  fontSize: '0.8rem',
-                  color: theme.palette.text.secondary,
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {item.date}
-              </Typography>
+              {!isTemplateMode && (
+                <Typography
+                  sx={{
+                    fontSize: '0.8rem',
+                    color: theme.palette.text.secondary,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.date}
+                </Typography>
+              )}
 
               {isKit && (
                 <Box
@@ -364,16 +377,18 @@ export default function ItemListComponent({
                   marginRight: 'auto',
                 }}
               >
-                <Typography
-                  sx={{
-                    fontSize: '0.75rem',
-                    color: theme.palette.text.secondary,
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.date}
-                </Typography>
+                {!isTemplateMode && (
+                  <Typography
+                    sx={{
+                      fontSize: '0.75rem',
+                      color: theme.palette.text.secondary,
+                      fontWeight: 500,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.date}
+                  </Typography>
+                )}
 
                 {isKit && (
                   <Box
@@ -394,6 +409,48 @@ export default function ItemListComponent({
                   </Box>
                 )}
               </Box>
+
+              {/* EDIT BUTTON (template mode) */}
+              {isTemplateMode && onEditItem && (
+                <Tooltip title="Edit template item">
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditItem(item.id);
+                    }}
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      '&:hover': { color: theme.palette.primary.main },
+                    }}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+
+              {/* DELETE BUTTON (template mode) */}
+              {isTemplateMode && (
+                <Tooltip title={isKit ? 'Remove kit and child items' : 'Remove from template'}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isKit && onRemoveKit) {
+                        onRemoveKit(item);
+                      } else if (onRemoveItem) {
+                        onRemoveItem(item.id, item.productName);
+                      }
+                    }}
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      '&:hover': { color: theme.palette.error.main },
+                    }}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
 
               {/* KIT / ITEM LABEL */}
               <Box
@@ -416,7 +473,7 @@ export default function ItemListComponent({
               </Box>
 
               {/* STATUS BADGE */}
-              {shownStatus && (
+              {!isTemplateMode && shownStatus && (
                 <Box
                   sx={{
                     px: { xs: 1, sm: 1.5 },
@@ -466,7 +523,7 @@ export default function ItemListComponent({
           <Collapse in={isExpanded} timeout="auto">
             <Box sx={{ mt: 1 }}>
               {hasChildren && item.children!.map((child) => renderItem(child, level + 1))}
-              {renderAddItemButton(item.id, level + 1)}
+              {!isTemplateMode && renderAddItemButton(item.id, level + 1)}
             </Box>
           </Collapse>
         )}

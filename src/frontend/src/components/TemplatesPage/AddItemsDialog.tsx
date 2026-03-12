@@ -46,6 +46,7 @@ interface Item {
   nsn?: string;
   liin?: string;
   endItemNiin?: string;
+  imageLink?: string;
 }
 
 interface AddItemsDialogProps {
@@ -54,6 +55,24 @@ interface AddItemsDialogProps {
   templateItems: { nsn?: string; name: string }[];
   onClose: () => void;
   onSuccess: (count: number) => void;
+}
+
+async function fetchImageAsBase64(imageLink?: string): Promise<string | undefined> {
+  if (!imageLink) return undefined;
+  // Already a base64 data URL (local dev)
+  if (imageLink.startsWith('data:')) return imageLink;
+  // HTTP URL (S3 presigned) — fetch and convert
+  try {
+    const response = await fetch(imageLink);
+    const blob = await response.blob();
+    return new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined;
+  }
 }
 
 export default function AddItemsDialog({
@@ -170,6 +189,7 @@ export default function AddItemsDialog({
     let totalAdded = 0;
     try {
       for (const item of toAddFiltered) {
+        const imageBase64 = await fetchImageAsBase64(item.imageLink);
         const result = await addItemToTemplate(templateId, {
           name: item.name,
           actualName: item.actualName,
@@ -179,6 +199,7 @@ export default function AddItemsDialog({
           nsn: item.nsn,
           liin: item.liin,
           endItemNiin: item.endItemNiin,
+          imageBase64,
         });
         totalAdded++;
 
@@ -186,8 +207,9 @@ export default function AddItemsDialog({
           const newTemplateItemId = (result as { templateItemId: string }).templateItemId;
           const children = items.filter((i) => i.parent === item.itemId);
           await Promise.all(
-            children.map((child) =>
-              addItemToTemplate(templateId, {
+            children.map(async (child) => {
+              const childImage = await fetchImageAsBase64(child.imageLink);
+              return addItemToTemplate(templateId, {
                 name: child.name,
                 actualName: child.actualName,
                 description: child.description,
@@ -196,8 +218,9 @@ export default function AddItemsDialog({
                 nsn: child.nsn,
                 liin: child.liin,
                 endItemNiin: child.endItemNiin,
-              }),
-            ),
+                imageBase64: childImage,
+              });
+            }),
           );
           totalAdded += children.length;
         }

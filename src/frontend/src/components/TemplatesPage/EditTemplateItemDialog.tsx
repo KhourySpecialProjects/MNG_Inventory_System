@@ -1,9 +1,8 @@
 /**
- * Dialog for creating a brand-new item or kit directly within a template.
- * Uses ItemDetailsForm in create mode and strips template-irrelevant fields
- * (serialNumber, ohQuantity, status) before saving.
+ * Dialog for editing an existing template item.
+ * Uses ItemDetailsForm in edit + template mode, pre-populated with current values.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,17 +14,19 @@ import {
 } from '@mui/material';
 import ItemDetailsForm from '../ProductPage/ItemDetailsForm';
 import ImagePanel from '../ProductPage/ImagePanel';
-import { createTemplateItem } from '../../api/templates';
+import { updateTemplateItem } from '../../api/templates';
 
 interface TemplateItem {
   templateItemId: string;
   name: string;
   actualName?: string;
+  description?: string;
   isKit?: boolean;
   parent?: string | null;
   nsn?: string;
   endItemNiin?: string;
   liin?: string;
+  imageLink?: string;
 }
 
 interface ProductForm {
@@ -40,50 +41,72 @@ interface ProductForm {
   notes: string;
 }
 
-interface CreateTemplateItemDialogProps {
+interface EditTemplateItemDialogProps {
   open: boolean;
   templateId: string;
   templateItems: TemplateItem[];
+  item: TemplateItem | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const emptyProduct = () => ({
-  productName: '',
-  actualName: '',
-  isKit: false,
-  parent: null as string | null,
-  nsn: '',
-  liin: '',
-  endItemNiin: '',
-  description: '',
-  notes: '',
-});
-
-export default function CreateTemplateItemDialog({
+export default function EditTemplateItemDialog({
   open,
   templateId,
   templateItems,
+  item,
   onClose,
   onSuccess,
-}: CreateTemplateItemDialogProps) {
-  const [editedProduct, setEditedProduct] = useState<ProductForm>(emptyProduct());
+}: EditTemplateItemDialogProps) {
+  const [editedProduct, setEditedProduct] = useState<ProductForm>({
+    productName: '',
+    actualName: '',
+    isKit: false,
+    parent: null,
+    nsn: '',
+    liin: '',
+    endItemNiin: '',
+    description: '',
+    notes: '',
+  });
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
-  // Map templateItems to the shape ItemDetailsForm expects for the Kit From selector.
-  const itemsList = templateItems.map((item) => ({
-    itemId: item.templateItemId,
-    name: item.name,
-    actualName: item.actualName ?? '',
-    isKit: item.isKit ?? false,
-  }));
+  // Pre-populate form when item changes
+  useEffect(() => {
+    if (item && open) {
+      setEditedProduct({
+        productName: item.name ?? '',
+        actualName: item.actualName ?? '',
+        isKit: item.isKit ?? false,
+        parent: item.parent ?? null,
+        nsn: item.nsn ?? '',
+        liin: item.liin ?? '',
+        endItemNiin: item.endItemNiin ?? '',
+        description: item.description ?? '',
+        notes: '',
+      });
+      setImagePreview(item.imageLink ?? '');
+      setSelectedImageFile(null);
+      setErrors({});
+      setSaveError(null);
+    }
+  }, [item, open]);
+
+  // Exclude the item being edited from the kit-from list
+  const itemsList = templateItems
+    .filter((ti) => ti.templateItemId !== item?.templateItemId)
+    .map((ti) => ({
+      itemId: ti.templateItemId,
+      name: ti.name,
+      actualName: ti.actualName ?? '',
+      isKit: ti.isKit ?? false,
+    }));
 
   function handleClose() {
-    setEditedProduct(emptyProduct());
     setErrors({});
     setSaveError(null);
     setImagePreview('');
@@ -92,6 +115,8 @@ export default function CreateTemplateItemDialog({
   }
 
   async function handleSubmit() {
+    if (!item) return;
+
     const newErrors: Record<string, boolean> = {};
     if (!editedProduct.productName?.trim()) newErrors.productName = true;
     if (!editedProduct.actualName?.trim()) newErrors.actualName = true;
@@ -100,33 +125,36 @@ export default function CreateTemplateItemDialog({
       return;
     }
 
-    let imageBase64: string | undefined;
+    let imageBase64: string | null | undefined;
     if (selectedImageFile) {
       const reader = new FileReader();
       imageBase64 = await new Promise<string>((resolve) => {
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(selectedImageFile);
       });
+    } else if (!imagePreview && item.imageLink) {
+      // Image was removed
+      imageBase64 = null;
     }
 
     setSaving(true);
     setSaveError(null);
     try {
-      await createTemplateItem(templateId, {
+      await updateTemplateItem(templateId, item.templateItemId, {
         name: editedProduct.productName,
-        actualName: editedProduct.actualName,
-        description: editedProduct.description || undefined,
+        actualName: editedProduct.actualName || null,
+        description: editedProduct.description || null,
         isKit: editedProduct.isKit ?? false,
         parent: editedProduct.parent ?? null,
-        nsn: editedProduct.nsn || undefined,
-        liin: editedProduct.liin || undefined,
-        endItemNiin: editedProduct.endItemNiin || undefined,
+        nsn: editedProduct.nsn || null,
+        liin: editedProduct.liin || null,
+        endItemNiin: editedProduct.endItemNiin || null,
         imageBase64,
       });
       handleClose();
       onSuccess();
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to create template item');
+      setSaveError(err instanceof Error ? err.message : 'Failed to update template item');
     } finally {
       setSaving(false);
     }
@@ -134,7 +162,7 @@ export default function CreateTemplateItemDialog({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Create New Template Item</DialogTitle>
+      <DialogTitle>Edit Template Item</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <ImagePanel
@@ -142,14 +170,14 @@ export default function CreateTemplateItemDialog({
             setImagePreview={setImagePreview}
             setSelectedImageFile={setSelectedImageFile}
             isEditMode={true}
-            isCreateMode={true}
+            isCreateMode={false}
           />
           <ItemDetailsForm
             editedProduct={editedProduct}
             setEditedProduct={setEditedProduct}
             itemsList={itemsList}
             isEditMode={true}
-            isCreateMode={true}
+            isCreateMode={false}
             isTemplateMode={true}
             errors={errors}
           />
@@ -170,7 +198,7 @@ export default function CreateTemplateItemDialog({
           onClick={() => void handleSubmit()}
           disabled={saving}
         >
-          {saving ? 'Creating…' : 'Create Template Item'}
+          {saving ? 'Saving…' : 'Save Changes'}
         </Button>
       </DialogActions>
     </Dialog>

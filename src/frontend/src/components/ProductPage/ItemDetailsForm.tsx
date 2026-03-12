@@ -36,6 +36,7 @@ interface ItemDetailsFormProps {
   itemsList: any[];
   isEditMode: boolean;
   isCreateMode?: boolean;
+  isTemplateMode?: boolean;
   alwaysEditableFields?: string[];
   damageReports?: string[];
   setDamageReports?: (r: string[]) => void;
@@ -51,6 +52,7 @@ export default function ItemDetailsForm({
   itemsList,
   isEditMode,
   isCreateMode = false,
+  isTemplateMode = false,
   alwaysEditableFields = [],
   damageReports = [],
   setDamageReports,
@@ -181,11 +183,11 @@ export default function ItemDetailsForm({
           >
             <ToggleButton value="item" sx={{ textTransform: 'none', py: 1.5 }}>
               <CategoryIcon sx={{ mr: 1 }} />
-              Item
+              {isTemplateMode ? 'Template Item' : 'Item'}
             </ToggleButton>
             <ToggleButton value="kit" sx={{ textTransform: 'none', py: 1.5 }}>
               <InventoryIcon sx={{ mr: 1 }} />
-              Kit
+              {isTemplateMode ? 'Template Kit' : 'Kit'}
             </ToggleButton>
           </ToggleButtonGroup>
         </Box>
@@ -216,7 +218,7 @@ export default function ItemDetailsForm({
 
       {/* 2. Authorized Quantity + Kit From (side by side) */}
       <Grid container spacing={2}>
-        {itemType === 'item' && (
+        {itemType === 'item' && !isTemplateMode && (
           <Grid size={{ xs: 12, sm: 6 }}>
             {isEditMode || isCreateMode ? (
               <TextField
@@ -241,7 +243,7 @@ export default function ItemDetailsForm({
           </Grid>
         )}
 
-        <Grid size={{ xs: 12, sm: itemType === 'item' ? 6 : 12 }}>
+        <Grid size={{ xs: 12, sm: itemType === 'item' && !isTemplateMode ? 6 : 12 }}>
           {isEditMode || isCreateMode ? (
             <Autocomplete
               options={[
@@ -309,8 +311,8 @@ export default function ItemDetailsForm({
         </Grid>
       </Grid>
 
-      {/* 3. Status Buttons (moved up from bottom, only shown when not in create mode) */}
-      {!isCreateMode && (isEditMode || alwaysEditable('status')) && (
+      {/* 3. Status Buttons (hidden in create mode and template mode) */}
+      {!isCreateMode && !isTemplateMode && (isEditMode || alwaysEditable('status')) && (
         <Box>
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
             Status
@@ -382,8 +384,8 @@ export default function ItemDetailsForm({
           </Box>
         ))}
 
-      {/* 5. Notes / Last Known Location - Full Width */}
-      {(isEditMode || alwaysEditable('notes')) && (
+      {/* 5. Notes / Last Known Location - Full Width (hidden in template mode) */}
+      {!isTemplateMode && (isEditMode || alwaysEditable('notes')) && (
         <TextField
           label="Notes / Last Known Location"
           size="small"
@@ -420,7 +422,18 @@ export default function ItemDetailsForm({
       )}
 
       {/* 7. NSN + Serial Number (side by side) for Items */}
-      {itemType === 'item' && (
+      {itemType === 'item' && isTemplateMode && (
+        <TextField
+          label="National Serial Number"
+          size="small"
+          fullWidth
+          value={editedProduct.nsn || ''}
+          onChange={(e) => handleChange('nsn', e.target.value)}
+          error={errors.nsn}
+          helperText={errors.nsn ? 'NSN must be unique if provided' : ''}
+        />
+      )}
+      {itemType === 'item' && !isTemplateMode && (
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -505,7 +518,7 @@ export default function ItemDetailsForm({
                       {...params}
                       label="National Serial Number"
                       size="small"
-                      
+
                       error={errors.nsn}
                       helperText={errors.nsn ? 'NSN must be unique if provided' : ''}
                       InputProps={{
@@ -653,8 +666,8 @@ export default function ItemDetailsForm({
         </Grid>
       )}
 
-      {/* NSN + Serial Number (side by side) for Kits */}
-{itemType === 'kit' && (
+      {/* NSN + Serial Number (side by side) for Kits (hidden in template mode) */}
+{itemType === 'kit' && !isTemplateMode && (
   <Grid container spacing={2}>
     <Grid size={{ xs: 12, sm: 6 }}>
       <Stack direction="row" alignItems="center" spacing={1}>

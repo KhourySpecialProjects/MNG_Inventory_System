@@ -77,6 +77,7 @@ export async function addItemToTemplate(
     nsn?: string;
     liin?: string;
     endItemNiin?: string;
+    imageBase64?: string;
   },
 ) {
   const currentUser = await me();
@@ -121,6 +122,7 @@ export async function createTemplateItem(
     nsn?: string;
     liin?: string;
     endItemNiin?: string;
+    imageBase64?: string;
   },
 ) {
   const currentUser = await me();
@@ -130,6 +132,37 @@ export async function createTemplateItem(
       method: 'POST',
       body: JSON.stringify({
         templateId,
+        userId: currentUser.userId,
+        ...item,
+      }),
+    })) ?? {}
+  );
+}
+
+/** UPDATE TEMPLATE ITEM */
+export async function updateTemplateItem(
+  templateId: string,
+  templateItemId: string,
+  item: {
+    name?: string;
+    actualName?: string | null;
+    description?: string | null;
+    isKit?: boolean;
+    parent?: string | null;
+    nsn?: string | null;
+    liin?: string | null;
+    endItemNiin?: string | null;
+    imageBase64?: string | null;
+  },
+) {
+  const currentUser = await me();
+
+  return (
+    (await trpcFetch(`${TRPC}/updateTemplateItem`, {
+      method: 'POST',
+      body: JSON.stringify({
+        templateId,
+        templateItemId,
         userId: currentUser.userId,
         ...item,
       }),

@@ -12,9 +12,70 @@ import crypto from 'crypto';
 import { doc } from '../aws';
 import { loadConfig } from '../process';
 import { TRPCError } from '@trpc/server';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { isLocalDev } from '../localDev';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
+const BUCKET_NAME = config.BUCKET_NAME;
+const REGION = config.REGION;
+const KMS_KEY_ARN = config.KMS_KEY_ARN;
+
+// In-memory image store for local dev
+const localTemplateImages = new Map<string, string>();
+
+const s3 = isLocalDev ? null : new S3Client({ region: REGION });
+
+function getImageExtension(base64: string): string {
+  const m = base64.match(/^data:image\/(\w+);base64,/);
+  return m ? m[1].toLowerCase() : 'png';
+}
+
+function stripBase64Header(base64: string): string {
+  return base64.replace(/^data:image\/\w+;base64,/, '');
+}
+
+async function uploadImage(key: string, base64Data: string, contentType: string): Promise<void> {
+  if (isLocalDev) {
+    if (!base64Data.startsWith('data:')) {
+      base64Data = `data:${contentType};base64,${base64Data}`;
+    }
+    localTemplateImages.set(key, base64Data);
+    console.log(`[LocalDev] Stored template image: ${key} (size: ${base64Data.length} chars)`);
+    return;
+  }
+
+  const buffer = Buffer.from(stripBase64Header(base64Data), 'base64');
+  await s3!.send(
+    new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+      ...(KMS_KEY_ARN ? { ServerSideEncryption: 'aws:kms', SSEKMSKeyId: KMS_KEY_ARN } : {}),
+    }),
+  );
+}
+
+async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
+  if (!imageKey) return undefined;
+
+  if (isLocalDev) {
+    return localTemplateImages.get(imageKey) || undefined;
+  }
+
+  const url = await getSignedUrl(
+    s3!,
+    new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: imageKey,
+    }),
+    { expiresIn: 3600 },
+  );
+
+  return url;
+}
 
 function newId(n = 10): string {
   return crypto
@@ -254,6 +315,7 @@ export const templatesRouter = router({
         nsn: z.string().optional().nullable(),
         liin: z.string().optional().nullable(),
         endItemNiin: z.string().optional().nullable(),
+        imageBase64: z.string().optional().nullable(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -271,6 +333,14 @@ export const templatesRouter = router({
 
         const templateItemId = newId(12);
         const now = new Date().toISOString();
+
+        let imageKey: string | undefined;
+        if (input.imageBase64) {
+          const ext = getImageExtension(input.imageBase64);
+          const identifier = input.nsn || input.liin || input.endItemNiin || templateItemId;
+          imageKey = `templates/${input.templateId}/${identifier}.${ext}`;
+          await uploadImage(imageKey, input.imageBase64, `image/${ext}`);
+        }
 
         const templateItem = {
           PK: `TEMPLATE#${input.templateId}`,
@@ -291,6 +361,7 @@ export const templatesRouter = router({
           nsn: input.nsn ?? null,
           liin: input.liin ?? null,
           endItemNiin: input.endItemNiin ?? null,
+          imageKey,
 
           createdBy: input.userId,
           createdAt: now,
@@ -350,6 +421,7 @@ export const templatesRouter = router({
         nsn: z.string().optional().nullable(),
         liin: z.string().optional().nullable(),
         endItemNiin: z.string().optional().nullable(),
+        imageBase64: z.string().optional().nullable(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -367,6 +439,14 @@ export const templatesRouter = router({
 
         const templateItemId = newId(12);
         const now = new Date().toISOString();
+
+        let imageKey: string | undefined;
+        if (input.imageBase64) {
+          const ext = getImageExtension(input.imageBase64);
+          const identifier = input.nsn || input.liin || input.endItemNiin || templateItemId;
+          imageKey = `templates/${input.templateId}/${identifier}.${ext}`;
+          await uploadImage(imageKey, input.imageBase64, `image/${ext}`);
+        }
 
         const templateItem = {
           PK: `TEMPLATE#${input.templateId}`,
@@ -386,6 +466,7 @@ export const templatesRouter = router({
           nsn: input.nsn ?? null,
           liin: input.liin ?? null,
           endItemNiin: input.endItemNiin ?? null,
+          imageKey,
 
           createdBy: input.userId,
           createdAt: now,
@@ -423,6 +504,136 @@ export const templatesRouter = router({
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: err.message || 'Failed to create template item',
+        });
+      }
+    }),
+
+  /** UPDATE TEMPLATE ITEM **/
+  updateTemplateItem: permissionedProcedure('template.update')
+    .input(
+      z.object({
+        templateId: z.string(),
+        templateItemId: z.string(),
+        userId: z.string(),
+
+        name: z.string().optional(),
+        actualName: z.string().optional().nullable(),
+        description: z.string().optional().nullable(),
+        isKit: z.boolean().optional(),
+        parent: z.string().optional().nullable(),
+
+        nsn: z.string().optional().nullable(),
+        liin: z.string().optional().nullable(),
+        endItemNiin: z.string().optional().nullable(),
+        imageBase64: z.string().optional().nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const key = {
+          PK: `TEMPLATE#${input.templateId}`,
+          SK: `ITEM#${input.templateItemId}`,
+        };
+
+        const existing = await doc.send(new GetCommand({ TableName: TABLE_NAME, Key: key }));
+        if (!existing.Item) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Template item not found' });
+        }
+
+        const now = new Date().toISOString();
+        const updates: string[] = ['updatedAt = :updatedAt'];
+        const values: Record<string, any> = { ':updatedAt': now };
+        const names: Record<string, string> = {};
+
+        if (input.name !== undefined) {
+          updates.push('#name = :name');
+          values[':name'] = input.name;
+          names['#name'] = 'name';
+        }
+        if (input.actualName !== undefined) {
+          updates.push('actualName = :actualName');
+          values[':actualName'] = input.actualName ?? null;
+        }
+        if (input.description !== undefined) {
+          updates.push('description = :description');
+          values[':description'] = input.description ?? null;
+        }
+        if (input.isKit !== undefined) {
+          updates.push('isKit = :isKit');
+          values[':isKit'] = input.isKit;
+        }
+        if (input.parent !== undefined) {
+          updates.push('parent = :parent');
+          values[':parent'] = input.parent ?? null;
+        }
+        if (input.nsn !== undefined) {
+          updates.push('nsn = :nsn');
+          values[':nsn'] = input.nsn ?? null;
+        }
+        if (input.liin !== undefined) {
+          updates.push('liin = :liin');
+          values[':liin'] = input.liin ?? null;
+        }
+        if (input.endItemNiin !== undefined) {
+          updates.push('endItemNiin = :endItemNiin');
+          values[':endItemNiin'] = input.endItemNiin ?? null;
+        }
+
+        // Handle image update
+        if (input.imageBase64 !== undefined) {
+          if (input.imageBase64) {
+            const ext = getImageExtension(input.imageBase64);
+            const identifier = input.nsn || input.liin || input.endItemNiin || input.templateItemId;
+            const imageKey = `templates/${input.templateId}/${identifier}.${ext}`;
+            await uploadImage(imageKey, input.imageBase64, `image/${ext}`);
+            updates.push('imageKey = :imageKey');
+            values[':imageKey'] = imageKey;
+          } else {
+            updates.push('imageKey = :imageKey');
+            values[':imageKey'] = null;
+          }
+        }
+
+        const result = await doc.send(
+          new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: key,
+            UpdateExpression: `SET ${updates.join(', ')}`,
+            ExpressionAttributeValues: values,
+            ExpressionAttributeNames: Object.keys(names).length ? names : undefined,
+            ReturnValues: 'ALL_NEW',
+          }),
+        );
+
+        // Bump template updatedAt
+        const userName = await getUserName(input.userId);
+        await doc.send(
+          new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: `TEMPLATE#${input.templateId}`, SK: 'METADATA' },
+            UpdateExpression:
+              'SET updatedAt = :now, updateLog = list_append(if_not_exists(updateLog, :empty), :log)',
+            ExpressionAttributeValues: {
+              ':now': now,
+              ':log': [
+                {
+                  userId: input.userId,
+                  userName: userName ?? 'Unknown',
+                  action: 'update_item',
+                  timestamp: now,
+                },
+              ],
+              ':empty': [],
+            },
+          }),
+        );
+
+        return { success: true, templateItem: result.Attributes };
+      } catch (err: any) {
+        if (err.name === 'TRPCError') throw err;
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: err.message || 'Failed to update template item',
         });
       }
     }),
@@ -512,7 +723,8 @@ export const templatesRouter = router({
               );
               parentName = parentRes.Item?.name ?? null;
             }
-            return { ...item, parentName };
+            const imageLink = await getPresignedUrl(item.imageKey);
+            return { ...item, parentName, imageLink };
           }),
         );
 
