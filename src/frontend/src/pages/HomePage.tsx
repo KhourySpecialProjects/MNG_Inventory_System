@@ -5,7 +5,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { Box, Button, Grid, Stack, Typography } from '@mui/material';
+import { Box, Button, Grid, Stack, Typography, Snackbar, Alert } from '@mui/material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { useParams, useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -23,6 +23,7 @@ import TeamActivityChart from '../components/HomePage/TeamActivityChart';
 import { getItems } from '../api/items';
 import { me } from '../api/auth'; // Import your auth function
 import { getTeam } from '../api/home';
+import ImportTemplateDialog from '../components/ImportTemplateDialog';
 
 export default function HomePage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -38,10 +39,15 @@ export default function HomePage() {
   const [timeMode, setTimeMode] = useState<'hours' | 'days'>('days');
   const [selectedValue, setSelectedValue] = useState<number>(7); // default
   const [items, setItems] = useState<any[]>([]); // new state for raw items
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  // pull data for dashboard components from DynamoDB
-  useEffect(() => {
-    const getDashboardData = async (): Promise<void> => {
+  // Define getDashboardData outside useEffect so it can be reused
+  const getDashboardData = async (): Promise<void> => {
       if (!teamId) {
         setError('Missing team ID');
         setLoading(false);
@@ -163,10 +169,11 @@ export default function HomePage() {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
-    
+  useEffect(() => {
     getDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId]);
 
   const totals = dashboardData?.totals || { toReview: 0, completed: 0, shortages: 0, damaged: 0 };
@@ -243,7 +250,7 @@ export default function HomePage() {
 
             <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={3}>
-                <AddInventoryCard teamId={teamId!} />
+                <AddInventoryCard teamId={teamId!} onImportFromTemplate={() => setImportDialogOpen(true)} />
                 <RestartInventoryProcess teamId={teamId!} />
 
                 {/* Hide TeamActivityChart on mobile */}
@@ -255,6 +262,29 @@ export default function HomePage() {
           </Grid>
         )}
       </Box>
+
+      <ImportTemplateDialog
+        teamId={teamId!}
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onSuccess={() => getDashboardData()}
+        showSnackbar={(message, severity) => setSnackbar({ open: true, message, severity })}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <Profile open={profileOpen} onClose={() => setProfileOpen(false)} />
       <Box sx={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>

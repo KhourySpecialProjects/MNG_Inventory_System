@@ -7,6 +7,7 @@ import {
   QueryCommand,
   UpdateCommand,
   DeleteCommand,
+  BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import crypto from 'crypto';
 import { doc } from '../aws';
@@ -166,7 +167,26 @@ export const templatesRouter = router({
         );
 
         const templates = result.Items ?? [];
-        return { success: true, templates };
+
+        // Count items for each template
+        const templatesWithCounts = await Promise.all(
+          templates.map(async (t: any) => {
+            const countRes = await doc.send(
+              new QueryCommand({
+                TableName: TABLE_NAME,
+                KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+                ExpressionAttributeValues: {
+                  ':pk': `TEMPLATE#${t.templateId}`,
+                  ':sk': 'ITEM#',
+                },
+                Select: 'COUNT',
+              }),
+            );
+            return { ...t, itemCount: countRes.Count ?? 0 };
+          }),
+        );
+
+        return { success: true, templates: templatesWithCounts };
       } catch (err: any) {
         return { success: false, error: err.message };
       }
@@ -732,6 +752,223 @@ export const templatesRouter = router({
       } catch (err: any) {
         return { success: false, error: err.message };
       }
+    }),
+
+  /** IMPORT TEMPLATE ITEMS TO TEAM **/
+  importTemplateToTeam: permissionedProcedure('item.create')
+    .input(
+      z.object({
+        templateId: z.string(),
+        teamId: z.string(),
+        userId: z.string(),
+        selections: z.array(
+          z.object({
+            templateItemId: z.string(),
+            authQuantity: z.number().min(1).default(1),
+            serialNumber: z.string(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const now = new Date().toISOString();
+
+      // 1. Verify template exists
+      const templateRes = await doc.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `TEMPLATE#${input.templateId}`, SK: 'METADATA' },
+        }),
+      );
+      if (!templateRes.Item) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+      }
+
+      // 2. Fetch all template items
+      const itemsRes = await doc.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+          ExpressionAttributeValues: {
+            ':pk': `TEMPLATE#${input.templateId}`,
+            ':sk': 'ITEM#',
+          },
+        }),
+      );
+      const templateItems = itemsRes.Items ?? [];
+
+      // Build lookup map
+      const templateItemMap = new Map<string, any>();
+      for (const ti of templateItems) {
+        templateItemMap.set(ti.templateItemId, ti);
+      }
+
+      // 3. Validate all selections
+      const selectionMap = new Map<string, { authQuantity: number; serialNumber: string }>();
+      for (const sel of input.selections) {
+        if (!templateItemMap.has(sel.templateItemId)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Template item "${sel.templateItemId}" not found in template`,
+          });
+        }
+        selectionMap.set(sel.templateItemId, {
+          authQuantity: sel.authQuantity,
+          serialNumber: sel.serialNumber,
+        });
+      }
+
+      // 4. Get user name for updateLog
+      const userName = await getUserName(input.userId);
+
+      // 5. Build items to create
+      const itemsToCreate: any[] = [];
+      const selectedIds = new Set(selectionMap.keys());
+
+      // Identify which selected items are children of selected kits
+      const kitChildIds = new Set<string>();
+      for (const ti of templateItems) {
+        if (ti.parent && selectedIds.has(ti.parent) && selectedIds.has(ti.templateItemId)) {
+          const parentItem = templateItemMap.get(ti.parent);
+          if (parentItem?.isKit) {
+            kitChildIds.add(ti.templateItemId);
+          }
+        }
+      }
+
+      // Helper to build base item fields
+      function buildItemFields(
+        ti: any,
+        overrides: {
+          itemId: string;
+          parent: string | null;
+          authQuantity: number;
+          ohQuantity: number;
+          serialNumber?: string;
+          liin?: string;
+          endItemNiin?: string;
+        },
+      ) {
+        return {
+          PK: `TEAM#${input.teamId}`,
+          SK: `ITEM#${overrides.itemId}`,
+          Type: 'Item',
+          teamId: input.teamId,
+          itemId: overrides.itemId,
+          name: ti.name,
+          actualName: ti.actualName ?? undefined,
+          description: ti.description ?? undefined,
+          status: 'To Review',
+          parent: overrides.parent,
+          isKit: ti.isKit ?? false,
+          nsn: ti.nsn ?? '',
+          serialNumber: overrides.serialNumber ?? undefined,
+          authQuantity: overrides.authQuantity,
+          ohQuantity: overrides.ohQuantity,
+          liin: overrides.liin ?? ti.liin ?? '',
+          endItemNiin: overrides.endItemNiin ?? ti.endItemNiin ?? '',
+          imageKey: ti.imageKey ?? undefined,
+          damageReports: [],
+          createdAt: now,
+          updatedAt: now,
+          createdBy: input.userId,
+          updateLog: [
+            {
+              userId: input.userId,
+              userName: userName ?? 'Unknown',
+              action: 'imported from template',
+              timestamp: now,
+            },
+          ],
+        };
+      }
+
+      // Process selected kits
+      for (const [templateItemId, sel] of selectionMap) {
+        const ti = templateItemMap.get(templateItemId)!;
+        if (!ti.isKit) continue;
+
+        const kitQuantity = sel.authQuantity;
+        // Find children of this kit that are also selected
+        const children = templateItems.filter(
+          (child: any) => child.parent === templateItemId && kitChildIds.has(child.templateItemId),
+        );
+
+        for (let copy = 0; copy < kitQuantity; copy++) {
+          const kitItemId = newId(12);
+
+          // Kit copy — authQuantity is 1 per copy (expansion already handled)
+          itemsToCreate.push(
+            buildItemFields(ti, {
+              itemId: kitItemId,
+              parent: null,
+              authQuantity: 1,
+              ohQuantity: 1,
+              serialNumber: undefined,
+            }),
+          );
+
+          // Children for this kit copy
+          for (const child of children) {
+            const childSel = selectionMap.get(child.templateItemId)!;
+            const childItemId = newId(12);
+
+            itemsToCreate.push(
+              buildItemFields(child, {
+                itemId: childItemId,
+                parent: kitItemId,
+                authQuantity: childSel.authQuantity,
+                ohQuantity: childSel.authQuantity,
+                serialNumber: childSel.serialNumber || undefined,
+                liin: ti.liin ?? '',
+                endItemNiin: ti.endItemNiin ?? '',
+              }),
+            );
+          }
+        }
+      }
+
+      // Process standalone items (not kits, not children of selected kits)
+      for (const [templateItemId, sel] of selectionMap) {
+        const ti = templateItemMap.get(templateItemId)!;
+        if (ti.isKit) continue;
+        if (kitChildIds.has(templateItemId)) continue;
+
+        const itemId = newId(12);
+        itemsToCreate.push(
+          buildItemFields(ti, {
+            itemId,
+            parent: null,
+            authQuantity: sel.authQuantity,
+            ohQuantity: sel.authQuantity,
+            serialNumber: sel.serialNumber || undefined,
+          }),
+        );
+      }
+
+      // 6. Batch write all items (chunks of 25, with retry for unprocessed)
+      const BATCH_SIZE = 25;
+      for (let i = 0; i < itemsToCreate.length; i += BATCH_SIZE) {
+        const batch = itemsToCreate.slice(i, i + BATCH_SIZE);
+        let unprocessed: any[] = batch.map((item) => ({ PutRequest: { Item: item } }));
+
+        let retries = 0;
+        while (unprocessed.length > 0 && retries < 3) {
+          const result = await doc.send(
+            new BatchWriteCommand({
+              RequestItems: { [TABLE_NAME]: unprocessed },
+            }),
+          );
+          unprocessed = result.UnprocessedItems?.[TABLE_NAME] ?? [];
+          retries++;
+        }
+
+        if (unprocessed.length > 0) {
+          console.warn(`[importTemplateToTeam] ${unprocessed.length} items could not be written after retries`);
+        }
+      }
+
+      return { success: true, itemsCreated: itemsToCreate.length };
     }),
 });
 

@@ -25,6 +25,7 @@ jest.mock('../src/helpers/teamspaceHelpers', () => ({
       'template.view',
       'template.update',
       'template.delete',
+      'item.create',
     ],
   })),
   checkPermission: jest.fn(async () => ({ allowed: true })),
@@ -1123,6 +1124,269 @@ describe('Templates Router', () => {
       expect(items[0].imageLink).toBe('https://s3.example.com/presigned-url');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // importTemplateToTeam
+  // ---------------------------------------------------------------------------
+  describe('importTemplateToTeam', () => {
+    const mockImportTemplateItem = {
+      PK: 'TEMPLATE#tmpl123',
+      SK: 'ITEM#ti-001',
+      Type: 'TemplateItem',
+      templateItemId: 'ti-001',
+      templateId: 'tmpl123',
+      name: 'Test Item',
+      actualName: 'Actual Test Item',
+      description: 'A template item',
+      isKit: false,
+      parent: null,
+      nsn: '1234-56-789-0000',
+      liin: '',
+      endItemNiin: '',
+      imageKey: undefined,
+    };
+
+    it('should import a single item to a team', async () => {
+      dynamoSendSpy.mockImplementation(async (command: MockableCommand) => {
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.SK === 'METADATA') {
+          return { Item: { ...mockTemplate, templateId: 'tmpl123' } };
+        }
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.PK?.startsWith('USER#')) {
+          return { Item: { name: 'Test User' } };
+        }
+        if (isCommandNamed(command, 'QueryCommand')) {
+          return { Items: [mockImportTemplateItem] };
+        }
+        if (isCommandNamed(command, 'BatchWriteCommand')) {
+          return { UnprocessedItems: {} };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .post('/trpc/importTemplateToTeam')
+        .set('Cookie', validAuthCookie)
+        .send({
+          templateId: 'tmpl123',
+          teamId: 'team-001',
+          userId: 'test-user-id',
+          selections: [
+            { templateItemId: 'ti-001', authQuantity: 1, serialNumber: 'SN-001' },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      const body = res.body?.result?.data;
+      expect(body.success).toBe(true);
+      expect(body.itemsCreated).toBe(1);
+    });
+
+    const mockKit = {
+      PK: 'TEMPLATE#tmpl123',
+      SK: 'ITEM#ti-kit-001',
+      Type: 'TemplateItem',
+      templateItemId: 'ti-kit-001',
+      templateId: 'tmpl123',
+      name: 'Test Kit',
+      isKit: true,
+      parent: null,
+      nsn: '',
+      liin: 'L001',
+      endItemNiin: 'N001',
+      imageKey: undefined,
+    };
+
+    const mockKitChild1 = {
+      PK: 'TEMPLATE#tmpl123',
+      SK: 'ITEM#ti-child-001',
+      Type: 'TemplateItem',
+      templateItemId: 'ti-child-001',
+      templateId: 'tmpl123',
+      name: 'Kit Child 1',
+      isKit: false,
+      parent: 'ti-kit-001',
+      nsn: '1111-11-111-1111',
+      liin: '',
+      endItemNiin: '',
+      imageKey: undefined,
+    };
+
+    const mockKitChild2 = {
+      PK: 'TEMPLATE#tmpl123',
+      SK: 'ITEM#ti-child-002',
+      Type: 'TemplateItem',
+      templateItemId: 'ti-child-002',
+      templateId: 'tmpl123',
+      name: 'Kit Child 2',
+      isKit: false,
+      parent: 'ti-kit-001',
+      nsn: '2222-22-222-2222',
+      liin: '',
+      endItemNiin: '',
+      imageKey: undefined,
+    };
+
+    it('should expand kit quantity and duplicate children per copy', async () => {
+      dynamoSendSpy.mockImplementation(async (command: MockableCommand) => {
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.SK === 'METADATA') {
+          return { Item: { ...mockTemplate, templateId: 'tmpl123' } };
+        }
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.PK?.startsWith('USER#')) {
+          return { Item: { name: 'Test User' } };
+        }
+        if (isCommandNamed(command, 'QueryCommand')) {
+          return { Items: [mockKit, mockKitChild1, mockKitChild2] };
+        }
+        if (isCommandNamed(command, 'BatchWriteCommand')) {
+          return { UnprocessedItems: {} };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .post('/trpc/importTemplateToTeam')
+        .set('Cookie', validAuthCookie)
+        .send({
+          templateId: 'tmpl123',
+          teamId: 'team-001',
+          userId: 'test-user-id',
+          selections: [
+            { templateItemId: 'ti-kit-001', authQuantity: 2, serialNumber: '' },
+            { templateItemId: 'ti-child-001', authQuantity: 3, serialNumber: 'SN-A' },
+            { templateItemId: 'ti-child-002', authQuantity: 4, serialNumber: 'SN-B' },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      const body = res.body?.result?.data;
+      expect(body.success).toBe(true);
+      // 2 kit copies + 2 children * 2 kit copies = 6 entities
+      expect(body.itemsCreated).toBe(6);
+
+      // Verify BatchWriteCommand was called with correct items
+      const batchCalls = dynamoSendSpy.mock.calls.filter(
+        ([cmd]: [MockableCommand]) => isCommandNamed(cmd, 'BatchWriteCommand'),
+      );
+      const allItems = batchCalls.flatMap(([cmd]: [MockableCommand]) => {
+        const requestItems = (cmd.input as any).RequestItems;
+        const tableName = Object.keys(requestItems)[0];
+        return requestItems[tableName].map((r: any) => r.PutRequest.Item);
+      });
+
+      expect(allItems.length).toBe(6);
+      const kits = allItems.filter((i: any) => i.isKit === true);
+      expect(kits.length).toBe(2);
+      // Each kit copy should have authQuantity 1 (not 2)
+      kits.forEach((kit: any) => {
+        expect(kit.authQuantity).toBe(1);
+      });
+      const children = allItems.filter((i: any) => i.isKit === false);
+      expect(children.length).toBe(4);
+      // Children should inherit liin and endItemNiin from kit
+      children.forEach((child: any) => {
+        expect(child.liin).toBe('L001');
+        expect(child.endItemNiin).toBe('N001');
+      });
+    });
+
+    it('should return error when template does not exist', async () => {
+      dynamoSendSpy.mockImplementation(async (command: MockableCommand) => {
+        if (isCommandNamed(command, 'GetCommand')) {
+          return { Item: undefined };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .post('/trpc/importTemplateToTeam')
+        .set('Cookie', validAuthCookie)
+        .send({
+          templateId: 'nonexistent',
+          teamId: 'team-001',
+          userId: 'test-user-id',
+          selections: [
+            { templateItemId: 'ti-001', authQuantity: 1, serialNumber: 'SN-001' },
+          ],
+        });
+
+      expect(res.status).toBe(404);
+    });
+
+    it('should return error when selection references non-existent template item', async () => {
+      dynamoSendSpy.mockImplementation(async (command: MockableCommand) => {
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.SK === 'METADATA') {
+          return { Item: { ...mockTemplate, templateId: 'tmpl123' } };
+        }
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.PK?.startsWith('USER#')) {
+          return { Item: { name: 'Test User' } };
+        }
+        if (isCommandNamed(command, 'QueryCommand')) {
+          return { Items: [mockImportTemplateItem] };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .post('/trpc/importTemplateToTeam')
+        .set('Cookie', validAuthCookie)
+        .send({
+          templateId: 'tmpl123',
+          teamId: 'team-001',
+          userId: 'test-user-id',
+          selections: [
+            { templateItemId: 'nonexistent-id', authQuantity: 1, serialNumber: 'SN-001' },
+          ],
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it('should import kit child as standalone item when parent kit is not selected', async () => {
+      dynamoSendSpy.mockImplementation(async (command: MockableCommand) => {
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.SK === 'METADATA') {
+          return { Item: { ...mockTemplate, templateId: 'tmpl123' } };
+        }
+        if (isCommandNamed(command, 'GetCommand') && (command.input as any).Key?.PK?.startsWith('USER#')) {
+          return { Item: { name: 'Test User' } };
+        }
+        if (isCommandNamed(command, 'QueryCommand')) {
+          return { Items: [mockKit, mockKitChild1] };
+        }
+        if (isCommandNamed(command, 'BatchWriteCommand')) {
+          return { UnprocessedItems: {} };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .post('/trpc/importTemplateToTeam')
+        .set('Cookie', validAuthCookie)
+        .send({
+          templateId: 'tmpl123',
+          teamId: 'team-001',
+          userId: 'test-user-id',
+          selections: [
+            { templateItemId: 'ti-child-001', authQuantity: 1, serialNumber: 'SN-STANDALONE' },
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      const body = res.body?.result?.data;
+      expect(body.success).toBe(true);
+      expect(body.itemsCreated).toBe(1);
+
+      const batchCalls = dynamoSendSpy.mock.calls.filter(
+        ([cmd]: [MockableCommand]) => isCommandNamed(cmd, 'BatchWriteCommand'),
+      );
+      const allItems = batchCalls.flatMap(([cmd]: [MockableCommand]) => {
+        const requestItems = (cmd.input as any).RequestItems;
+        const tableName = Object.keys(requestItems)[0];
+        return requestItems[tableName].map((r: any) => r.PutRequest.Item);
+      });
+
+      expect(allItems[0].parent).toBeNull();
+    });
+  }); // end describe importTemplateToTeam
 
   // ---------------------------------------------------------------------------
   // Authentication

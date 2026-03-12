@@ -21,6 +21,11 @@ import {
   Tab,
   Box,
   Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Checkbox,
+  CircularProgress,
 } from '@mui/material';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -33,6 +38,8 @@ import {
 } from '../../api/teamspace';
 import { me, inviteUser } from '../../api/auth';
 import { getAllUsers } from '../../api/teamspace';
+import { getTemplates, getTemplateItems, importTemplateToTeam } from '../../api/templates';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 interface DialogsProps {
   teams: Team[];
@@ -66,6 +73,56 @@ export function CreateTeamDialog({
   });
 
   const [loading, setLoading] = useState(false);
+
+  // Template import state
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [templateItems, setTemplateItems] = useState<any[]>([]);
+  const [templateSelections, setTemplateSelections] = useState<
+    Map<string, { checked: boolean; authQuantity: number; serialNumber: string }>
+  >(new Map());
+  const [loadingTemplateItems, setLoadingTemplateItems] = useState(false);
+
+  // Load templates when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    async function load() {
+      try {
+        const res = await getTemplates();
+        setTemplates(res?.templates ?? []);
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+      }
+    }
+    load();
+  }, [open]);
+
+  // Load template items when template selected
+  useEffect(() => {
+    if (!selectedTemplateId) {
+      setTemplateItems([]);
+      setTemplateSelections(new Map());
+      return;
+    }
+    async function load() {
+      setLoadingTemplateItems(true);
+      try {
+        const res = await getTemplateItems(selectedTemplateId);
+        const items = res?.items ?? [];
+        setTemplateItems(items);
+        const sels = new Map<string, { checked: boolean; authQuantity: number; serialNumber: string }>();
+        for (const item of items) {
+          sels.set(item.templateItemId, { checked: false, authQuantity: 1, serialNumber: '' });
+        }
+        setTemplateSelections(sels);
+      } catch (err) {
+        console.error('Failed to load template items:', err);
+      } finally {
+        setLoadingTemplateItems(false);
+      }
+    }
+    load();
+  }, [selectedTemplateId]);
 
   const allFilled = workspaceName.trim() && uic.trim() && contactName.trim() && contactEmail.trim();
 
@@ -107,12 +164,37 @@ export function CreateTeamDialog({
         return;
       }
 
-      showSnackbar('Teamspace created successfully!', 'success');
+      // Import template items if any were selected
+      const checkedSelections = Array.from(templateSelections.entries())
+        .filter(([, sel]) => sel.checked)
+        .map(([id, sel]) => ({
+          templateItemId: id,
+          authQuantity: sel.authQuantity,
+          serialNumber: sel.serialNumber,
+        }));
+
+      if (checkedSelections.length > 0 && result?.teamId) {
+        try {
+          await importTemplateToTeam(selectedTemplateId, result.teamId, checkedSelections);
+          showSnackbar('Teamspace created and items imported successfully!', 'success');
+        } catch (importErr) {
+          console.error('Template import failed:', importErr);
+          showSnackbar(
+            'Team created, but item import failed. You can import items later from the team dashboard.',
+            'error',
+          );
+        }
+      } else {
+        showSnackbar('Teamspace created successfully!', 'success');
+      }
 
       setWorkspaceName('');
       setUic('');
       setContactName('');
       setContactEmail('');
+      setSelectedTemplateId('');
+      setTemplateItems([]);
+      setTemplateSelections(new Map());
 
       onClose();
       await onRefresh();
@@ -133,7 +215,7 @@ export function CreateTeamDialog({
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="xs"
+      maxWidth="md"
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -146,8 +228,8 @@ export function CreateTeamDialog({
           fontWeight: 700,
           fontSize: '1.5rem',
           pb: 1,
-          background: (theme) => `linear-gradient(135deg, 
-            ${theme.palette.primary.main}15 0%, 
+          background: (theme) => `linear-gradient(135deg,
+            ${theme.palette.primary.main}15 0%,
             ${theme.palette.secondary.main}15 100%)`,
         }}
       >
@@ -230,6 +312,197 @@ export function CreateTeamDialog({
             },
           }}
         />
+
+        {/* Template Import (Optional) */}
+        <Accordion
+          sx={{ mt: 2, borderRadius: '8px !important', '&:before': { display: 'none' } }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography sx={{ fontWeight: 600 }}>
+              Import items from a template (optional)
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel id="create-team-template-select">Select Template</InputLabel>
+              <Select
+                labelId="create-team-template-select"
+                label="Select Template"
+                value={selectedTemplateId}
+                onChange={(e) => setSelectedTemplateId(e.target.value)}
+              >
+                {templates.map((t: any) => (
+                  <MenuItem key={t.templateId} value={t.templateId}>
+                    {t.name} ({t.itemCount ?? 0} items)
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {loadingTemplateItems && <CircularProgress size={24} />}
+
+            {selectedTemplateId && !loadingTemplateItems && templateItems.length === 0 && (
+              <Typography color="text.secondary">This template has no items</Typography>
+            )}
+
+            {templateItems.length > 0 && !loadingTemplateItems && (
+              <>
+                {/* Header row */}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '48px 1fr 120px 180px',
+                    gap: 1,
+                    px: 1,
+                    pb: 1,
+                    borderBottom: '2px solid',
+                    borderColor: 'divider',
+                    mb: 1,
+                  }}
+                >
+                  <Box />
+                  <Typography variant="subtitle2" fontWeight={700}>Item</Typography>
+                  <Typography variant="subtitle2" fontWeight={700}>Quantity</Typography>
+                  <Typography variant="subtitle2" fontWeight={700}>Serial Number</Typography>
+                </Box>
+
+                <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>
+                  {(() => {
+                    const childrenMap = new Map<string, any[]>();
+                    for (const item of templateItems) {
+                      if (item.parent) {
+                        const siblings = childrenMap.get(item.parent) ?? [];
+                        siblings.push(item);
+                        childrenMap.set(item.parent, siblings);
+                      }
+                    }
+                    const topLevel = templateItems.filter((i: any) => !i.parent);
+                    const kits = topLevel.filter((i: any) => i.isKit);
+                    const standalone = topLevel.filter((i: any) => !i.isKit);
+                    const ordered: { item: any; isChild: boolean }[] = [];
+                    for (const item of [...kits, ...standalone]) {
+                      ordered.push({ item, isChild: false });
+                      for (const child of childrenMap.get(item.templateItemId) ?? []) {
+                        ordered.push({ item: child, isChild: true });
+                      }
+                    }
+                    return ordered;
+                  })().map(({ item, isChild }) => {
+                      const sel = templateSelections.get(item.templateItemId);
+                      if (!sel) return null;
+
+                      return (
+                        <Box
+                          key={item.templateItemId}
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: '48px 1fr 120px 180px',
+                            gap: 1,
+                            px: 1,
+                            py: 0.75,
+                            alignItems: 'center',
+                            ...(isChild
+                              ? {
+                                  bgcolor: 'action.hover',
+                                  borderLeft: '3px solid',
+                                  borderColor: 'primary.main',
+                                  ml: 3,
+                                }
+                              : item.isKit
+                                ? { bgcolor: 'primary.50', borderRadius: 1 }
+                                : {}),
+                            '&:hover': { bgcolor: 'action.selected' },
+                          }}
+                        >
+                          <Checkbox
+                            size="small"
+                            checked={sel.checked}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setTemplateSelections((prev) => {
+                                const next = new Map(prev);
+                                next.set(item.templateItemId, { ...sel, checked });
+                                if (item.isKit) {
+                                  for (const ti of templateItems) {
+                                    if (ti.parent === item.templateItemId) {
+                                      const childSel = next.get(ti.templateItemId);
+                                      if (childSel) next.set(ti.templateItemId, { ...childSel, checked });
+                                    }
+                                  }
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {isChild && (
+                              <Typography variant="caption" color="text.secondary" sx={{ userSelect: 'none' }}>
+                                └
+                              </Typography>
+                            )}
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: item.isKit ? 700 : 400, color: item.isKit ? 'primary.main' : 'text.primary' }}
+                            >
+                              {item.name}
+                            </Typography>
+                            {item.isKit && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  bgcolor: 'primary.main',
+                                  color: 'primary.contrastText',
+                                  px: 0.75,
+                                  py: 0.125,
+                                  borderRadius: 1,
+                                  fontWeight: 600,
+                                  fontSize: '0.65rem',
+                                }}
+                              >
+                                KIT
+                              </Typography>
+                            )}
+                          </Box>
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={sel.authQuantity}
+                            onChange={(e) => {
+                              setTemplateSelections((prev) => {
+                                const next = new Map(prev);
+                                next.set(item.templateItemId, {
+                                  ...sel,
+                                  authQuantity: Math.max(1, parseInt(e.target.value) || 1),
+                                });
+                                return next;
+                              });
+                            }}
+                            disabled={!sel.checked}
+                            inputProps={{ min: 1 }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+                          />
+                          <TextField
+                            size="small"
+                            placeholder="Serial #"
+                            value={sel.serialNumber}
+                            onChange={(e) => {
+                              setTemplateSelections((prev) => {
+                                const next = new Map(prev);
+                                next.set(item.templateItemId, { ...sel, serialNumber: e.target.value });
+                                return next;
+                              });
+                            }}
+                            disabled={!sel.checked || item.isKit}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+                          />
+                        </Box>
+                      );
+                    })}
+                </Box>
+              </>
+            )}
+          </AccordionDetails>
+        </Accordion>
       </DialogContent>
 
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
