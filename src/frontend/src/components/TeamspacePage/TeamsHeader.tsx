@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material/styles';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import AddIcon from '@mui/icons-material/Add';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import { Link as RouterLink } from 'react-router-dom';
 
 interface TeamsHeaderProps {
@@ -85,6 +86,22 @@ export default function TeamsHeader({ onCreateTeam, onInviteMember }: TeamsHeade
           }}
         >
           Invite Member
+        </Button>
+        <Button
+          variant="contained"
+          color="warning"
+          component={RouterLink}
+          to="/templates"
+          startIcon={<InventoryIcon />}
+          sx={{
+            fontWeight: 600,
+            textTransform: 'none',
+            borderRadius: 2,
+            px: 2,
+            transition: 'all 0.2s ease',
+          }}
+        >
+          Templates
         </Button>
       </Stack>
     </Stack>

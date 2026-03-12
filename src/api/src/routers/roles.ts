@@ -35,7 +35,11 @@ export type Permission =
   | 'item.reset'
   | 'reports.create'
   | 'reports.view'
-  | 'reports.delete';
+  | 'reports.delete'
+  | 'template.create'
+  | 'template.view'
+  | 'template.update'
+  | 'template.delete';
 
 export interface RoleEntity {
   PK: `ROLE#${string}`;
