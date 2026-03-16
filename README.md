@@ -31,38 +31,42 @@ Our job is to create a web-based application for use by inventory-taking technic
 
 ## Architecture
 
-SupplyNet operates entirely on AWS infrastructure, using Amplify for hosting, Cognito for authentication, DynamoDB for storing users, teams, items, and logs, S3 for item images and generated reports, and Lambda for server-side PDF generation. The system is browser-based, responsive, and optimized for desktop, laptop, and tablet usage. While not built for full mobile or offline operation, its lightweight design and cloud architecture allow fast, secure access for a small team of fewer than ten active users at a time, with the potential to scale to additional National Guard units.
+SupplyNet operates entirely on AWS infrastructure, using CloudFront for hosting, Cognito for authentication, DynamoDB for storing users, teams, items, and logs, S3 for item images and generated reports, and Lambda for server-side PDF generation. The system is browser-based, responsive, and optimized for desktop, laptop, and tablet usage. While not built for full mobile or offline operation, its lightweight design and cloud architecture allow fast, secure access for a small team of fewer than ten active users at a time, with the potential to scale to additional National Guard units.
+
+### Infrastructure Highlights
+
+- **Custom Domain**: Route 53 hosted zone with ACM certificate (apex + wildcard). CloudFront serves the frontend under the custom domain with an A-record alias.
+- **Email**: SES domain identity with DKIM + DMARC in production. Dev/sandbox stages use a pre-verified email address.
+- **Authentication**: Cognito with EMAIL_OTP MFA, OAuth 2.0 authorization code flow, and role-based permissions (Owner, Manager, Member).
+- **Data**: Single-table DynamoDB design with customer-managed KMS encryption, point-in-time recovery, and 5 GSIs.
+- **Exports**: Python Lambda functions generate DA Form 2404 PDFs and inventory CSV reports.
+- **Data Migration**: Script for transferring teams, items, and templates between environments or AWS accounts.
+
+For a complete infrastructure setup guide on a fresh AWS account, see [SETUP_GUIDE.md](./SETUP_GUIDE.md).
 
 ---
 
-# Remaining Project Tasks
+## Documentation
 
-To complete the project and prepare it for a production environment, a couople components need to be updated. At the moment, everything is still configured to use development settings. CloudFront is serving through its default auto-generated distribution URL, and SES is limited to verified email addresses only. These settings are suitable for testing but must be adjusted for a real deployment.
+| Document | Description |
+|----------|-------------|
+| [Deployment Guide](./deployment.md) | Environment variables, deploy commands, local dev setup |
+| [AWS Setup Guide](./SETUP_GUIDE.md) | Fresh AWS account setup from scratch |
+| [CDK Documentation](src/cdk/README.md) | Infrastructure stacks and configuration |
+| [API Documentation](src/api/README.md) | tRPC router endpoints and methods |
+| [Frontend Documentation](src/frontend/README.md) | React components, pages, and patterns |
+| [Migration Guide](src/cdk/data-migration/MIGRATION_GUIDE.md) | Data migration between environments |
 
-## What Still Needs To Be Done, (Tasks NEU can't do and has to be internal developers)
+---
 
-1. **Assign a Custom Domain for CloudFront**
-   Update the CloudFront configuration so it no longer uses the default CloudFront URL. Inside `src/cdk/lib/web-stack.ts` and `src/cdk/bin/app.ts`, provide the custom domain you want your application to use. This ensures the project is deployed under a clean, user-friendly domain.
+## Known Bugs
 
-2. **Connect a Verified Domain for SES**
-   SES currently only works in sandbox mode, which restricts sending to verified emails. To finalize production readiness, configure SES with a fully verified domain. This will allow the system to send emails to unverified recipients and function as expected in production. Again look inside `src/cdk/lib/ses-stack.ts` and `src/cdk/bin/app.ts`
-
-3. **Update CDK Stacks to Use Production Values**
-   Replace development environment variables with your final domain name, hosted zone details, and SES identity. These updates should be made inside the CDK stacks under `src/cdk/lib/` and the application entry file at `src/cdk/bin/app.ts`.
-
-4. **Update Account Number**
-   Replace the current account number with your own AWS account number and region inside `src/cdk/bin/app.ts` line 24.
-
-Once these changes are done and deployed, the infrastructure will be fully configured for production use, with a proper domain, unrestricted email sending, and CloudFront serving content under your chosen URL.
-
-## Bugs
-
-1. **Updating Database in Profile Fields**
-   Currently, once a user updates the status of an item, it saves their userId, username, and name to that item as the last reviewed person. However, if a user then switches their name and/or username, it does not dynamically update the name and/or username to that already reviewed item. In order to fix this, we need to save only the userId to that item, and when getItems is called, the current username and name will be fetched based on that unique userId.
-2. **Change URL (Instructions in Deployment documentation)**
-   inside `src/cdk/bin/app.ts` once you set up your domain, make sure to switch all the URL with the correct domain URL.
+1. **Stale User Names on Reviewed Items**
+   When a user updates the status of an item, their userId, username, and name are saved to that item as the last reviewer. If the user later changes their name or username, previously reviewed items still show the old values. Fix: save only the userId and resolve the current name at query time.
+2. Template Generated Items Image Persistance
+   When items are created from a template, they inherit the templates image. Instead of copying the image in S3, the app uses the same s3 url as the template. Because of this, deleting a template item from a template could interfere with images on existing items. 
 
 ## Future Improvements
 
-1. **Include E2E Testing**
-   For security include the E2E testing
+1. **End-to-End Testing**
+   Add E2E test coverage for critical workflows (authentication, item CRUD, exports).

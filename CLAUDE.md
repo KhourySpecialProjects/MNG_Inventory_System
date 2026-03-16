@@ -29,7 +29,7 @@ Massachusetts National Guard inventory management system - a full-stack TypeScri
 ### Infrastructure (src/cdk/)
 
 - **IaC:** AWS CDK 2
-- **Services:** Lambda, API Gateway v2, DynamoDB, S3, CloudFront, Cognito, SES, KMS
+- **Services:** Lambda, API Gateway v2, DynamoDB, S3, CloudFront, Cognito, SES, KMS, Route 53, ACM
 
 ## Project Structure
 
@@ -51,8 +51,9 @@ src/
 │   │   └── handler.ts  # Lambda handler
 │   └── __tests__/      # Jest tests
 └── cdk/                # AWS infrastructure
-    ├── lib/            # CDK stacks (AuthStack, ApiStack, DynamoStack, etc.)
+    ├── lib/            # CDK stacks (AuthStack, ApiStack, DynamoStack, DnsStack, etc.)
     ├── bin/app.ts      # Stack orchestration
+    ├── data-migration/ # Data migration script + guide
     └── python_*/       # Python Lambda for PDF/CSV export
 ```
 
@@ -107,6 +108,8 @@ Key patterns:
 - `TEAM#{teamId} / ITEM#{itemId}` - Inventory items
 - `TEAM#{teamId} / MEMBER#{userId}` - Team membership
 - `ROLE#{roleName} / METADATA` - Role definitions
+- `TEMPLATE#{templateId} / METADATA` - Template metadata (global, not team-scoped)
+- `TEMPLATE#{templateId} / ITEM#{templateItemId}` - Template items
 
 GSIs: GSI_WorkspaceByName, GSI_UsersByUid, GSI_UsersByUsername, GSI_RolesByName, GSI_UserTeams
 
@@ -127,6 +130,7 @@ GSIs: GSI_WorkspaceByName, GSI_UsersByUid, GSI_UsersByUsername, GSI_RolesByName,
 - `roles.ts` - RBAC management
 - `home.ts` - Dashboard statistics
 - `export.ts` - PDF/CSV generation via Lambda
+- `templates.ts` - Template CRUD, template items, add from team inventory
 
 ## Coding Conventions
 

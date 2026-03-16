@@ -9,6 +9,9 @@ This guide explains how to use `scripts/migrate-teams-items.ts` to migrate team 
 | Team metadata                                     | Yes       | `ownerId` rewritten to migration user                          |
 | Inventory items (including kits and kit children) | Yes       | `createdBy` and `updateLog` rewritten to migration user        |
 | Item images (S3)                                  | Yes       | Copied from source to destination bucket                       |
+| Template metadata                                 | Yes       | `createdBy` and `updateLog` rewritten to migration user        |
+| Template items (including kit hierarchies)        | Yes       | Copied with all fields preserved                               |
+| Template images (S3)                              | Yes       | Copied from `templates/` prefix in source to destination       |
 | Team membership records                           | No        | A new MEMBER record is created for the migration user per team |
 | User records                                      | No        | Users are managed via Cognito in the destination               |
 | Role records                                      | No        | Roles are seeded automatically by CDK on deploy                |
@@ -108,12 +111,13 @@ npx ts-node src/cdk/data-migration/migrate-teams-items.ts
 The script will:
 
 1. Scan all records from the source DynamoDB table
-2. Filter to team metadata + item records only
+2. Filter to team metadata, item records, and template records
 3. Check for team name conflicts in the destination (with a 5-second abort window)
 4. Rewrite all user references (`ownerId`, `createdBy`, `updateLog`) to the migration user
 5. Create MEMBER records granting the migration user OWNER access to each team
 6. Batch write all records to the destination table
 7. Copy all item images from the source S3 bucket to the destination
+8. Copy all template images from the source S3 bucket to the destination
 
 ### Step 3: Verify
 
@@ -313,11 +317,13 @@ After the migration completes:
 
 1. **Verify data integrity**: Log in as the migration user and check that all teams and items are present with correct statuses, descriptions, and images.
 
-2. **Invite team members**: The migration user is the sole OWNER of all migrated teams. Use the application UI to invite additional users to each team.
+2. **Verify templates**: Navigate to the Templates page and confirm all templates and their items were migrated with correct images.
 
-3. **Test exports**: Generate a DA Form 2404 or inventory export to verify the export Lambda functions work correctly with the migrated data.
+3. **Invite team members**: The migration user is the sole OWNER of all migrated teams. Use the application UI to invite additional users to each team.
 
-4. **Clean up audit trail** (optional): All `updateLog` entries now show the migration user. If preserving the original audit history matters, you could modify the script to skip `updateLog` rewriting -- but this would leave references to user IDs that don't exist in the destination, which may cause display issues.
+4. **Test exports**: Generate a DA Form 2404 or inventory export to verify the export Lambda functions work correctly with the migrated data.
+
+5. **Clean up audit trail** (optional): All `updateLog` entries now show the migration user. If preserving the original audit history matters, you could modify the script to skip `updateLog` rewriting -- but this would leave references to user IDs that don't exist in the destination, which may cause display issues.
 
 ## Troubleshooting
 

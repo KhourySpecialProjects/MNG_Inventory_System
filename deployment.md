@@ -1,92 +1,82 @@
-# Project Requirements
+# Deployment Guide
 
 ## Initial Setup
 
-These steps prepare your local environment so the project can run and deploy correctly.
-
-Ensure that Node.js 20 and the AWS CDK are installed on your system.
-
-After cloning the repository, install all project dependencies:
+1. Install **Node.js 20+** and the **AWS CDK CLI** (`npm install -g aws-cdk`).
+2. Clone the repository and install dependencies:
 
 ```bash
 npm install
 ```
 
-Install all Node.js dependencies required for the project to compile, run tests, and deploy.
-Run the test suite to confirm everything is functioning correctly:
+3. Run the test suite to confirm everything works:
 
 ```bash
 npm run test
 ```
 
-To deploy the environment to AWS, bootstrap the CDK environment:
+4. Bootstrap the CDK environment in your AWS account (one-time setup):
 
 ```bash
-npm run bootstrap
+AWS_PROFILE=my-profile npx cdk bootstrap aws://<ACCOUNT_ID>/us-east-1
 ```
 
-## Local Development
+## Local Development (No AWS Required)
 
-To develop locally without the need for AWS, you can build a dynamodb docker container to mock the AWS DynamoDB:
+Build and start a local DynamoDB container:
 
 ```bash
 docker compose build
-```
-
-Then you can start and stop the database with:
-
-```bash
 docker compose up
-docker compose down
 ```
 
-To seed the local database with seed data from [seed.ts](./src/api/src/seed.ts):
+Seed the local database:
 
 ```bash
 npm run seed
 ```
 
-Finally, to spin up a local development environment with a default mock admin user:
+Start the local development environment with mock auth:
 
 ```bash
 npm run dev:local
 ```
 
+This starts both the frontend (port 5173) and API (port 3001). Sign in with any email and a password of at least 10 characters. Auth, S3, SES, and Lambda exports are all mocked. Data resets on restart.
+
+To stop the local database:
+
+```bash
+docker compose down
+```
+
 ## Environment Variables
 
-All AWS deployment configuration is provided through environment variables, passed inline with the deploy command. No `.env` file is used.
+All deployment configuration is passed inline with the deploy command. No `.env` file is used.
 
-| Variable | Required for | Description |
-|---|---|---|
-| `AWS_PROFILE` | All deploys (optional) | AWS CLI profile name from `~/.aws/credentials`. If not set, the default profile or ambient credentials are used. |
-| `SES_FROM_ADDRESS` | Dev deploys | A verified email address in the AWS SES console, used as the sender in sandbox mode. Not needed for prod. |
-| `SITE_DOMAIN` | Prod deploys | Custom domain name (e.g. `mng-inv.nunext.com`). Enables Route 53, ACM certificate, and SES domain identity. Not used for dev. |
+| Variable | Required For | Description |
+|----------|-------------|-------------|
+| `AWS_PROFILE` | All deploys (optional) | AWS CLI profile name from `~/.aws/credentials`. Falls back to default/ambient credentials. |
+| `SES_FROM_ADDRESS` | Dev deploys | A verified email address in the AWS SES console, used as the sender in sandbox mode. |
+| `SITE_DOMAIN` | Prod deploys | Custom domain (e.g., `mng-inv.nunext.com`). Enables Route 53, ACM certificate, SES domain identity, and CloudFront custom domain. |
+| `ALLOW_PROD_DEPLOY` | Prod deploys | Must be `true` to allow production deployment (safety gate). |
+| `COGNITO_CALLBACK_URLS` | Optional | Override OAuth callback URLs (comma-separated). Auto-derived from allowed origins if not set. |
+| `COGNITO_LOGOUT_URLS` | Optional | Override OAuth logout URLs (comma-separated). Auto-derived from allowed origins if not set. |
 
 ## SES Email Setup (Dev Deployments)
 
-Dev and sandbox deployments use SES in sandbox mode, which requires a verified sender email address. This is **not** needed for production deployments that use a custom domain — those use a domain-level SES identity instead.
+Dev deployments use SES in **sandbox mode**, which only allows sending to verified email addresses.
 
 1. Open the [AWS SES Console](https://console.aws.amazon.com/ses/) in `us-east-1`.
-2. Go to **Identities** → **Create identity** → choose **Email address**.
+2. Go to **Identities** > **Create identity** > choose **Email address**.
 3. Enter the email address you want to send from and click **Create identity**.
 4. Check your inbox for the verification email from AWS and click the confirmation link.
-5. Provide the `SES_FROM_ADDRESS` variable when deploying (see examples below).
+5. To send to test recipients, verify their email addresses the same way.
+6. Pass `SES_FROM_ADDRESS` when deploying (see commands below).
 
-> **Note:** In SES sandbox mode, you can only send emails to other verified email addresses. This is sufficient for development and testing. Production deployments with a custom domain bypass this restriction.
+> **Note:** Production deployments with a custom domain use SES domain identity instead, which bypasses the sandbox restriction. See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for production SES setup.
 
-## Prerequisites in order to deploy to prod
-
-1. Register or own a domain.
-2. Add the domain to SES for verification.
-3. Add SES TXT and DKIM CNAME records in Route 53.
-4. Configure SPF to allow SES sending.
-5. Update CDK to use a domain identity instead of an email identity.
-6. Update sender address in environment variables.
-7. Follow deployment steps below.
-
-## Deployment
-
-These steps build and publish your infrastructure to AWS.
+## Deployment Commands
 
 Build the project before deploying:
 
@@ -94,20 +84,44 @@ Build the project before deploying:
 npm run build
 ```
 
-Deploy to the development environment:
+### Dev Deployment
 
 ```bash
 SES_FROM_ADDRESS=you@example.com npm run deploy:dev
 ```
 
-Deploy to the production environment:
+With an AWS profile:
 
 ```bash
-SITE_DOMAIN=mng-inv.nunext.com npm run deploy:prod
+AWS_PROFILE=my-profile SES_FROM_ADDRESS=you@example.com npm run deploy:dev
 ```
 
-To specify an AWS profile for either deploy:
+### Production Deployment
 
 ```bash
-AWS_PROFILE=my-profile SITE_DOMAIN=mng-inv.nunext.com npm run deploy:prod
+SITE_DOMAIN=mng-inv.nunext.com ALLOW_PROD_DEPLOY=true npm run deploy:prod
 ```
+
+With an AWS profile:
+
+```bash
+AWS_PROFILE=my-profile SITE_DOMAIN=mng-inv.nunext.com ALLOW_PROD_DEPLOY=true npm run deploy:prod
+```
+
+### Other Useful Commands
+
+```bash
+npm run synth              # Generate CloudFormation templates without deploying
+npm run diff               # Preview infrastructure changes
+npm run destroy            # Destroy all stacks (careful in production!)
+```
+
+## After First Production Deploy
+
+If you deployed with a custom domain for the first time:
+
+1. **Update domain nameservers**: The DnsStack outputs NS records. Copy them to your domain registrar (Porkbun, GoDaddy, etc.) as the domain's nameservers.
+2. **Wait for DNS propagation**: This can take up to 48 hours, but typically completes within a few hours.
+3. **Request SES production access**: In the AWS SES console, go to **Account dashboard** and request to move out of sandbox mode so you can send to unverified email addresses.
+
+For a complete walkthrough of setting up a fresh AWS account, see [SETUP_GUIDE.md](./SETUP_GUIDE.md).

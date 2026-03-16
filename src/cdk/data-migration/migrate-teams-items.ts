@@ -1,10 +1,10 @@
 /**
  * migrate-teams-items.ts
  *
- * Migrates team metadata and item records from a source DynamoDB table
- * to a destination table, rewriting all user references to a single
- * "migration user" in the destination. Also copies item images from the
- * source S3 bucket to the destination S3 bucket.
+ * Migrates team metadata, item records, and template data from a source
+ * DynamoDB table to a destination table, rewriting all user references
+ * to a single "migration user" in the destination. Also copies item and
+ * template images from the source S3 bucket to the destination S3 bucket.
  *
  * Automatically creates MEMBER records so the migration user is an OWNER
  * of each migrated team.
@@ -13,7 +13,7 @@
  *        profile images, and generated documents.
  *
  * Usage:
- *   npx ts-node scripts/migrate-teams-items.ts [--dry-run]
+ *   npx ts-node src/cdk/data-migration/migrate-teams-items.ts [--dry-run]
  *
  * Configure the variables below before running.
  */
@@ -289,6 +289,69 @@ async function copyItemImages(): Promise<number> {
   return copied;
 }
 
+/**
+ * Copy all objects under templates/ from the source bucket to the dest bucket.
+ * Template images use the path templates/{templateId}/{identifier}.{ext}.
+ */
+async function copyTemplateImages(): Promise<number> {
+  const prefix = 'templates/';
+  let copied = 0;
+  let continuationToken: string | undefined;
+
+  do {
+    const listed = await sourceS3.send(
+      new ListObjectsV2Command({
+        Bucket: SOURCE_BUCKET,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+
+    for (const obj of listed.Contents ?? []) {
+      const key = obj.Key!;
+
+      if (DRY_RUN) {
+        console.log(`  [DRY RUN] Would copy ${key}`);
+        copied++;
+        continue;
+      }
+
+      try {
+        if (SAME_ACCOUNT) {
+          await destS3.send(
+            new CopyObjectCommand({
+              Bucket: DEST_BUCKET,
+              Key: key,
+              CopySource: `${SOURCE_BUCKET}/${encodeURIComponent(key)}`,
+            }),
+          );
+        } else {
+          const getRes = await sourceS3.send(
+            new GetObjectCommand({ Bucket: SOURCE_BUCKET, Key: key }),
+          );
+          const body = await getRes.Body!.transformToByteArray();
+          await destS3.send(
+            new PutObjectCommand({
+              Bucket: DEST_BUCKET,
+              Key: key,
+              Body: body,
+              ContentType: getRes.ContentType,
+            }),
+          );
+        }
+        copied++;
+        console.log(`  Copied ${key}`);
+      } catch (err: any) {
+        console.error(`  Failed to copy ${key}: ${err.message}`);
+      }
+    }
+
+    continuationToken = listed.NextContinuationToken;
+  } while (continuationToken);
+
+  return copied;
+}
+
 // ============== Main ==============
 
 async function main() {
@@ -306,23 +369,44 @@ async function main() {
   const allRecords = await scanAll(sourceDdb, SOURCE_TABLE);
   console.log(`  Found ${allRecords.length} total records.\n`);
 
-  // 2. Filter to team metadata + items only
+  // 2. Filter to team metadata + items + templates
   const toMigrate = allRecords.filter((r) => {
     const pk = r.PK as string;
     const sk = r.SK as string;
 
-    if (!pk.startsWith('TEAM#')) return false;
-    if (sk === 'METADATA') return true;
-    if (sk.startsWith('ITEM#')) return true;
+    // Team records
+    if (pk.startsWith('TEAM#')) {
+      if (sk === 'METADATA') return true;
+      if (sk.startsWith('ITEM#')) return true;
+    }
+
+    // Template records
+    if (pk.startsWith('TEMPLATE#')) {
+      if (sk === 'METADATA') return true;
+      if (sk.startsWith('ITEM#')) return true;
+    }
+
     return false;
   });
 
-  const teams = toMigrate.filter((r) => r.SK === 'METADATA');
-  const items = toMigrate.filter((r) => (r.SK as string).startsWith('ITEM#'));
+  const teams = toMigrate.filter(
+    (r) => (r.PK as string).startsWith('TEAM#') && r.SK === 'METADATA',
+  );
+  const items = toMigrate.filter(
+    (r) => (r.PK as string).startsWith('TEAM#') && (r.SK as string).startsWith('ITEM#'),
+  );
+  const templates = toMigrate.filter(
+    (r) => (r.PK as string).startsWith('TEMPLATE#') && r.SK === 'METADATA',
+  );
+  const templateItems = toMigrate.filter(
+    (r) => (r.PK as string).startsWith('TEMPLATE#') && (r.SK as string).startsWith('ITEM#'),
+  );
 
   console.log(`Records to migrate:`);
-  console.log(`  Teams:   ${teams.length}`);
-  console.log(`  Items:   ${items.length}`);
+  console.log(`  Teams:          ${teams.length}`);
+  console.log(`  Items:          ${items.length}`);
+  console.log(`  Templates:      ${templates.length}`);
+  console.log(`  Template Items: ${templateItems.length}`);
 
   // Log skipped record types for visibility
   const skipped = allRecords.filter((r) => {
@@ -363,7 +447,7 @@ async function main() {
   // 6. Write to destination table
   if (DRY_RUN) {
     console.log(`[DRY RUN] Would write ${allToWrite.length} records to ${DEST_TABLE}:`);
-    console.log(`  ${rewritten.length} team/item records`);
+    console.log(`  ${rewritten.length} team/item/template records`);
     console.log(`  ${memberRecords.length} member records\n`);
   } else if (allToWrite.length > 0) {
     console.log(`Writing ${allToWrite.length} records to ${DEST_TABLE}...`);
@@ -376,7 +460,14 @@ async function main() {
   // 7. Copy item images from S3
   console.log(`Copying item images from S3...`);
   const imagesCopied = await copyItemImages();
-  console.log(`  ${DRY_RUN ? 'Would copy' : 'Copied'} ${imagesCopied} images.\n`);
+  console.log(`  ${DRY_RUN ? 'Would copy' : 'Copied'} ${imagesCopied} item images.\n`);
+
+  // 8. Copy template images from S3
+  console.log(`Copying template images from S3...`);
+  const templateImagesCopied = await copyTemplateImages();
+  console.log(
+    `  ${DRY_RUN ? 'Would copy' : 'Copied'} ${templateImagesCopied} template images.\n`,
+  );
 
   if (DRY_RUN) {
     console.log('=== DRY RUN COMPLETE - no changes were made ===\n');
