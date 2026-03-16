@@ -8,9 +8,10 @@ import { useTheme } from '@mui/material/styles';
 
 interface AddInventoryCardProps {
   teamId: string;
+  onImportFromTemplate?: () => void;
 }
 
-export default function AddInventoryCard({ teamId }: AddInventoryCardProps) {
+export default function AddInventoryCard({ teamId, onImportFromTemplate }: AddInventoryCardProps) {
   const theme = useTheme();
 
   return (
@@ -53,6 +54,26 @@ export default function AddInventoryCard({ teamId }: AddInventoryCardProps) {
       >
         Add New Inventory Item
       </Button>
+      {onImportFromTemplate && (
+        <Button
+          variant="contained"
+          fullWidth
+          color="secondary"
+          onClick={onImportFromTemplate}
+          sx={{
+            mt: 1.5,
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 8,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          Import from Template
+        </Button>
+      )}
     </Paper>
   );
 }

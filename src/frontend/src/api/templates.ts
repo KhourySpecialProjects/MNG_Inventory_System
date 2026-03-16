@@ -184,3 +184,28 @@ export async function deleteTemplate(templateId: string) {
     })) ?? {}
   );
 }
+
+/** IMPORT TEMPLATE ITEMS TO TEAM */
+export async function importTemplateToTeam(
+  templateId: string,
+  teamId: string,
+  selections: Array<{
+    templateItemId: string;
+    authQuantity: number;
+    serialNumber: string;
+  }>,
+) {
+  const currentUser = await me();
+
+  return (
+    (await trpcFetch(`${TRPC}/importTemplateToTeam`, {
+      method: 'POST',
+      body: JSON.stringify({
+        templateId,
+        teamId,
+        userId: currentUser.userId,
+        selections,
+      }),
+    })) ?? {}
+  );
+}
