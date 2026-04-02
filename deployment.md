@@ -78,34 +78,43 @@ Dev deployments use SES in **sandbox mode**, which only allows sending to verifi
 
 ## Deployment Commands
 
-Build the project before deploying:
+> **Important:** Always run `npm run build` at the **root** of the repository before deploying.
+> The CDK deploy scripts only rebuild the CDK TypeScript — they do **not** rebuild the frontend
+> or API source code. If you skip this step, CDK will package stale build artifacts and may
+> detect "no changes" for stacks whose source code actually changed, resulting in a deploy
+> that silently skips your updates.
 
 ```bash
-npm run build
+npm run build            # Builds both frontend (Vite) and API (tsc)
+npm run deploy:dev       # or deploy:prod — always build first!
 ```
 
 ### Dev Deployment
 
 ```bash
+npm run build
 SES_FROM_ADDRESS=you@example.com npm run deploy:dev
 ```
 
 With an AWS profile:
 
 ```bash
+npm run build
 AWS_PROFILE=my-profile SES_FROM_ADDRESS=you@example.com npm run deploy:dev
 ```
 
 ### Production Deployment
 
 ```bash
-SITE_DOMAIN=mng-inv.nunext.com ALLOW_PROD_DEPLOY=true npm run deploy:prod
+npm run build
+SITE_DOMAIN=mng-inv.nunext.dev ALLOW_PROD_DEPLOY=true npm run deploy:prod
 ```
 
 With an AWS profile:
 
 ```bash
-AWS_PROFILE=my-profile SITE_DOMAIN=mng-inv.nunext.com ALLOW_PROD_DEPLOY=true npm run deploy:prod
+npm run build
+AWS_PROFILE=my-profile SITE_DOMAIN=mng-inv.nunext.dev ALLOW_PROD_DEPLOY=true npm run deploy:prod
 ```
 
 ### Other Useful Commands

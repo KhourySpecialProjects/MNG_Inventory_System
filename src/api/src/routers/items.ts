@@ -14,15 +14,13 @@ import { doc } from '../aws';
 import { loadConfig } from '../process';
 import { TRPCError } from '@trpc/server';
 import { isLocalDev } from '../localDev';
+import { localImages } from './localImageStore';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
 const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
-
-// In-memory image store for local dev
-const localItemImages = new Map<string, string>();
 
 if (!isLocalDev && !BUCKET_NAME) throw new Error('❌ Missing S3 bucket name');
 const s3 = isLocalDev ? null : new S3Client({ region: REGION });
@@ -64,7 +62,7 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
 
   // Local dev mode: return from memory store
   if (isLocalDev) {
-    const image = localItemImages.get(imageKey);
+    const image = localImages.get(imageKey);
     if (image) {
       console.log(`[LocalDev] Retrieved item image: ${imageKey} (size: ${image.length} chars)`);
     } else {
@@ -94,7 +92,7 @@ async function uploadImage(key: string, base64Data: string, contentType: string)
       // If it doesn't have a header, add it
       base64Data = `data:${contentType};base64,${base64Data}`;
     }
-    localItemImages.set(key, base64Data);
+    localImages.set(key, base64Data);
     console.log(`[LocalDev] Stored item image: ${key} (size: ${base64Data.length} chars)`);
     return;
   }
@@ -480,7 +478,7 @@ export const itemsRouter = router({
 
         if (getRes.Item.imageKey) {
           if (isLocalDev) {
-            localItemImages.delete(getRes.Item.imageKey);
+            localImages.delete(getRes.Item.imageKey);
           } else {
             await s3!.send(
               new (await import('@aws-sdk/client-s3')).DeleteObjectCommand({

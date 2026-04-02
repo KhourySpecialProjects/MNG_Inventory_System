@@ -16,15 +16,13 @@ import { TRPCError } from '@trpc/server';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { isLocalDev } from '../localDev';
+import { localImages } from './localImageStore';
 
 const config = loadConfig();
 const TABLE_NAME = config.TABLE_NAME;
 const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
-
-// In-memory image store for local dev
-const localTemplateImages = new Map<string, string>();
 
 const s3 = isLocalDev ? null : new S3Client({ region: REGION });
 
@@ -42,7 +40,7 @@ async function uploadImage(key: string, base64Data: string, contentType: string)
     if (!base64Data.startsWith('data:')) {
       base64Data = `data:${contentType};base64,${base64Data}`;
     }
-    localTemplateImages.set(key, base64Data);
+    localImages.set(key, base64Data);
     console.log(`[LocalDev] Stored template image: ${key} (size: ${base64Data.length} chars)`);
     return;
   }
@@ -63,7 +61,7 @@ async function getPresignedUrl(imageKey?: string): Promise<string | undefined> {
   if (!imageKey) return undefined;
 
   if (isLocalDev) {
-    return localTemplateImages.get(imageKey) || undefined;
+    return localImages.get(imageKey) || undefined;
   }
 
   const url = await getSignedUrl(
