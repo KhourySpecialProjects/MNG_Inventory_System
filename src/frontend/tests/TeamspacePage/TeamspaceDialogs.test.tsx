@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router';
 import userEvent from '@testing-library/user-event';
 import {
   CreateTeamDialog,
@@ -23,7 +24,11 @@ vi.mock('../../src/api/auth');
 const theme = createTheme();
 
 function renderWithProviders(component: React.ReactElement) {
-  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
+  return render(
+    <MemoryRouter>
+      <ThemeProvider theme={theme}>{component}</ThemeProvider>
+    </MemoryRouter>,
+  );
 }
 
 const mockTeams = [
