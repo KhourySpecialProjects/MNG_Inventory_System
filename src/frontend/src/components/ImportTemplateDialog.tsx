@@ -217,7 +217,6 @@ export default function ImportTemplateDialog({
     if (checkedItems.length === 0) return false;
     return checkedItems.every((item) => {
       if (item.authQuantity < 1) return false;
-      if (!item.isKit && !item.serialNumber.trim()) return false;
       return true;
     });
   }, [checkedItems]);
@@ -430,16 +429,21 @@ export default function ImportTemplateDialog({
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                     />
 
-                    <TextField
-                      size="small"
-                      placeholder="Serial #"
-                      value={sel.serialNumber}
-                      onChange={(e) =>
-                        updateSelection(item.templateItemId, { serialNumber: e.target.value })
-                      }
-                      disabled={!sel.checked || item.isKit}
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
-                    />
+                    {item.isKit ? (
+                      <Typography variant="body2" color="text.disabled" sx={{ px: 1 }}>
+                        —
+                      </Typography>
+                    ) : (
+                      <TextField
+                        size="small"
+                        placeholder="Serial # (optional)"
+                        value={sel.serialNumber}
+                        onChange={(e) =>
+                          updateSelection(item.templateItemId, { serialNumber: e.target.value })
+                        }
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+                      />
+                    )}
                   </Box>
                 );
               })}
