@@ -22,7 +22,7 @@ interface FlatItem {
   description?: string;
   isKit?: boolean;
   parent?: string | null;
-  nsn?: string;
+  // nsn intentionally excluded — template items do not carry stock numbers
   liin?: string;
   endItemNiin?: string;
 }
@@ -106,7 +106,6 @@ export default function ExtractAsTemplateDialog({
           description: item.description || undefined,
           isKit: item.isKit ?? false,
           parent: item.parent ? (idMap.get(item.parent) ?? null) : null,
-          nsn: item.nsn || undefined,
           liin: item.liin || undefined,
           endItemNiin: item.endItemNiin || undefined,
         });

@@ -26,13 +26,13 @@ describe('AddInventoryCard', () => {
     it('renders the card with title', () => {
       renderWithRouter('team-123');
 
-      expect(screen.getByText('Add Inventory')).toBeInTheDocument();
+      expect(screen.getByText('Inventory Actions')).toBeInTheDocument();
     });
 
     it('renders the description text', () => {
       renderWithRouter('team-123');
 
-      expect(screen.getByText('Register new inventory items to be reviewed')).toBeInTheDocument();
+      expect(screen.getByText('Add items, import from a template, or extract this team\'s inventory as a new template')).toBeInTheDocument();
     });
 
     it('renders the add inventory button', () => {
@@ -115,7 +115,7 @@ describe('AddInventoryCard', () => {
     it('has proper heading hierarchy', () => {
       renderWithRouter('team-123');
 
-      const heading = screen.getByRole('heading', { name: /add inventory/i });
+      const heading = screen.getByRole('heading', { name: /inventory actions/i });
       expect(heading).toBeInTheDocument();
     });
 
@@ -129,8 +129,8 @@ describe('AddInventoryCard', () => {
     it('all text content is visible', () => {
       renderWithRouter('team-123');
 
-      expect(screen.getByText('Add Inventory')).toBeVisible();
-      expect(screen.getByText('Register new inventory items to be reviewed')).toBeVisible();
+      expect(screen.getByText('Inventory Actions')).toBeVisible();
+      expect(screen.getByText('Add items, import from a template, or extract this team\'s inventory as a new template')).toBeVisible();
       expect(screen.getByText('Add New Inventory Item')).toBeVisible();
     });
   });
