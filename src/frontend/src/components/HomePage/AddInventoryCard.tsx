@@ -9,9 +9,10 @@ import { useTheme } from '@mui/material/styles';
 interface AddInventoryCardProps {
   teamId: string;
   onImportFromTemplate?: () => void;
+  onExtractAsTemplate?: () => void;
 }
 
-export default function AddInventoryCard({ teamId, onImportFromTemplate }: AddInventoryCardProps) {
+export default function AddInventoryCard({ teamId, onImportFromTemplate, onExtractAsTemplate }: AddInventoryCardProps) {
   const theme = useTheme();
 
   return (
@@ -31,10 +32,10 @@ export default function AddInventoryCard({ teamId, onImportFromTemplate }: AddIn
       }}
     >
       <Typography variant="h6" fontWeight={700} mb={1.5}>
-        Add Inventory
+        Inventory Actions
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Register new inventory items to be reviewed
+        Add items, import from a template, or extract this team's inventory as a new template
       </Typography>
       <Button
         variant="contained"
@@ -72,6 +73,26 @@ export default function AddInventoryCard({ teamId, onImportFromTemplate }: AddIn
           }}
         >
           Import from Template
+        </Button>
+      )}
+      {onExtractAsTemplate && (
+        <Button
+          variant="contained"
+          color="warning"
+          fullWidth
+          onClick={onExtractAsTemplate}
+          sx={{
+            mt: 1.5,
+            textTransform: 'none',
+            fontWeight: 600,
+            borderRadius: 8,
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              transform: 'scale(1.02)',
+            },
+          }}
+        >
+          Extract as Template
         </Button>
       )}
     </Paper>

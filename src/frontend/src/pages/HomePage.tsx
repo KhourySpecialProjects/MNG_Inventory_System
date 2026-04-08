@@ -24,6 +24,7 @@ import { getItems } from '../api/items';
 import { me } from '../api/auth'; // Import your auth function
 import { getTeam } from '../api/home';
 import ImportTemplateDialog from '../components/ImportTemplateDialog';
+import ExtractAsTemplateDialog from '../components/HomePage/ExtractAsTemplateDialog';
 
 export default function HomePage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -40,6 +41,7 @@ export default function HomePage() {
   const [selectedValue, setSelectedValue] = useState<number>(7); // default
   const [items, setItems] = useState<any[]>([]); // new state for raw items
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [extractDialogOpen, setExtractDialogOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -250,7 +252,11 @@ export default function HomePage() {
 
             <Grid size={{ xs: 12, md: 4 }}>
               <Stack spacing={3}>
-                <AddInventoryCard teamId={teamId!} onImportFromTemplate={() => setImportDialogOpen(true)} />
+                <AddInventoryCard
+                  teamId={teamId!}
+                  onImportFromTemplate={() => setImportDialogOpen(true)}
+                  onExtractAsTemplate={items.length > 0 ? () => setExtractDialogOpen(true) : undefined}
+                />
                 <RestartInventoryProcess teamId={teamId!} />
 
                 {/* Hide TeamActivityChart on mobile */}
@@ -262,6 +268,16 @@ export default function HomePage() {
           </Grid>
         )}
       </Box>
+
+      <ExtractAsTemplateDialog
+        open={extractDialogOpen}
+        items={items}
+        onClose={() => setExtractDialogOpen(false)}
+        onSuccess={(templateId) => {
+          setExtractDialogOpen(false);
+          navigate(`/templates/${templateId}`);
+        }}
+      />
 
       <ImportTemplateDialog
         teamId={teamId!}
