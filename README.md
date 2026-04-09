@@ -13,7 +13,7 @@ The following includes hyperlinks to section-specific docmentation:
 
 ### Overview of Project
 
-The Inventory Management System (SupplyNet) is a web application designed to replace the Massachusetts Army National Guard’s paper-based inventory system. The existing process is slow, error-prone, and dependent on nested forms and inconsistent item naming, often requiring eight or more hours of repeated checks. SupplyNet modernizes this workflow by giving technicians an intuitive interface to log items, navigate nested kits, update statuses, and attach photos, while providing managers and supervisors the tools needed to create teams, manage personnel, update inventory structures, and export official documentation.
+The Inventory Management System (SupplyNet) is a web application designed to replace the Massachusetts Army National Guard's paper-based inventory system. The existing process is slow, error-prone, and dependent on nested forms and inconsistent item naming, often requiring eight or more hours of repeated checks. SupplyNet modernizes this workflow by giving technicians an intuitive interface to log items, navigate nested kits, update statuses, and attach photos, while providing managers and supervisors the tools needed to create teams, manage personnel, update inventory structures, and export official documentation.
 
 The system is built around role-based access (Technician, Manager, Skip-Manager) and supports the creation, updating, and review of both standalone items and multi-level kits. All logged data can be exported into standardized Army PDF forms generated through our backend system. These reports provide supply managers and leadership with accurate, compliant records of equipment status.
 
@@ -33,6 +33,50 @@ Our job is to create a web-based application for use by inventory-taking technic
 
 SupplyNet operates entirely on AWS infrastructure, using CloudFront for hosting, Cognito for authentication, DynamoDB for storing users, teams, items, and logs, S3 for item images and generated reports, and Lambda for server-side PDF generation. The system is browser-based, responsive, and optimized for desktop, laptop, and tablet usage. While not built for full mobile or offline operation, its lightweight design and cloud architecture allow fast, secure access for a small team of fewer than ten active users at a time, with the potential to scale to additional National Guard units.
 
+```
+                                    ┌─────────┐
+                                    │  Users  │
+                                    └────┬────┘
+                                         │
+          ┌───────────┐            ┌─────▼──────┐            ┌───────────┐
+          │ Route 53  │───  DNS  ─▶│ CloudFront │◀──  TLS  ──│    ACM    │
+          └───────────┘            └──┬──────┬──┘            └───────────┘
+                                      │      │
+                        static assets │      │ /trpc/*
+                                      │      │
+                      ┌───────────────┘      └───────────────┐
+                      ▼                                      ▼
+               ┌────────────┐                       ┌───────────────┐
+               │   S3 Web   │                       │API Gateway v2 │
+               │  React SPA │                       │   HTTP API    │
+               └────────────┘                       └───────┬───────┘
+                                                            │
+                                                    ┌───────▼───────┐     ┌───────────┐
+                                                    │    Lambda     ├────▶│  Cognito  │
+                                                    │  tRPC/Node20  │     │ Auth+MFA  │
+                                                    └──┬─────┬───┬──┘     └───────────┘
+                                                       │     │   │
+                          ┌────────────────────────────┘     │   └──────────────┐
+                          │                ┌─────────────────┘                  │
+                          ▼                ▼                                    ▼
+                   ┌────────────┐   ┌────────────┐                      ┌────────────┐
+                   │  DynamoDB  │   │    SES     │                      │ S3 Uploads │
+                   │ single-tbl │   │   email    │                      │images/docs │
+                   │   5 GSIs   │   └────────────┘                      └─────┬──────┘
+                   └─────▲──────┘                                             │
+                         │           ┌───────────────────┐                    │
+                         └───────────┤  Export Lambdas   │◀───────────────────┘
+                                     │ Python 3.11       │
+                                     │ DA 2404 PDF / CSV │
+                                     └───────────────────┘
+
+                   ┌─────────┐
+                   │   KMS   │  ◀── encrypts DynamoDB table + S3 buckets
+                   └─────────┘
+```
+
+**Request flow:** Users hit **CloudFront** (via Route 53 DNS + ACM TLS). Static assets are served from the **S3 web bucket**. API calls (`/trpc/*`) are proxied to **API Gateway v2**, which invokes the **tRPC Lambda** (Node.js 20). The Lambda authenticates via **Cognito** (EMAIL_OTP MFA), reads/writes data in **DynamoDB** (single-table, 5 GSIs), sends emails through **SES** (DKIM + DMARC), and stores images in **S3 Uploads**. For report generation, the Lambda invokes separate **Export Lambdas** (Python 3.11) that read from DynamoDB and write PDFs/CSVs to S3. All data at rest is encrypted with customer-managed **KMS** keys.
+
 ### Infrastructure Highlights
 
 - **Custom Domain**: Route 53 hosted zone with ACM certificate (apex + wildcard). CloudFront serves the frontend under the custom domain with an A-record alias.
@@ -48,14 +92,14 @@ For a complete infrastructure setup guide on a fresh AWS account, see [SETUP_GUI
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Deployment Guide](./deployment.md) | Environment variables, deploy commands, local dev setup |
-| [AWS Setup Guide](./SETUP_GUIDE.md) | Fresh AWS account setup from scratch |
-| [CDK Documentation](src/cdk/README.md) | Infrastructure stacks and configuration |
-| [API Documentation](src/api/README.md) | tRPC router endpoints and methods |
-| [Frontend Documentation](src/frontend/README.md) | React components, pages, and patterns |
-| [Migration Guide](src/cdk/data-migration/MIGRATION_GUIDE.md) | Data migration between environments |
+| Document                                                     | Description                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------- |
+| [Deployment Guide](./deployment.md)                          | Environment variables, deploy commands, local dev setup |
+| [AWS Setup Guide](./SETUP_GUIDE.md)                          | Fresh AWS account setup from scratch                    |
+| [CDK Documentation](src/cdk/README.md)                       | Infrastructure stacks and configuration                 |
+| [API Documentation](src/api/README.md)                       | tRPC router endpoints and methods                       |
+| [Frontend Documentation](src/frontend/README.md)             | React components, pages, and patterns                   |
+| [Migration Guide](src/cdk/data-migration/MIGRATION_GUIDE.md) | Data migration between environments                     |
 
 ---
 
@@ -64,7 +108,7 @@ For a complete infrastructure setup guide on a fresh AWS account, see [SETUP_GUI
 1. **Stale User Names on Reviewed Items**
    When a user updates the status of an item, their userId, username, and name are saved to that item as the last reviewer. If the user later changes their name or username, previously reviewed items still show the old values. Fix: save only the userId and resolve the current name at query time.
 2. Template Generated Items Image Persistance
-   When items are created from a template, they inherit the templates image. Instead of copying the image in S3, the app uses the same s3 url as the template. Because of this, deleting a template item from a template could interfere with images on existing items. 
+   When items are created from a template, they inherit the templates image. Instead of copying the image in S3, the app uses the same s3 url as the template. Because of this, deleting a template item from a template could interfere with images on existing items.
 
 ## Future Improvements
 
