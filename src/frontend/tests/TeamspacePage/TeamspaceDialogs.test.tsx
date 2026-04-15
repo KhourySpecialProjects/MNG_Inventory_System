@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import {
   CreateTeamDialog,
@@ -50,14 +51,18 @@ describe('CreateTeamDialog', () => {
   });
 
   it('renders all form fields', () => {
-    renderWithProviders(
-      <CreateTeamDialog
-        open={true}
-        onClose={mockOnClose}
-        teams={mockTeams}
-        onRefresh={mockOnRefresh}
-        showSnackbar={mockShowSnackbar}
-      />,
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <CreateTeamDialog
+            open={true}
+            onClose={mockOnClose}
+            teams={mockTeams}
+            onRefresh={mockOnRefresh}
+            showSnackbar={mockShowSnackbar}
+          />
+        </ThemeProvider>
+      </MemoryRouter>,
     );
 
     expect(screen.getByText('Create New Teamspace')).toBeInTheDocument();
@@ -68,14 +73,18 @@ describe('CreateTeamDialog', () => {
   });
 
   it('disables Create button when fields are empty', () => {
-    renderWithProviders(
-      <CreateTeamDialog
-        open={true}
-        onClose={mockOnClose}
-        teams={mockTeams}
-        onRefresh={mockOnRefresh}
-        showSnackbar={mockShowSnackbar}
-      />,
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <CreateTeamDialog
+            open={true}
+            onClose={mockOnClose}
+            teams={mockTeams}
+            onRefresh={mockOnRefresh}
+            showSnackbar={mockShowSnackbar}
+          />
+        </ThemeProvider>
+      </MemoryRouter>,
     );
 
     const createButton = screen.getByRole('button', { name: /create/i });
@@ -84,14 +93,18 @@ describe('CreateTeamDialog', () => {
 
   it('enables Create button when all fields are filled', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <CreateTeamDialog
-        open={true}
-        onClose={mockOnClose}
-        teams={mockTeams}
-        onRefresh={mockOnRefresh}
-        showSnackbar={mockShowSnackbar}
-      />,
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <CreateTeamDialog
+            open={true}
+            onClose={mockOnClose}
+            teams={mockTeams}
+            onRefresh={mockOnRefresh}
+            showSnackbar={mockShowSnackbar}
+          />
+        </ThemeProvider>
+      </MemoryRouter>,
     );
 
     await user.type(screen.getByLabelText(/teamspace name/i), 'New Team');
@@ -109,14 +122,18 @@ describe('CreateTeamDialog', () => {
       success: true,
     });
 
-    renderWithProviders(
-      <CreateTeamDialog
-        open={true}
-        onClose={mockOnClose}
-        teams={mockTeams}
-        onRefresh={mockOnRefresh}
-        showSnackbar={mockShowSnackbar}
-      />,
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <CreateTeamDialog
+            open={true}
+            onClose={mockOnClose}
+            teams={mockTeams}
+            onRefresh={mockOnRefresh}
+            showSnackbar={mockShowSnackbar}
+          />
+        </ThemeProvider>
+      </MemoryRouter>,
     );
 
     await user.type(screen.getByLabelText(/teamspace name/i), 'New Team');
@@ -141,14 +158,18 @@ describe('CreateTeamDialog', () => {
       error: 'Failed to create',
     });
 
-    renderWithProviders(
-      <CreateTeamDialog
-        open={true}
-        onClose={mockOnClose}
-        teams={mockTeams}
-        onRefresh={mockOnRefresh}
-        showSnackbar={mockShowSnackbar}
-      />,
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <CreateTeamDialog
+            open={true}
+            onClose={mockOnClose}
+            teams={mockTeams}
+            onRefresh={mockOnRefresh}
+            showSnackbar={mockShowSnackbar}
+          />
+        </ThemeProvider>
+      </MemoryRouter>,
     );
 
     await user.type(screen.getByLabelText(/teamspace name/i), 'New Team');
@@ -166,14 +187,18 @@ describe('CreateTeamDialog', () => {
 
   it('closes dialog when Cancel is clicked', async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <CreateTeamDialog
-        open={true}
-        onClose={mockOnClose}
-        teams={mockTeams}
-        onRefresh={mockOnRefresh}
-        showSnackbar={mockShowSnackbar}
-      />,
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <CreateTeamDialog
+            open={true}
+            onClose={mockOnClose}
+            teams={mockTeams}
+            onRefresh={mockOnRefresh}
+            showSnackbar={mockShowSnackbar}
+          />
+        </ThemeProvider>
+      </MemoryRouter>,
     );
 
     const cancelButton = screen.getByRole('button', { name: /cancel/i });

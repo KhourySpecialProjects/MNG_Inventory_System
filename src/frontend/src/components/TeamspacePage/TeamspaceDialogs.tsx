@@ -5,6 +5,7 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogTitle,
@@ -73,6 +74,7 @@ export function CreateTeamDialog({
   });
 
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Template import state
   const [templates, setTemplates] = useState<any[]>([]);
@@ -198,6 +200,9 @@ export function CreateTeamDialog({
 
       onClose();
       await onRefresh();
+      if (result?.teamId) {
+        navigate(`/teams/home/${result.teamId}`);
+      }
     } catch (err) {
       console.error('❌ handleCreate error:', err);
       const errorMessage =

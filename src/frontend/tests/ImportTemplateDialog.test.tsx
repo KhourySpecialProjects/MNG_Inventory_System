@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
-import { BrowserRouter } from 'react-router';
+import { MemoryRouter } from 'react-router-dom';
 import ImportTemplateDialog from '../src/components/ImportTemplateDialog';
 import theme from '../src/theme';
 
@@ -37,9 +37,9 @@ function renderDialog(props: Partial<React.ComponentProps<typeof ImportTemplateD
 
   return render(
     <ThemeProvider theme={theme}>
-      <BrowserRouter>
+      <MemoryRouter>
         <ImportTemplateDialog {...defaultProps} {...props} />
-      </BrowserRouter>
+      </MemoryRouter>
     </ThemeProvider>,
   );
 }
