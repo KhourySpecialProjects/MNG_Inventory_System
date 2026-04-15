@@ -192,7 +192,7 @@ export async function importTemplateToTeam(
   selections: Array<{
     templateItemId: string;
     authQuantity: number;
-    serialNumber: string;
+    serialNumber?: string;
   }>,
 ) {
   const currentUser = await me();

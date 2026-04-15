@@ -763,7 +763,7 @@ export const templatesRouter = router({
           z.object({
             templateItemId: z.string(),
             authQuantity: z.number().min(1).default(1),
-            serialNumber: z.string(),
+            serialNumber: z.string().optional(),
           }),
         ),
       }),
@@ -802,7 +802,7 @@ export const templatesRouter = router({
       }
 
       // 3. Validate all selections
-      const selectionMap = new Map<string, { authQuantity: number; serialNumber: string }>();
+      const selectionMap = new Map<string, { authQuantity: number; serialNumber?: string }>();
       for (const sel of input.selections) {
         if (!templateItemMap.has(sel.templateItemId)) {
           throw new TRPCError({

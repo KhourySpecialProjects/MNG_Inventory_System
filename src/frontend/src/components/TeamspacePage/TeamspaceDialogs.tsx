@@ -486,20 +486,25 @@ export function CreateTeamDialog({
                             inputProps={{ min: 1 }}
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
                           />
-                          <TextField
-                            size="small"
-                            placeholder="Serial #"
-                            value={sel.serialNumber}
-                            onChange={(e) => {
-                              setTemplateSelections((prev) => {
-                                const next = new Map(prev);
-                                next.set(item.templateItemId, { ...sel, serialNumber: e.target.value });
-                                return next;
-                              });
-                            }}
-                            disabled={!sel.checked || item.isKit}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
-                          />
+                          {item.isKit ? (
+                            <Typography variant="body2" color="text.disabled" sx={{ px: 1 }}>
+                              —
+                            </Typography>
+                          ) : (
+                            <TextField
+                              size="small"
+                              placeholder="Serial # (optional)"
+                              value={sel.serialNumber}
+                              onChange={(e) => {
+                                setTemplateSelections((prev) => {
+                                  const next = new Map(prev);
+                                  next.set(item.templateItemId, { ...sel, serialNumber: e.target.value });
+                                  return next;
+                                });
+                              }}
+                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1.5 } }}
+                            />
+                          )}
                         </Box>
                       );
                     })}
