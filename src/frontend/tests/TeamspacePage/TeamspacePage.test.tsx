@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import userEvent from '@testing-library/user-event';
 import TeamspacePage from '../../src/pages/TeamspacePage';
@@ -49,11 +49,11 @@ const mockUser = {
 const theme = createTheme();
 
 function renderWithProviders(component: React.ReactElement) {
-  return render(
-    <BrowserRouter>
-      <ThemeProvider theme={theme}>{component}</ThemeProvider>
-    </BrowserRouter>,
+  const router = createMemoryRouter(
+    [{ path: '/', element: <ThemeProvider theme={theme}>{component}</ThemeProvider> }],
+    { initialEntries: ['/'] },
   );
+  return render(<RouterProvider router={router} />);
 }
 
 describe('TeamspacePage', () => {
