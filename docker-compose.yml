@@ -1,13 +1,28 @@
 services:
-  dynamodb-local:
-    image: amazon/dynamodb-local:latest
-    container_name: mng-dynamodb-local
-    ports:
-      - '8000:8000'
-    command: '-jar DynamoDBLocal.jar -sharedDb -inMemory'
-    networks:
-      - mng-local-network
-
-networks:
-  mng-local-network:
-    driver: bridge
+  garage:
+    image: dxflrs/garage:v1.0.1
+    restart: unless-stopped
+    volumes:
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+      - type: bind
+        source: ./garage.toml
+        target: /etc/garage.toml
+        content: |
+          metadata_dir = "/var/lib/garage/meta"
+          data_dir = "/var/lib/garage/data"
+          db_engine = "sqlite"
+          replication_factor = 1
+          rpc_bind_addr = "[::]:3901"
+          rpc_public_addr = "127.0.0.1:3901"
+          rpc_secret = "9e59dd9fbfb2aecfa1866dbd2b2401f491ee57bbb47448d427307e2a5f8b17e9"
+          [s3_api]
+          s3_region = "us-east-1"
+          api_bind_addr = "[::]:3900"
+          root_domain = ".s3.cs4535.cloud"
+          [admin]
+          api_bind_addr = "[::]:3903"
+          admin_token = "NpUgL4E9ggTsS04Q9hnG1K5z0H7pWgz3+SZyugJ7r+A=]"
+volumes:
+  garage-meta:
+  garage-data:
