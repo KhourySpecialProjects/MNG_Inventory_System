@@ -9,6 +9,10 @@ const CANONICAL_ALLOWED_ORIGINS = [
   process.env.LOCAL_WEB_ORIGIN ?? 'http://localhost:5173',
   'http://127.0.0.1:5173',
   'https://d2cktegyq4qcfk.cloudfront.net',
+  ...(process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
 ];
 
 function isAllowedOrigin(origin: string | undefined): boolean {
