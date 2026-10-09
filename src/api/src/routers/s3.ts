@@ -1,5 +1,6 @@
 // S3 router – uploads profile images and fetches inventory PDFs
 import { z } from 'zod';
+import { makeS3Client } from '../aws';
 import {
   S3Client,
   PutObjectCommand,
@@ -17,21 +18,7 @@ const REGION = config.REGION;
 const BUCKET_NAME = config.BUCKET_NAME;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
-const s3 = isLocalDev
-  ? null
-  : new S3Client({
-      region: REGION,
-      ...(process.env.S3_ENDPOINT
-        ? {
-            endpoint: process.env.S3_ENDPOINT,
-            forcePathStyle: true,
-            credentials: {
-              accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-              secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-            },
-          }
-        : {}),
-    });
+const s3 = isLocalDev ? null : makeS3Client();
 
 // In-memory storage for local dev
 const localImageStore = new Map<string, { mime: string; data: string }>();

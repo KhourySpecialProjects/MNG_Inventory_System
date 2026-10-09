@@ -10,7 +10,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
-import { doc } from '../aws';
+import { doc, makeS3Client } from '../aws';
 import { loadConfig } from '../process';
 import { TRPCError } from '@trpc/server';
 import { isLocalDev } from '../localDev';
@@ -23,7 +23,7 @@ const REGION = config.REGION;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
 if (!isLocalDev && !BUCKET_NAME) throw new Error('❌ Missing S3 bucket name');
-const s3 = isLocalDev ? null : new S3Client({ region: REGION });
+const s3 = isLocalDev ? null : makeS3Client();
 
 // creates an ID for the item
 function newId(n = 10): string {

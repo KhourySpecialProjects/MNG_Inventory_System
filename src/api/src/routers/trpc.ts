@@ -4,6 +4,7 @@ import type { Request, Response } from 'express';
 import type { APIGatewayProxyEventV2, Context as LambdaCtx } from 'aws-lambda';
 import { COOKIE_ACCESS, parseCookiesFromCtx } from '../helpers/cookies';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import { SELF_HOSTED, localVerifier } from '../helpers/selfHosted';
 import { getUserPermissions } from '../helpers/teamspaceHelpers';
 import { TRPCError } from '@trpc/server';
 import type { Permission } from './roles';
@@ -73,13 +74,15 @@ const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID || 'us-east-1_sP3HAecAw';
 const USER_POOL_CLIENT_ID = process.env.COGNITO_CLIENT_ID || '6vk8qbvjv6hvb99a0jjcpbth9k';
 
 // Only create verifier if not in local dev mode
-const verifier = isLocalDev
+const verifier: any = isLocalDev
   ? null
-  : CognitoJwtVerifier.create({
-      userPoolId: USER_POOL_ID,
-      clientId: USER_POOL_CLIENT_ID,
-      tokenUse: 'access',
-    });
+  : SELF_HOSTED
+    ? localVerifier
+    : CognitoJwtVerifier.create({
+        userPoolId: USER_POOL_ID,
+        clientId: USER_POOL_CLIENT_ID,
+        tokenUse: 'access',
+      });
 
 /**
  *  Auth Middleware

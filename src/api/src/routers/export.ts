@@ -5,12 +5,13 @@ import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { loadConfig } from '../process';
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { isLocalDev } from '../localDev';
+import { lambdaClient, makeS3Client } from '../aws';
 
 const config = loadConfig();
 const REGION = config.REGION;
 
-const lambda = isLocalDev ? null : new LambdaClient({ region: REGION });
-const s3 = isLocalDev ? null : new S3Client({ region: REGION });
+const lambda = isLocalDev ? null : lambdaClient;
+const s3 = isLocalDev ? null : makeS3Client();
 
 const UPLOADS_BUCKET = config.BUCKET_NAME;
 

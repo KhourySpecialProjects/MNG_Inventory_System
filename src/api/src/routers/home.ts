@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, permissionedProcedure } from './trpc';
 import { QueryCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
-import { doc } from '../aws';
+import { doc, makeS3Client } from '../aws';
 import { loadConfig } from '../process';
 import { isLocalDev } from '../localDev';
 
@@ -11,7 +11,7 @@ const TABLE_NAME = config.TABLE_NAME;
 const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 
-const s3 = isLocalDev ? null : new S3Client({ region: REGION });
+const s3 = isLocalDev ? null : makeS3Client();
 
 // HARD RESET — Delete all items and images for a team
 async function hardReset(teamId: string) {

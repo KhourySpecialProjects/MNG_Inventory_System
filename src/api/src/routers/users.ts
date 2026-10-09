@@ -8,7 +8,7 @@ import {
   DeleteCommand,
   QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { doc } from '../aws';
+import { doc, makeS3Client } from '../aws';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { loadConfig } from '../process';
 
@@ -122,7 +122,7 @@ export const usersRouter = router({
       const { userId } = input;
       console.log(`[Users] deleteUser start user=${userId}`);
 
-      const s3Client = new S3Client({ region: config.REGION });
+      const s3Client = makeS3Client();
 
       const exts = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
       const prefix = `Profile/${userId}`;

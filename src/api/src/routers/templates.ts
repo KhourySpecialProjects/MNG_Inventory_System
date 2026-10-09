@@ -10,7 +10,7 @@ import {
   BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import crypto from 'crypto';
-import { doc } from '../aws';
+import { doc, makeS3Client } from '../aws';
 import { loadConfig } from '../process';
 import { TRPCError } from '@trpc/server';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
@@ -24,7 +24,7 @@ const BUCKET_NAME = config.BUCKET_NAME;
 const REGION = config.REGION;
 const KMS_KEY_ARN = config.KMS_KEY_ARN;
 
-const s3 = isLocalDev ? null : new S3Client({ region: REGION });
+const s3 = isLocalDev ? null : makeS3Client();
 
 function getImageExtension(base64: string): string {
   const m = base64.match(/^data:image\/(\w+);base64,/);

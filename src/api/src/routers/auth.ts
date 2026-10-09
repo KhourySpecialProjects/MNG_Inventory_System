@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import { cognitoClient } from '../aws';
 import { sendInviteEmail } from '../helpers/inviteEmail';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
+import { SELF_HOSTED, localVerifier } from '../helpers/selfHosted';
 import {
   setAuthCookies,
   clearAuthCookies,
@@ -36,13 +37,15 @@ export const SES_FROM_ADDRESS = config.SES_FROM;
 export const APP_SIGNIN_URL = config.APP_SIGNIN_URL || `${config.WEB_URL}/signin`;
 
 // Only create verifier if not in local dev mode
-const verifier = isLocalDev
+const verifier: any = isLocalDev
   ? null
-  : CognitoJwtVerifier.create({
-      userPoolId: USER_POOL_ID,
-      clientId: USER_POOL_CLIENT_ID,
-      tokenUse: 'access',
-    });
+  : SELF_HOSTED
+    ? localVerifier
+    : CognitoJwtVerifier.create({
+        userPoolId: USER_POOL_ID,
+        clientId: USER_POOL_CLIENT_ID,
+        tokenUse: 'access',
+      });
 
 // generates a temp password with letters + digits only
 const generateTempPassword = (): string => {

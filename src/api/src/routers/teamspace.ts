@@ -9,7 +9,7 @@ import {
   ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import crypto from 'crypto';
-import { doc } from '../aws';
+import { doc, makeS3Client } from '../aws';
 import { loadConfig } from '../process';
 import { DeleteObjectsCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
 import { isLocalDev } from '../localDev';
@@ -366,7 +366,7 @@ export const teamspaceRouter = router({
 
         // Skip S3 cleanup in local dev mode
         if (!isLocalDev) {
-          const s3 = new S3Client({ region: config.REGION });
+          const s3 = makeS3Client();
 
           const prefix = `items/${input.inviteWorkspaceId}/`;
 
